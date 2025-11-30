@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Home | Sportova</title>
+    <title>Home | NSTE</title>
     <link rel="stylesheet" href="style.css" />
     <link href="https://unpkg.com/aos@2.3.4/dist/aos.css" rel="stylesheet">
     <link rel="stylesheet" href="https://unpkg.com/swiper/swiper-bundle.min.css" />
@@ -192,6 +192,7 @@
         </div>
         <nav>
             <a href="index.html">Home</a>
+            <a href="business-partners.html">Partenrship</a>
             <a href="facilities.html" class="active">Facilities</a>
             <a href="community.html">Community</a>
             <a href="about.html">About us</a>
@@ -205,9 +206,7 @@
 
     <section class="hero">
         <div class="hero-content">
-            <h1>Book Your Favorite Sports Facility<br />Anytime, Anywhere</h1>
-            <p>A Warm Welcome to our platform. We are the leading providers for a group coaching as well as
-                private coaching. We Thrive to create new form of Focus to our students</p>
+            <p>Book Your Favorite Sports Facility<br />Anytime, Anywhere</p>
             <a href="login.html"><button>Get Started</button></a>
         </div>
     </section>
@@ -462,254 +461,7 @@
             }
         });
     </script>
-    <script>
-        window.onload = function () {
-            // --- Stylish CSS ---
-            const style = document.createElement("style");
-            style.textContent = `
-    /* Launcher button */
-    #tennis-bot-launcher {
-      position: fixed; bottom: 25px; left: 25px;
-      width: 60px; height: 60px;
-      border-radius: 50%;
-      background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
-      box-shadow: 0 8px 15px rgba(0, 242, 254, 0.4);
-      border: none; cursor: pointer;
-      font-size: 30px; color: white;
-      display: flex; justify-content: center; align-items: center;
-      transition: box-shadow 0.3s ease;
-      z-index: 9999;
-    }
-    #tennis-bot-launcher:hover {
-      box-shadow: 0 12px 20px rgba(0, 242, 254, 0.7);
-    }
-
-    /* Popup container */
-    #tennis-bot-popup {
-      position: fixed; bottom: 90px; left: 25px;
-      width: 350px; max-height: 420px;
-      background: #ffffff;
-      border-radius: 15px;
-      box-shadow: 0 10px 25px rgba(0,0,0,0.15);
-      display: none;
-      flex-direction: column;
-      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-      overflow: hidden;
-      z-index: 9999;
-    }
-
-    /* Header */
-    #tennis-bot-header {
-      background: linear-gradient(90deg, #4facfe 0%, #00f2fe 100%);
-      color: white;
-      padding: 16px 20px;
-      font-weight: 700;
-      font-size: 18px;
-      user-select: none;
-    }
-
-    /* Chat body */
-    #tennis-bot-body {
-      flex: 1;
-      padding: 15px 20px;
-      overflow-y: auto;
-      font-size: 15px;
-      background: #f9fbfd;
-      scrollbar-width: thin;
-      scrollbar-color: #00c6ff transparent;
-    }
-    #tennis-bot-body::-webkit-scrollbar {
-      width: 8px;
-    }
-    #tennis-bot-body::-webkit-scrollbar-thumb {
-      background-color: #00c6ff;
-      border-radius: 4px;
-    }
-
-    /* Footer input container */
-    #tennis-bot-footer {
-      display: flex;
-      border-top: 1px solid #ddd;
-      background: #fff;
-    }
-
-    /* Input box */
-    #tennis-bot-input {
-      flex: 1;
-      border: none;
-      padding: 12px 15px;
-      font-size: 15px;
-      outline: none;
-      transition: background-color 0.3s ease;
-      font-family: inherit;
-    }
-    #tennis-bot-input:focus {
-      background-color: #eef9ff;
-    }
-
-    /* Send button */
-    #tennis-bot-send {
-      background: #00c6ff;
-      border: none;
-      color: white;
-      font-size: 20px;
-      padding: 0 20px;
-      cursor: pointer;
-      transition: background-color 0.3s ease;
-    }
-    #tennis-bot-send:hover {
-      background: #009edc;
-    }
-
-    /* Messages */
-    .bot-msg, .user-msg {
-      max-width: 75%;
-      margin: 8px 0;
-      padding: 12px 16px;
-      border-radius: 20px;
-      line-height: 1.4;
-      white-space: pre-wrap;
-      word-wrap: break-word;
-      user-select: text;
-    }
-
-    /* Bot messages style */
-    .bot-msg {
-      background: #e0f7fa;
-      color: #007c91;
-      border-bottom-left-radius: 0;
-      position: relative;
-      padding-left: 40px;
-    }
-    .bot-msg::before {
-      content: "🎾";
-      position: absolute;
-      left: 12px;
-      top: 50%;
-      transform: translateY(-50%);
-      font-size: 18px;
-    }
-
-    /* User messages style */
-    .user-msg {
-      background: #0077cc;
-      color: white;
-      border-bottom-right-radius: 0;
-      margin-left: auto;
-      position: relative;
-      padding-right: 40px;
-    }
-    .user-msg::after {
-      content: "👤";
-      position: absolute;
-      right: 12px;
-      top: 50%;
-      transform: translateY(-50%);
-      font-size: 18px;
-    }
-  `;
-            document.head.appendChild(style);
-
-            // --- UI Elements ---
-            const launcher = document.createElement("button");
-            launcher.id = "tennis-bot-launcher";
-            launcher.textContent = "🎾";
-            document.body.appendChild(launcher);
-
-            const popup = document.createElement("div");
-            popup.id = "tennis-bot-popup";
-            popup.innerHTML = `
-    <div id="tennis-bot-header">SPORTOVA Bot</div>
-    <div id="tennis-bot-body"></div>
-    <div id="tennis-bot-footer">
-      <input type="text" id="tennis-bot-input" placeholder="Ask a question..." autocomplete="off" />
-      <button id="tennis-bot-send" aria-label="Send message">➤</button>
-    </div>
-  `;
-            document.body.appendChild(popup);
-
-            launcher.onclick = () => {
-                popup.style.display = popup.style.display === "flex" ? "none" : "flex";
-                if (popup.style.display === "flex") {
-                    input.focus();
-                }
-            };
-
-            const input = popup.querySelector("#tennis-bot-input");
-            const send = popup.querySelector("#tennis-bot-send");
-            const body = popup.querySelector("#tennis-bot-body");
-
-            // FAQ data
-            const faqs = [
-                {
-                    keywords: ["hello", "hi", "hey", "good morning", "good afternoon", "good evening", "greetings"],
-                    a: "Hello! Welcome to our NSTE Tennis Academy. How can I assist you today?"
-                },
-                {
-                    keywords: ["what are your timings", "timing", "opening hours", "when do you open", "timings", "working hours"],
-                    a: "We're open from 5 PM to 9 PM every day."
-                },
-                {
-                    keywords: ["how to book", "booking", "book a slot", "reserve court"],
-                    a: "You can book a slot by calling us or visiting the academy."
-                },
-                {
-                    keywords: ["do you offer coaching", "coaching", "training", "lessons"],
-                    a: "Yes, we offer coaching for beginners and advanced players."
-                },
-                {
-                    keywords: ["what is the fee", "cost", "price", "charges", "fees"],
-                    a: "Our monthly fee is RM150 for kids and RM200 for adults."
-                },
-                {
-                    keywords: ["where are you located", "located", "location", "address", "where is the academy"],
-                    a: "We're located in Penang,malaysia."
-                },
-            ];
-
-
-            // Send message handler
-            send.onclick = () => {
-                handleUserInput();
-            };
-            input.addEventListener("keydown", e => {
-                if (e.key === "Enter") {
-                    e.preventDefault();
-                    handleUserInput();
-                }
-            });
-
-            function handleUserInput() {
-                const userText = input.value.trim();
-                if (!userText) return;
-                input.value = "";
-                printMessage(userText, "user");
-
-                const match = faqs.find(f =>
-                    f.keywords.some(keyword => userText.toLowerCase().includes(keyword.toLowerCase()))
-                );
-
-
-                if (match) {
-                    printMessage(match.a, "bot");
-                } else {
-                    printMessage("🤖 Sorry, I didn't understand. Try asking about timings, fees, or location.", "bot");
-                }
-            }
-
-            function printMessage(msg, type) {
-                const div = document.createElement("div");
-                div.className = type === "bot" ? "bot-msg" : "user-msg";
-                div.innerText = msg;
-                body.appendChild(div);
-                body.scrollTop = body.scrollHeight;
-            }
-        };
-    </script>
-
-
-
-
+    <script src='https://www.noupe.com/embed/019aaf49cb6d766a9468b5a8f39ae8f58434.js'></script>
 
 </body>
 
@@ -730,8 +482,7 @@
     </div>
 </footer>
 <div class="copyright">
-    &copy; 2023 NSTE Tennis Academy. All rights reserved.
+    &copy; SPORTOVA. All rights reserved.
 </div>
 
 </html>
-

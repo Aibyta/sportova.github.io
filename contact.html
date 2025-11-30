@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Contact Us | SPORTOVA</title>
+    <title>Contact Us | NSTE Tennis Academy</title>
     <link rel="stylesheet" href="style.css" />
     <link href="https://unpkg.com/aos@2.3.4/dist/aos.css" rel="stylesheet">
     <link rel="stylesheet" href="https://unpkg.com/swiper/swiper-bundle.min.css" />
@@ -58,6 +58,26 @@
         .logo img {
             height: 40px;
             margin-right: 10px;
+        }
+
+        .logo-text {
+            display: flex;
+            flex-direction: column;
+            line-height: 1.2;
+            /* Tightens the spacing between elements */
+        }
+
+        .slogan {
+            font-size: 0.65em;
+            /* About 40% smaller than main text */
+            font-weight: 400;
+            /* Normal weight (not bold) */
+            color: var(--primary-color, #333);
+            /* Uses your variable with fallback */
+            opacity: 0.8;
+            /* Slightly transparent */
+            margin-top: 2px;
+            /* Small gap between name and slogan */
         }
 
         nav {
@@ -432,17 +452,22 @@
     <header>
         <div class="logo">
             <img src="img/logo.jpg" alt="Logo">
-            SPORTOVA
+            <div class="logo-text">
+                SPORTOVA
+                <div class="slogan">Book. Play. Win</div>
+            </div>
         </div>
         <nav>
             <a href="index.html">Home</a>
-            <a href="facilities.html">Facilities</a>
+            <a href="business-partners.html">Partenrship</a>
+            <a href="facilities.html" class="active">Facilities</a>
             <a href="community.html">Community</a>
             <a href="about.html">About us</a>
-            <a href="contact.html" class="active">Contact us</a>
+            <a href="contact.html">Contact us</a>
         </nav>
         <div class="auth-buttons">
-            <button onclick="window.location.href='login.html';"><i class="fas fa-sign-in-alt"></i> Login/Sign up</button>
+            <button onclick="window.location.href='login.html';"><i class="fas fa-sign-in-alt"></i> Login/Sign
+                up</button>
         </div>
     </header>
 
@@ -456,8 +481,9 @@
         <!-- Contact Information -->
         <div class="contact-info">
             <h2>Get in Touch</h2>
-            <p class="text-gray-600" style="margin-bottom: 2rem;">Feel free to contact us for booking help, suggestions, or technical support.</p>
-            
+            <p class="text-gray-600" style="margin-bottom: 2rem;">Feel free to contact us for booking help, suggestions,
+                or technical support.</p>
+
             <div class="contact-details">
                 <div class="contact-item">
                     <div class="contact-icon">
@@ -468,7 +494,7 @@
                         <p>016-4645054</p>
                     </div>
                 </div>
-                
+
                 <div class="contact-item">
                     <div class="contact-icon">
                         <i class="fas fa-envelope"></i>
@@ -478,7 +504,7 @@
                         <p>nstepgmgmt@gmail.com</p>
                     </div>
                 </div>
-                
+
                 <div class="contact-item">
                     <div class="contact-icon">
                         <i class="fas fa-map-marker-alt"></i>
@@ -489,14 +515,14 @@
                     </div>
                 </div>
             </div>
-            
+
             <div class="map-container">
                 <iframe
                     src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3972.173025039892!2d100.29966277372291!3d5.390582835293549!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x304ac22a87cc0001%3A0x7f99c54a3bf9333b!2s88%2C%2088k%2C%20Jln%20Masjid%20Negeri%2C%20Island%20Park%2C%2011600%20George%20Town%2C%20Pulau%20Pinang%2C%20Malaysia!5e0!3m2!1sen!2sin!4v1747627505686!5m2!1sen!2sin"
                     allowfullscreen="" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>
             </div>
         </div>
-        
+
         <!-- Contact Form -->
         <div class="contact-form">
             <h2>Send Us a Message</h2>
@@ -505,22 +531,22 @@
                     <label for="name">Your Name</label>
                     <input type="text" id="name" required>
                 </div>
-                
+
                 <div class="form-group">
                     <label for="email">Email Address</label>
                     <input type="email" id="email" required>
                 </div>
-                
+
                 <div class="form-group">
                     <label for="subject">Subject</label>
                     <input type="text" id="subject" required>
                 </div>
-                
+
                 <div class="form-group">
                     <label for="message">Your Message</label>
                     <textarea id="message" required></textarea>
                 </div>
-                
+
                 <button type="submit" class="submit-btn">
                     <i class="fas fa-paper-plane"></i> Send Message
                 </button>
@@ -531,40 +557,45 @@
     <!-- FAQ Section -->
     <section class="faq-section">
         <h2>Frequently Asked Questions</h2>
-        
+
         <div class="faq-container">
             <div class="faq-item">
                 <div class="faq-question">How can I book a sports facility?</div>
                 <div class="faq-answer">
-                    <p>You can browse facilities on our homepage and click "Book Facility" to reserve a slot. You'll need to create an account first if you haven't already.</p>
+                    <p>You can browse facilities on our homepage and click "Book Facility" to reserve a slot. You'll
+                        need to create an account first if you haven't already.</p>
                 </div>
             </div>
-            
+
             <div class="faq-item">
                 <div class="faq-question">Can I cancel or reschedule a booking?</div>
                 <div class="faq-answer">
-                    <p>Yes, bookings can be cancelled or rescheduled up to 2 hours before the start time through your account dashboard. Late cancellations may be subject to fees.</p>
+                    <p>Yes, bookings can be cancelled or rescheduled up to 2 hours before the start time through your
+                        account dashboard. Late cancellations may be subject to fees.</p>
                 </div>
             </div>
-            
+
             <div class="faq-item">
                 <div class="faq-question">Do I need to create an account?</div>
                 <div class="faq-answer">
-                    <p>Yes, an account is required to manage your bookings and access exclusive offers. Creating an account takes less than a minute and gives you access to all our features.</p>
+                    <p>Yes, an account is required to manage your bookings and access exclusive offers. Creating an
+                        account takes less than a minute and gives you access to all our features.</p>
                 </div>
             </div>
-            
+
             <div class="faq-item">
                 <div class="faq-question">What payment options are available?</div>
                 <div class="faq-answer">
-                    <p>We support credit/debit cards, UPI, and net banking via our secure payment gateway. All transactions are encrypted for your security.</p>
+                    <p>We support credit/debit cards, UPI, and net banking via our secure payment gateway. All
+                        transactions are encrypted for your security.</p>
                 </div>
             </div>
-            
+
             <div class="faq-item">
                 <div class="faq-question">What are your operating hours?</div>
                 <div class="faq-answer">
-                    <p>Our facilities are open from 6:00 AM to 10:00 PM daily, including weekends and public holidays. Some facilities may have different hours during special events.</p>
+                    <p>Our facilities are open from 6:00 AM to 10:00 PM daily, including weekends and public holidays.
+                        Some facilities may have different hours during special events.</p>
                 </div>
             </div>
         </div>
@@ -576,10 +607,11 @@
         <div class="new_footer_top">
             <div class="footer-content">
                 <div class="footer-description">
-                    <p>Premier training facilities for players of all levels. Book your court today and elevate your game!</p>
+                    <p>Premier training facilities for players of all levels. Book your court today and elevate your
+                        game!</p>
                 </div>
             </div>
-            
+
             <div class="footer_bg">
                 <div class="footer_bg_one"></div>
                 <div class="footer_bg_two"></div>
@@ -587,14 +619,14 @@
         </div>
     </footer>
     <div class="copyright">
-            &copy; 2023 SPORTOVA. All rights reserved.
+        &copy; 2023 NSTE Tennis Academy. All rights reserved.
     </div>
 
     <script>
         // Scroll to top button
         const scrollToTopBtn = document.getElementById("scrollToTopBtn");
 
-        window.onscroll = function() {
+        window.onscroll = function () {
             if (document.body.scrollTop > 200 || document.documentElement.scrollTop > 200) {
                 scrollToTopBtn.classList.add("show");
             } else {
@@ -602,7 +634,7 @@
             }
         };
 
-        scrollToTopBtn.onclick = function() {
+        scrollToTopBtn.onclick = function () {
             window.scrollTo({ top: 0, behavior: 'smooth' });
         };
 
@@ -611,7 +643,7 @@
             question.addEventListener('click', () => {
                 const item = question.parentNode;
                 item.classList.toggle('active');
-                
+
                 // Close other open items
                 document.querySelectorAll('.faq-item').forEach(otherItem => {
                     if (otherItem !== item && otherItem.classList.contains('active')) {
@@ -622,9 +654,9 @@
         });
 
         // Form submission
-        document.getElementById('contactForm').addEventListener('submit', function(e) {
+        document.getElementById('contactForm').addEventListener('submit', function (e) {
             e.preventDefault();
-            
+
             // Here you would typically send the form data to your server
             // For now, we'll just show a success message
             alert('Thank you for your message! We will get back to you soon.');

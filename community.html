@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Community | SPORTOVA</title>
+    <title>Community | NSTE Tennis Academy</title>
     <link rel="stylesheet" href="style.css" />
     <link href="https://unpkg.com/aos@2.3.4/dist/aos.css" rel="stylesheet">
     <link rel="stylesheet" href="https://unpkg.com/swiper/swiper-bundle.min.css" />
@@ -58,6 +58,26 @@
         .logo img {
             height: 40px;
             margin-right: 10px;
+        }
+
+        .logo-text {
+            display: flex;
+            flex-direction: column;
+            line-height: 1.2;
+            /* Tightens the spacing between elements */
+        }
+
+        .slogan {
+            font-size: 0.65em;
+            /* About 40% smaller than main text */
+            font-weight: 400;
+            /* Normal weight (not bold) */
+            color: var(--primary-color, #333);
+            /* Uses your variable with fallback */
+            opacity: 0.8;
+            /* Slightly transparent */
+            margin-top: 2px;
+            /* Small gap between name and slogan */
         }
 
         nav {
@@ -288,6 +308,7 @@
             color: var(--text-light);
             font-size: 0.9rem;
         }
+
         /* Stats Section */
         .stats-section {
             background: linear-gradient(135deg, var(--secondary-color), var(--primary-color));
@@ -438,6 +459,7 @@
         }
 
         @media (max-width: 576px) {
+
             .features-grid,
             .events-grid {
                 grid-template-columns: 1fr;
@@ -461,17 +483,22 @@
     <header>
         <div class="logo">
             <img src="img/logo.jpg" alt="Logo">
-            SPORTOVA
+            <div class="logo-text">
+                SPORTOVA
+                <div class="slogan">Book. Play. Win</div>
+            </div>
         </div>
         <nav>
             <a href="index.html">Home</a>
-            <a href="facilities.html">Facilities</a>
-            <a href="community.html" class="active">Community</a>
+            <a href="business-partners.html">Partenrship</a>
+            <a href="facilities.html" class="active">Facilities</a>
+            <a href="community.html">Community</a>
             <a href="about.html">About us</a>
             <a href="contact.html">Contact us</a>
         </nav>
         <div class="auth-buttons">
-            <button onclick="window.location.href='login.html';"><i class="fas fa-sign-in-alt"></i> Login/Sign up</button>
+            <button onclick="window.location.href='login.html';"><i class="fas fa-sign-in-alt"></i> Login/Sign
+                up</button>
         </div>
     </header>
 
@@ -487,7 +514,7 @@
             <h2>Why Join Our Community?</h2>
             <p>Discover the benefits of being part of NSTE's vibrant tennis network</p>
         </div>
-        
+
         <div class="features-grid">
             <div class="feature-card" data-aos="fade-up">
                 <div class="feature-icon">
@@ -496,7 +523,7 @@
                 <h3>Find Playing Partners</h3>
                 <p>Connect with players at your skill level and schedule matches that fit your calendar</p>
             </div>
-            
+
             <div class="feature-card" data-aos="fade-up" data-aos-delay="100">
                 <div class="feature-icon">
                     <i class="fas fa-trophy"></i>
@@ -504,7 +531,7 @@
                 <h3>Join Tournaments</h3>
                 <p>Compete in regular tournaments and challenge yourself against other community members</p>
             </div>
-            
+
             <div class="feature-card" data-aos="fade-up" data-aos-delay="200">
                 <div class="feature-icon">
                     <i class="fas fa-chalkboard-teacher"></i>
@@ -512,7 +539,7 @@
                 <h3>Learn Together</h3>
                 <p>Participate in group clinics and learning sessions with our professional coaches</p>
             </div>
-            
+
             <div class="feature-card" data-aos="fade-up">
                 <div class="feature-icon">
                     <i class="fas fa-calendar-alt"></i>
@@ -520,7 +547,7 @@
                 <h3>Social Events</h3>
                 <p>Join our social mixers, round robins, and other fun tennis-related activities</p>
             </div>
-            
+
             <div class="feature-card" data-aos="fade-up" data-aos-delay="100">
                 <div class="feature-icon">
                     <i class="fas fa-comments"></i>
@@ -528,7 +555,7 @@
                 <h3>Discussion Forums</h3>
                 <p>Share tips, ask questions, and discuss all things tennis with our active community</p>
             </div>
-            
+
             <div class="feature-card" data-aos="fade-up" data-aos-delay="200">
                 <div class="feature-icon">
                     <i class="fas fa-chart-line"></i>
@@ -637,10 +664,11 @@
         <div class="new_footer_top">
             <div class="footer-content">
                 <div class="footer-description">
-                    <p>Premier training facilities for players of all levels. Book your court today and elevate your game!</p>
+                    <p>Premier training facilities for players of all levels. Book your court today and elevate your
+                        game!</p>
                 </div>
             </div>
-            
+
             <div class="footer_bg">
                 <div class="footer_bg_one"></div>
                 <div class="footer_bg_two"></div>
@@ -648,7 +676,7 @@
         </div>
     </footer>
     <div class="copyright">
-            &copy; 2023 SPORTOVA. All rights reserved.
+        &copy; 2023 NSTE Tennis Academy. All rights reserved.
     </div>
 
     <script src="https://unpkg.com/swiper/swiper-bundle.min.js"></script>
@@ -656,7 +684,7 @@
         // Scroll to top button
         const scrollToTopBtn = document.getElementById("scrollToTopBtn");
 
-        window.onscroll = function() {
+        window.onscroll = function () {
             if (document.body.scrollTop > 200 || document.documentElement.scrollTop > 200) {
                 scrollToTopBtn.classList.add("show");
             } else {
@@ -664,7 +692,7 @@
             }
         };
 
-        scrollToTopBtn.onclick = function() {
+        scrollToTopBtn.onclick = function () {
             window.scrollTo({ top: 0, behavior: 'smooth' });
         };
 
@@ -691,7 +719,7 @@
 
         // Simple animation on scroll implementation
         const aosElements = document.querySelectorAll('[data-aos]');
-        
+
         const observer = new IntersectionObserver((entries) => {
             entries.forEach(entry => {
                 if (entry.isIntersecting) {

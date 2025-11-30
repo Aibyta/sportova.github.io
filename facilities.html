@@ -1,10 +1,10 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Facilities | SPORTOVA</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="style.css" />
     <link href="https://unpkg.com/aos@2.3.4/dist/aos.css" rel="stylesheet">
     <link rel="stylesheet" href="https://unpkg.com/swiper/swiper-bundle.min.css" />
@@ -31,12 +31,13 @@
         body {
             font-family: 'Poppins', sans-serif;
             color: var(--text-color);
-            background-color: #f9f9f9;
+            background: linear-gradient(135deg, #f5f7fa 0%, #e4e8ed 100%);
             line-height: 1.6;
+            overflow-x: hidden;
         }
 
         header {
-            background-color: white;
+            background-color: rgba(255, 255, 255, 0.95);
             box-shadow: var(--shadow);
             padding: 1rem 5%;
             display: flex;
@@ -45,6 +46,7 @@
             position: sticky;
             top: 0;
             z-index: 1000;
+            backdrop-filter: blur(10px);
         }
 
         .logo {
@@ -58,6 +60,20 @@
         .logo img {
             height: 40px;
             margin-right: 10px;
+        }
+
+        .logo-text {
+            display: flex;
+            flex-direction: column;
+            line-height: 1.2;
+        }
+
+        .slogan {
+            font-size: 0.65em;
+            font-weight: 400;
+            color: var(--primary-color);
+            opacity: 0.8;
+            margin-top: 2px;
         }
 
         nav {
@@ -77,6 +93,10 @@
             color: var(--secondary-color);
         }
 
+        nav a.active {
+            color: var(--secondary-color);
+        }
+
         nav a::after {
             content: '';
             position: absolute;
@@ -88,7 +108,8 @@
             transition: var(--transition);
         }
 
-        nav a:hover::after {
+        nav a:hover::after,
+        nav a.active::after {
             width: 100%;
         }
 
@@ -109,155 +130,407 @@
             transform: translateY(-2px);
         }
 
-        /* Page Title Section - Matches Facilities Page */
-        .page-title-section {
-            background-color: white;
-            padding: 3rem 5%;
+        /* Hero Section */
+        .hero-section {
+            background: linear-gradient(rgba(44, 62, 80, 0.8), rgba(44, 62, 80, 0.9)), url('https://images.unsplash.com/photo-1595435934249-5df7ed86e1c0?ixlib=rb-4.0.3&auto=format&fit=crop&w=1950&q=80');
+            background-size: cover;
+            background-position: center;
+            color: white;
+            padding: 6rem 5%;
             text-align: center;
-            border-bottom: 1px solid #eee;
+            position: relative;
         }
 
-        .page-title-section h1 {
+        .hero-content {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        .hero-content h1 {
+            font-size: 3.5rem;
+            margin-bottom: 1.5rem;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+        }
+
+        .hero-content p {
+            font-size: 1.2rem;
+            margin-bottom: 2rem;
+            opacity: 0.9;
+        }
+
+        .cta-button {
+            display: inline-block;
+            background-color: var(--accent-color);
+            color: white;
+            padding: 0.8rem 2rem;
+            border-radius: 30px;
+            text-decoration: none;
+            font-weight: 600;
+            font-size: 1.1rem;
+            transition: var(--transition);
+            box-shadow: 0 4px 15px rgba(231, 76, 60, 0.4);
+        }
+
+        .cta-button:hover {
+            background-color: #c0392b;
+            transform: translateY(-3px);
+            box-shadow: 0 6px 20px rgba(231, 76, 60, 0.6);
+        }
+
+        /* Login Required Section */
+        .login-required-section {
+            padding: 5rem 5%;
+            max-width: 1200px;
+            margin: 0 auto;
+            text-align: center;
+        }
+
+        .login-required-card {
+            background: white;
+            border-radius: 20px;
+            padding: 4rem 3rem;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            max-width: 800px;
+            margin: 0 auto;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .login-required-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 0.9px;
+            background: linear-gradient(90deg, var(--secondary-color), var(--accent-color));
+        }
+
+        .login-required-card i {
+            font-size: 5rem;
+            color: var(--secondary-color);
+            margin-bottom: 2rem;
+            background: linear-gradient(135deg, var(--secondary-color), var(--accent-color));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .login-required-card h2 {
             font-size: 2.5rem;
             color: var(--primary-color);
-            margin-bottom: 1rem;
+            margin-bottom: 1.5rem;
         }
 
-        .page-title-section p {
+        .login-required-card p {
             color: var(--text-light);
-            max-width: 700px;
-            margin: 0 auto;
+            margin-bottom: 2.5rem;
+            font-size: 1.2rem;
+            line-height: 1.2;
         }
 
-        .facilities-section {
-            padding: 4rem 5%;
+        .login-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 6px 20px rgba(52, 152, 219, 0.6);
+        }
+
+        /* Preview Section */
+        .preview-section {
+            padding: 5rem 5%;
             max-width: 1400px;
             margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
+            margin-top: 3rem;
         }
 
-        .facilities-section h2 {
+        .preview-section h2 {
             text-align: center;
-            font-size: 2.5rem;
-            margin-bottom: 1.5rem;
+            font-size: 2.8rem;
+            margin-bottom: 3rem;
             color: var(--primary-color);
             position: relative;
         }
 
-        .facilities-section h2::after {
+        .preview-section h2::after {
             content: '';
             display: block;
-            width: 80px;
-            height: 4px;
-            background: var(--secondary-color);
-            margin: 0.5rem auto;
-            border-radius: 2px;
+            width: 100px;
+            height: 5px;
+            background: linear-gradient(90deg, var(--secondary-color), var(--accent-color));
+            margin: 0.8rem auto;
+            border-radius: 5px;
         }
 
-        #searchInput {
-            width: 100%;
-            padding: 12px 20px;
-            font-size: 16px;
-            margin: 20px auto 40px;
-            max-width: 600px;
-            display: block;
-            border-radius: 30px;
-            border: 2px solid #ddd;
-            outline: none;
-            transition: var(--transition);
-            box-shadow: var(--shadow);
-        }
-
-        #searchInput:focus {
-            border-color: var(--secondary-color);
-            box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.2);
-        }
-
-        .facilities-grid {
+        .preview-grid {
             display: grid;
             grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-            gap: 2rem;
+            gap: 2.5rem;
         }
 
-        .facility-card {
+        .preview-card {
             background: white;
-            border-radius: 10px;
+            border-radius: 15px;
             overflow: hidden;
-            box-shadow: var(--shadow);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+            transition: var(--transition);
+            position: relative;
+            transform-style: preserve-3d;
+        }
+
+        .preview-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(rgba(44, 62, 80, 0.7), rgba(44, 62, 80, 0.9));
+            z-index: 1;
+            opacity: 0.9;
+        }
+
+        .preview-card:hover {
+            transform: translateY(-15px) rotateX(5deg);
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.2);
+        }
+
+        .preview-card img {
+            width: 100%;
+            height: 220px;
+            object-fit: cover;
             transition: var(--transition);
         }
 
-        .facility-card:hover {
-            transform: translateY(-10px);
-            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+        .preview-card:hover img {
+            transform: scale(1.05);
         }
 
-        .facility-card img {
+        .preview-card-content {
+            position: absolute;
+            bottom: 0;
+            left: 0;
             width: 100%;
-            height: 200px;
-            object-fit: cover;
-            border-bottom: 4px solid var(--secondary-color);
+            padding: 2rem;
+            color: white;
+            z-index: 2;
         }
 
-        .facility-card h3 {
-            padding: 1rem 1.5rem 0;
+        .preview-card h3 {
+            font-size: 1.6rem;
+            margin-bottom: 0.8rem;
+            text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.5);
+        }
+
+        .preview-card p {
+            font-size: 1rem;
+            opacity: 0.9;
+            margin-bottom: 1.5rem;
+        }
+
+        .preview-card .price {
             font-size: 1.4rem;
-            color: var(--primary-color);
-        }
-
-        .facility-card p {
-            padding: 0.5rem 1.5rem;
-            color: var(--text-light);
-        }
-
-        .price {
-            padding: 0 1.5rem;
-            font-size: 1.3rem;
             font-weight: 700;
             color: var(--accent-color);
+            margin-bottom: 1rem;
         }
 
-        .price span {
-            font-size: 0.9rem;
-            font-weight: 400;
-            color: var(--text-light);
-        }
-
-        .card-buttons {
+        .preview-card .locked-icon {
+            position: absolute;
+            top: 80%;
+            left: 80%;
+            transform: translate(-50%, -50%);
+            font-size: 3.5rem;
+            color: white;
+            z-index: 2;
+            background: rgba(255, 255, 255, 0.2);
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
             display: flex;
-            padding: 1.5rem;
-            gap: 1rem;
+            align-items: center;
+            justify-content: center;
+            backdrop-filter: blur(5px);
         }
 
-        .card-buttons button {
-            flex: 1;
-            padding: 0.7rem;
-            border: none;
+        /* Features Section */
+        .features-section {
+            padding: 6rem 5%;
+            max-width: 1400px;
+            margin: 0 auto;
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+            border-radius: 20px;
+            margin-top: 5rem;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .features-section::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 5px;
+            background: linear-gradient(90deg, var(--secondary-color), var(--accent-color));
+        }
+
+        .features-section h2 {
+            text-align: center;
+            font-size: 2.8rem;
+            margin-bottom: 4rem;
+            color: var(--primary-color);
+            position: relative;
+        }
+
+        .features-section h2::after {
+            content: '';
+            display: block;
+            width: 100px;
+            height: 5px;
+            background: linear-gradient(90deg, var(--secondary-color), var(--accent-color));
+            margin: 0.8rem auto;
             border-radius: 5px;
-            font-weight: 500;
-            cursor: pointer;
-            transition: var(--transition);
         }
 
-        .card-buttons button:first-child {
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+            gap: 3rem;
+        }
+
+        .feature-card {
             background: white;
+            text-align: center;
+            padding: 3rem 2rem;
+            border-radius: 15px;
+            transition: var(--transition);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.08);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .feature-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 5px;
+            background: linear-gradient(90deg, var(--secondary-color), var(--accent-color));
+        }
+
+        .feature-card:hover {
+            transform: translateY(-10px);
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.15);
+        }
+
+        .feature-card i {
+            font-size: 3.5rem;
+            margin-bottom: 1.5rem;
+            background: linear-gradient(135deg, var(--secondary-color), var(--accent-color));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .feature-card h3 {
+            font-size: 1.6rem;
+            color: var(--primary-color);
+            margin-bottom: 1.2rem;
+        }
+
+        .feature-card p {
+            color: var(--text-light);
+            line-height: 1.7;
+        }
+
+        /* Testimonials */
+        .testimonials-section {
+            padding: 6rem 5%;
+            max-width: 1400px;
+            margin: 0 auto;
+            text-align: center;
+        }
+
+        .testimonials-section h2 {
+            font-size: 2.8rem;
+            margin-bottom: 4rem;
+            color: var(--primary-color);
+            position: relative;
+        }
+
+        .testimonials-section h2::after {
+            content: '';
+            display: block;
+            width: 100px;
+            height: 5px;
+            background: linear-gradient(90deg, var(--secondary-color), var(--accent-color));
+            margin: 0.8rem auto;
+            border-radius: 5px;
+        }
+
+        .testimonials-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+            gap: 2.5rem;
+        }
+
+        .testimonial-card {
+            background: white;
+            padding: 2.5rem;
+            border-radius: 15px;
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.08);
+            text-align: left;
+            position: relative;
+        }
+
+        .testimonial-card::before {
+            content: '"';
+            position: absolute;
+            top: 20px;
+            left: 25px;
+            font-size: 5rem;
             color: var(--secondary-color);
-            border: 2px solid var(--secondary-color);
+            opacity: 0.2;
+            font-family: Georgia, serif;
         }
 
-        .card-buttons button:first-child:hover {
+        .testimonial-content {
+            margin-bottom: 1.5rem;
+            font-style: italic;
+            color: var(--text-color);
+            line-height: 1.7;
+        }
+
+        .testimonial-author {
+            display: flex;
+            align-items: center;
+        }
+
+        .author-avatar {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
             background: var(--secondary-color);
+            margin-right: 1rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
             color: white;
+            font-weight: bold;
         }
 
-        .card-buttons button:last-child {
-            background: var(--secondary-color);
-            color: white;
+        .author-info h4 {
+            color: var(--primary-color);
+            margin-bottom: 0.3rem;
         }
 
-        .card-buttons button:last-child:hover {
-            background: #2980b9;
+        .author-info p {
+            color: var(--text-light);
+            font-size: 0.9rem;
         }
 
+        /* Scroll to top button */
         #scrollToTopBtn {
             position: fixed;
             bottom: 30px;
@@ -265,7 +538,7 @@
             width: 50px;
             height: 50px;
             border-radius: 50%;
-            background-color: var(--secondary-color);
+            background: linear-gradient(135deg, var(--secondary-color), var(--accent-color));
             color: white;
             border: none;
             cursor: pointer;
@@ -273,7 +546,7 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
             opacity: 0;
             visibility: hidden;
             transition: var(--transition);
@@ -286,31 +559,20 @@
         }
 
         #scrollToTopBtn:hover {
-            background-color: var(--primary-color);
             transform: translateY(-3px);
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
         }
 
-        /* Filter chips */
-        .filter-chips {
-            display: flex;
-            justify-content: center;
-            flex-wrap: wrap;
-            gap: 0.8rem;
-            margin-bottom: 2rem;
-        }
-
-        .filter-chip {
-            padding: 0.5rem 1.2rem;
-            background: #e0e0e0;
-            border-radius: 30px;
-            cursor: pointer;
-            transition: var(--transition);
-            font-size: 0.9rem;
-        }
-
-        .filter-chip.active {
-            background: var(--secondary-color);
-            color: white;
+        /* Responsive Design */
+        @media (max-width: 1024px) {
+            .hero-content h1 {
+                font-size: 3rem;
+            }
+            
+            .features-grid,
+            .testimonials-grid {
+                grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            }
         }
 
         @media (max-width: 768px) {
@@ -329,147 +591,230 @@
                 margin-top: 1rem;
             }
 
-            .facilities-section h2 {
-                font-size: 2rem;
+            .hero-content h1 {
+                font-size: 2.5rem;
+            }
+
+            .login-required-card {
+                padding: 3rem 2rem;
+            }
+
+            .preview-section h2,
+            .features-section h2,
+            .testimonials-section h2 {
+                font-size: 2.2rem;
             }
         }
 
         @media (max-width: 576px) {
-            .facilities-grid {
+            .preview-grid,
+            .features-grid,
+            .testimonials-grid {
                 grid-template-columns: 1fr;
             }
-
-            .card-buttons {
-                flex-direction: column;
+            
+            .hero-content h1 {
+                font-size: 2rem;
+            }
+            
+            .login-required-card h2 {
+                font-size: 2rem;
             }
         }
     </style>
 </head>
-
 <body>
-
     <header>
         <div class="logo">
             <img src="img/logo.jpg" alt="Logo">
-            SPORTOVA
+            <div class="logo-text">
+                SPORTOVA
+                <div class="slogan">Book. Play. Win</div>
+            </div>
         </div>
         <nav>
             <a href="index.html">Home</a>
+            <a href="business-partners.html">Partenrship</a>
             <a href="facilities.html" class="active">Facilities</a>
             <a href="community.html">Community</a>
             <a href="about.html">About us</a>
             <a href="contact.html">Contact us</a>
         </nav>
         <div class="auth-buttons">
-            <button onclick="window.location.href='login.html';"><i class="fas fa-sign-in-alt"></i> Login/Sign up</button>
+            <button onclick="window.location.href='login.html';"><i class="fas fa-sign-in-alt"></i> Login/Sign
+                up</button>
         </div>
     </header>
-    <!-- Page Title Section -->
-    <section class="page-title-section">
-        <h1>Our Facilities</h1>
-        <p>Discover our premium sports facilities designed to meet the needs of players at all levels</p>
+
+    <!-- Hero Section -->
+    <section class="hero-section">
+        <div class="hero-content">
+            <h1>World-Class Sports Facilities</h1>
+            <p>Experience premium courts, state-of-the-art equipment, and professional training environments designed for athletes of all levels.</p>
+            <a href="#preview" class="cta-button">Explore Our Facilities</a>
+        </div>
     </section>
 
-    <section class="facilities-section">
-        
-        <input type="text" id="searchInput" placeholder="Search by name or category (e.g. tennis, court)" onkeyup="filterFacilities()" />
-        
-        <div class="filter-chips">
-            <div class="filter-chip active" onclick="filterByCategory('all')">All</div>
-            <div class="filter-chip" onclick="filterByCategory('tennis')">Tennis</div>
-            <div class="filter-chip" onclick="filterByCategory('basketball')">Basketball</div>
-            <div class="filter-chip" onclick="filterByCategory('squash')">Squash</div>
-            <div class="filter-chip" onclick="filterByCategory('training')">Training</div>
+    <!-- Login Required Section -->
+    <section class="login-required-section">
+        <div class="login-required-card">
+            <i class="fas fa-lock"></i>
+            <h2>Access Our Premium Facilities</h2>
+            <p>To view our complete facilities, check real-time availability, make bookings, and access member-exclusive pricing, please log in to your SPORTOVA account. New users can create an account in just 60 seconds!</p>
         </div>
+    </section>
 
-        <div class="facilities-grid">
-            <!-- Facility Card Template -->
-            <div class="facility-card" data-category="tennis training">
-                <img src="img/tennis.jpeg" alt="Professional Tennis Court" />
-                <div class="card-content">
+    <!-- Preview Section -->
+    <section class="preview-section" id="preview">
+        <h2>Facility Preview</h2>
+        <div class="preview-grid">
+            <div class="preview-card">
+                <img src="https://tse4.mm.bing.net/th/id/OIP.U-8-SdUVVkOQNxsLyb7GOAHaEE?rs=1&pid=ImgDetMain&o=7&rm=3" alt="Professional Tennis Court" />
+                <div class="preview-card-content">
                     <h3>Professional Tennis Court</h3>
-                    <p>Championship-quality outdoor court with cushioned surface for optimal playability and reduced impact.</p>
-                    <p class="price">$25 <span>per hour</span></p>
-                    <div class="card-buttons">
-                        <button><i class="fas fa-info-circle"></i> Details</button>
-                        <button><i class="fas fa-calendar-alt"></i> Book Now</button>
-                    </div>
+                    <p>Championship-quality outdoor court with cushioned surface</p>
+                </div>
+                <div class="locked-icon">
+                    <i class="fas fa-lock"></i>
                 </div>
             </div>
 
-            <div class="facility-card" data-category="tennis">
-                <img src="img/tennis.jpeg" alt="Clay Tennis Court" />
-                <div class="card-content">
+            <div class="preview-card">
+                <img src="https://images.unsplash.com/photo-1595435934249-5df7ed86e1c0?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80" alt="Clay Tennis Court" />
+                <div class="preview-card-content">
                     <h3>Clay Tennis Court</h3>
-                    <p>European-style red clay court offering slower play and higher bounce, perfect for developing strategy.</p>
-                    <p class="price">$30 <span>per hour</span></p>
-                    <div class="card-buttons">
-                        <button><i class="fas fa-info-circle"></i> Details</button>
-                        <button><i class="fas fa-calendar-alt"></i> Book Now</button>
-                    </div>
+                    <p>European-style red clay court offering slower play</p>
+                </div>
+                <div class="locked-icon">
+                    <i class="fas fa-lock"></i>
                 </div>
             </div>
 
-            <div class="facility-card" data-category="training">
-                <img src="img/tennis.jpeg" alt="Practice Wall" />
-                <div class="card-content">
-                    <h3>Practice Wall</h3>
-                    <p>Perfect your strokes with our rebound walls featuring target zones for precision training.</p>
-                    <p class="price">$10 <span>per hour</span></p>
-                    <div class="card-buttons">
-                        <button><i class="fas fa-info-circle"></i> Details</button>
-                        <button><i class="fas fa-calendar-alt"></i> Book Now</button>
-                    </div>
-                </div>
-            </div>
-
-            <div class="facility-card" data-category="basketball">
-                <img src="img/tennis.jpeg" alt="Basketball Court" />
-                <div class="card-content">
+            <div class="preview-card">
+                <img src="https://tse1.mm.bing.net/th/id/OIP.Gdn2yLjsAuexjviqAkTHRwHaE7?rs=1&pid=ImgDetMain&o=7&rm=3" alt="Basketball Court" />
+                <div class="preview-card-content">
                     <h3>Basketball Court</h3>
-                    <p>Full-size indoor basketball court with hardwood flooring and professional-grade hoops.</p>
-                    <p class="price">$35 <span>per hour</span></p>
-                    <div class="card-buttons">
-                        <button><i class="fas fa-info-circle"></i> Details</button>
-                        <button><i class="fas fa-calendar-alt"></i> Book Now</button>
-                    </div>
+                    <p>Full-size indoor court with professional-grade hoops</p>
+                </div>
+                <div class="locked-icon">
+                    <i class="fas fa-lock"></i>
                 </div>
             </div>
 
-            <div class="facility-card" data-category="squash training">
-                <img src="img/tennis.jpeg" alt="Squash Court" />
-                <div class="card-content">
+            <div class="preview-card">
+                <img src="https://images.unsplash.com/photo-1590239926044-4131f5d0654d?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80" alt="Squash Court" />
+                <div class="preview-card-content">
                     <h3>Squash Court</h3>
-                    <p>Air-conditioned indoor squash court with soundproof walls and professional lighting.</p>
-                    <p class="price">$22 <span>per hour</span></p>
-                    <div class="card-buttons">
-                        <button><i class="fas fa-info-circle"></i> Details</button>
-                        <button><i class="fas fa-calendar-alt"></i> Book Now</button>
-                    </div>
+                    <p>Air-conditioned indoor court with professional lighting</p>
+                </div>
+                <div class="locked-icon">
+                    <i class="fas fa-lock"></i>
                 </div>
             </div>
-
-            <div class="facility-card" data-category="training">
-                <img src="img/tennis.jpeg" alt="Fitness Center" />
-                <div class="card-content">
-                    <h3>Fitness Center</h3>
-                    <p>State-of-the-art gym with equipment for strength training, cardio, and flexibility.</p>
-                    <p class="price">$15 <span>per hour</span></p>
-                    <div class="card-buttons">
-                        <button><i class="fas fa-info-circle"></i> Details</button>
-                        <button><i class="fas fa-calendar-alt"></i> Book Now</button>
-                    </div>
-                </div>
-            </div>
-
         </div>
     </section>
+
+    <!-- Features Section -->
+    <section class="features-section">
+        <h2>Why Join SPORTOVA?</h2>
+        <div class="features-grid">
+            <div class="feature-card">
+                <i class="fas fa-calendar-check"></i>
+                <h3>Easy Online Booking</h3>
+                <p>Book courts and facilities 24/7 with our user-friendly platform. Real-time availability and instant confirmation.</p>
+            </div>
+
+            <div class="feature-card">
+                <i class="fas fa-users"></i>
+                <h3>Vibrant Community</h3>
+                <p>Connect with players of similar skill levels, join tournaments, and participate in social events.</p>
+            </div>
+
+            <div class="feature-card">
+                <i class="fas fa-star"></i>
+                <h3>Premium Facilities</h3>
+                <p>Access to meticulously maintained courts, top-quality equipment, and professional training areas.</p>
+            </div>
+
+            <div class="feature-card">
+                <i class="fas fa-trophy"></i>
+                <h3>Competitions & Leagues</h3>
+                <p>Participate in regular tournaments, leagues, and competitive events for all skill levels.</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- Testimonials Section -->
+    <section class="testimonials-section">
+        <h2>What Our Members Say</h2>
+        <div class="testimonials-grid">
+            <div class="testimonial-card">
+                <div class="testimonial-content">
+                    "The facilities at SPORTOVA are exceptional. The booking system is so convenient, and I've improved my game significantly since joining."
+                </div>
+                <div class="testimonial-author">
+                    <div class="author-avatar">JS</div>
+                    <div class="author-info">
+                        <h4>Jessica Smith</h4>
+                        <p>Tennis Enthusiast</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="testimonial-card">
+                <div class="testimonial-content">
+                    "As a competitive player, I appreciate the professional quality of the courts and the vibrant community of players to practice with."
+                </div>
+                <div class="testimonial-author">
+                    <div class="author-avatar">MR</div>
+                    <div class="author-info">
+                        <h4>Michael Rodriguez</h4>
+                        <p>Competitive Player</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="testimonial-card">
+                <div class="testimonial-content">
+                    "The variety of facilities and the ease of booking make SPORTOVA my go-to for both tennis and basketball with friends."
+                </div>
+                <div class="testimonial-author">
+                    <div class="author-avatar">AK</div>
+                    <div class="author-info">
+                        <h4>Alex Kim</h4>
+                        <p>Multi-Sport Athlete</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
     <button id="scrollToTopBtn" title="Go to top"><i class="fas fa-arrow-up"></i></button>
+
+    <footer class="new_footer_area bg_color">
+    <div class="new_footer_top">
+        <div class="footer-content">
+            <div class="footer-description">
+                <p>Premier training facilities for players of all levels. Book your court today and elevate your game!
+                </p>
+            </div>
+        </div>
+
+        <div class="footer_bg">
+            <div class="footer_bg_one"></div>
+            <div class="footer_bg_two"></div>
+        </div>
+    </div>
+</footer>
+<div class="copyright">
+    &copy; SPORTOVA. All rights reserved.
+</div>
+
     <script>
         // Scroll to top button
         const scrollToTopBtn = document.getElementById("scrollToTopBtn");
 
-        window.onscroll = function() {
+        window.onscroll = function () {
             if (document.body.scrollTop > 200 || document.documentElement.scrollTop > 200) {
                 scrollToTopBtn.classList.add("show");
             } else {
@@ -477,82 +822,23 @@
             }
         };
 
-        scrollToTopBtn.onclick = function() {
+        scrollToTopBtn.onclick = function () {
             window.scrollTo({ top: 0, behavior: 'smooth' });
         };
 
-        // Search functionality
-        function filterFacilities() {
-            const input = document.getElementById("searchInput").value.toLowerCase();
-            const cards = document.getElementsByClassName("facility-card");
-
-            for (let i = 0; i < cards.length; i++) {
-                const title = cards[i].querySelector('h3').textContent.toLowerCase();
-                const description = cards[i].querySelector('p').textContent.toLowerCase();
-                const category = cards[i].getAttribute("data-category").toLowerCase();
-                
-                const match = title.includes(input) || description.includes(input) || category.includes(input);
-                cards[i].style.display = match ? "block" : "none";
-            }
-        }
-
-        // Filter by category chips
-        function filterByCategory(category) {
-            // Update active chip
-            const chips = document.querySelectorAll('.filter-chip');
-            chips.forEach(chip => {
-                chip.classList.remove('active');
-                if (chip.textContent.toLowerCase() === category || 
-                    (category === 'all' && chip.textContent.toLowerCase() === 'all')) {
-                    chip.classList.add('active');
-                }
-            });
-
-            // Filter cards
-            const cards = document.getElementsByClassName("facility-card");
-            for (let i = 0; i < cards.length; i++) {
-                const cardCategory = cards[i].getAttribute("data-category").toLowerCase();
-                
-                if (category === 'all' || cardCategory.includes(category)) {
-                    cards[i].style.display = "block";
-                } else {
-                    cards[i].style.display = "none";
-                }
-            }
-        }
-
         // Add hover effects to cards
-        document.addEventListener('DOMContentLoaded', function() {
-            const cards = document.querySelectorAll('.facility-card');
+        document.addEventListener('DOMContentLoaded', function () {
+            const cards = document.querySelectorAll('.preview-card, .feature-card, .testimonial-card');
             cards.forEach(card => {
-                card.addEventListener('mouseenter', function() {
-                    this.style.transform = 'translateY(-10px)';
+                card.addEventListener('mouseenter', function () {
+                    this.style.transform = this.classList.contains('preview-card') ? 
+                        'translateY(-15px) rotateX(5deg)' : 'translateY(-10px)';
                 });
-                card.addEventListener('mouseleave', function() {
+                card.addEventListener('mouseleave', function () {
                     this.style.transform = '';
                 });
             });
         });
     </script>
-
-    <footer class="new_footer_area bg_color">
-        <div class="new_footer_top">
-            <div class="footer-content">
-                <div class="footer-description">
-                    <p>Premier training facilities for players of all levels. Book your court today and elevate your game!</p>
-                </div>
-            </div>
-            
-            <div class="footer_bg">
-                <div class="footer_bg_one"></div>
-                <div class="footer_bg_two"></div>
-            </div>
-        </div>
-    </footer>
-    <div class="copyright">
-            &copy; 2023 SPORTOVA. All rights reserved.
-    </div>
-
 </body>
-
 </html>
