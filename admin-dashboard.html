@@ -1090,6 +1090,17 @@
         font-size: 0.8rem;
       }
     }
+
+    .btn-map {
+      background-color: #28a745;
+      color: white;
+      border: none;
+    }
+
+    .btn-map:hover {
+      background-color: #218838;
+      color: white;
+    }
   </style>
 </head>
 
@@ -1137,7 +1148,8 @@
 
     <div class="sidebar-footer">
       <div class="user-profile mb-3">
-        <img src="https://cdn-icons-png.freepik.com/512/10870/10870763.png" alt="Admin" class="user-avatar" id="adminAvatar">
+        <img src="https://cdn-icons-png.freepik.com/512/10870/10870763.png" alt="Admin" class="user-avatar"
+          id="adminAvatar">
         <div class="sidebar-text">
           <div class="fw-bold" id="adminName">Admin</div>
           <small id="adminEmail">admin@sportova.com</small>
@@ -1465,245 +1477,245 @@
     }
 
     // Load dashboard data - FIXED VERSION
-async function loadDashboardData() {
-  try {
-    // Get facility IDs for this admin
-    const facilityIds = adminFacilities.map(f => f.id);
+    async function loadDashboardData() {
+      try {
+        // Get facility IDs for this admin
+        const facilityIds = adminFacilities.map(f => f.id);
 
-    if (facilityIds.length === 0) {
-      document.getElementById('totalBookings').textContent = '0';
-      document.getElementById('totalCustomers').textContent = '0';
-      document.getElementById('totalRevenue').textContent = 'RM0';
-      document.getElementById('totalFacilities').textContent = '0';
-      document.getElementById('recentBookings').innerHTML = '<tr><td colspan="5" class="text-center">No facilities found</td></tr>';
-      return;
-    }
-
-    // Fetch bookings for admin's facilities
-    const bookingsSnapshot = await db.collection("bookings")
-      .where("facilityId", "in", facilityIds)
-      .get();
-
-    const totalBookings = bookingsSnapshot.size;
-    document.getElementById('totalBookings').textContent = totalBookings;
-
-    // Calculate unique customers (users who booked admin's facilities)
-    const customerIds = new Set();
-    let totalRevenue = 0;
-    const recentBookings = [];
-
-    bookingsSnapshot.forEach(doc => {
-      const booking = doc.data();
-      
-      // Handle customer IDs
-      if (booking.userId) {
-        customerIds.add(booking.userId);
-      }
-
-      // Handle revenue calculation
-      if (booking.price) {
-        totalRevenue += parseFloat(booking.price);
-      }
-
-      // Prepare recent bookings data
-      recentBookings.push({ 
-        id: doc.id, 
-        ...booking,
-        // Store the raw date for display
-        rawDate: booking.date
-      });
-    });
-
-    document.getElementById('totalCustomers').textContent = customerIds.size;
-    document.getElementById('totalRevenue').textContent = `RM${totalRevenue.toFixed(2)}`;
-    document.getElementById('totalFacilities').textContent = adminFacilities.length;
-
-    // Load recent bookings
-    const recentBookingsBody = document.getElementById('recentBookings');
-    recentBookingsBody.innerHTML = '';
-
-    if (recentBookings.length === 0) {
-      recentBookingsBody.innerHTML = '<tr><td colspan="5" class="text-center">No bookings found</td></tr>';
-    } else {
-      // Sort by timestamp or date (newest first) and take first 5
-      recentBookings.sort((a, b) => {
-        // Try to get dates for comparison
-        let dateA, dateB;
-
-        // For a
-        if (a.timestamp && a.timestamp.toDate) {
-          dateA = a.timestamp.toDate();
-        } else if (a.date && a.date.toDate) {
-          dateA = a.date.toDate();
-        } else if (a.date) {
-          dateA = new Date(a.date);
-        } else {
-          dateA = new Date(0); // Default to epoch if no date
+        if (facilityIds.length === 0) {
+          document.getElementById('totalBookings').textContent = '0';
+          document.getElementById('totalCustomers').textContent = '0';
+          document.getElementById('totalRevenue').textContent = 'RM0';
+          document.getElementById('totalFacilities').textContent = '0';
+          document.getElementById('recentBookings').innerHTML = '<tr><td colspan="5" class="text-center">No facilities found</td></tr>';
+          return;
         }
 
-        // For b
-        if (b.timestamp && b.timestamp.toDate) {
-          dateB = b.timestamp.toDate();
-        } else if (b.date && b.date.toDate) {
-          dateB = b.date.toDate();
-        } else if (b.date) {
-          dateB = new Date(b.date);
-        } else {
-          dateB = new Date(0); // Default to epoch if no date
-        }
+        // Fetch bookings for admin's facilities
+        const bookingsSnapshot = await db.collection("bookings")
+          .where("facilityId", "in", facilityIds)
+          .get();
 
-        return dateB - dateA; // Newest first
-      }).slice(0, 5).forEach(booking => {
-        const tr = document.createElement('tr');
-        
-        // Format date for display
-        let displayDate = 'N/A';
-        let displayTime = booking.slots || 'N/A';
-        const status = booking.status || 'pending';
+        const totalBookings = bookingsSnapshot.size;
+        document.getElementById('totalBookings').textContent = totalBookings;
 
-        // Handle different date formats for display
-        if (booking.timestamp && booking.timestamp.toDate) {
-          displayDate = booking.timestamp.toDate().toLocaleString();
-        } else if (booking.date && booking.date.toDate) {
-          displayDate = booking.date.toDate().toLocaleString();
-        } else if (booking.date) {
-          try {
-            displayDate = new Date(booking.date).toLocaleString();
-          } catch (e) {
-            displayDate = booking.date; // Use raw string if Date conversion fails
+        // Calculate unique customers (users who booked admin's facilities)
+        const customerIds = new Set();
+        let totalRevenue = 0;
+        const recentBookings = [];
+
+        bookingsSnapshot.forEach(doc => {
+          const booking = doc.data();
+
+          // Handle customer IDs
+          if (booking.userId) {
+            customerIds.add(booking.userId);
           }
-        }
 
-        tr.innerHTML = `
+          // Handle revenue calculation
+          if (booking.price) {
+            totalRevenue += parseFloat(booking.price);
+          }
+
+          // Prepare recent bookings data
+          recentBookings.push({
+            id: doc.id,
+            ...booking,
+            // Store the raw date for display
+            rawDate: booking.date
+          });
+        });
+
+        document.getElementById('totalCustomers').textContent = customerIds.size;
+        document.getElementById('totalRevenue').textContent = `RM${totalRevenue.toFixed(2)}`;
+        document.getElementById('totalFacilities').textContent = adminFacilities.length;
+
+        // Load recent bookings
+        const recentBookingsBody = document.getElementById('recentBookings');
+        recentBookingsBody.innerHTML = '';
+
+        if (recentBookings.length === 0) {
+          recentBookingsBody.innerHTML = '<tr><td colspan="5" class="text-center">No bookings found</td></tr>';
+        } else {
+          // Sort by timestamp or date (newest first) and take first 5
+          recentBookings.sort((a, b) => {
+            // Try to get dates for comparison
+            let dateA, dateB;
+
+            // For a
+            if (a.timestamp && a.timestamp.toDate) {
+              dateA = a.timestamp.toDate();
+            } else if (a.date && a.date.toDate) {
+              dateA = a.date.toDate();
+            } else if (a.date) {
+              dateA = new Date(a.date);
+            } else {
+              dateA = new Date(0); // Default to epoch if no date
+            }
+
+            // For b
+            if (b.timestamp && b.timestamp.toDate) {
+              dateB = b.timestamp.toDate();
+            } else if (b.date && b.date.toDate) {
+              dateB = b.date.toDate();
+            } else if (b.date) {
+              dateB = new Date(b.date);
+            } else {
+              dateB = new Date(0); // Default to epoch if no date
+            }
+
+            return dateB - dateA; // Newest first
+          }).slice(0, 5).forEach(booking => {
+            const tr = document.createElement('tr');
+
+            // Format date for display
+            let displayDate = 'N/A';
+            let displayTime = booking.slots || 'N/A';
+            const status = booking.status || 'pending';
+
+            // Handle different date formats for display
+            if (booking.timestamp && booking.timestamp.toDate) {
+              displayDate = booking.timestamp.toDate().toLocaleString();
+            } else if (booking.date && booking.date.toDate) {
+              displayDate = booking.date.toDate().toLocaleString();
+            } else if (booking.date) {
+              try {
+                displayDate = new Date(booking.date).toLocaleString();
+              } catch (e) {
+                displayDate = booking.date; // Use raw string if Date conversion fails
+              }
+            }
+
+            tr.innerHTML = `
           <td>${booking.userEmail || booking.userName || 'Unknown User'}</td>
           <td>${booking.facilityName || 'Unknown Facility'}</td>
           <td>${displayDate}</td>
           <td>${displayTime}</td>
           <td><span class="badge badge-status badge-${status}">${status}</span></td>
         `;
-        recentBookingsBody.appendChild(tr);
-      });
+            recentBookingsBody.appendChild(tr);
+          });
+        }
+
+        // Initialize revenue chart with the bookings snapshot
+        initRevenueChart(bookingsSnapshot);
+
+      } catch (error) {
+        console.error("Error loading dashboard data:", error);
+        showToast('Error loading dashboard data: ' + error.message, 'danger');
+      }
     }
-
-    // Initialize revenue chart with the bookings snapshot
-    initRevenueChart(bookingsSnapshot);
-
-  } catch (error) {
-    console.error("Error loading dashboard data:", error);
-    showToast('Error loading dashboard data: ' + error.message, 'danger');
-  }
-}
 
     // Initialize revenue chart with fixed size - FIXED VERSION
-function initRevenueChart(bookingsSnapshot) {
-  const ctx = document.getElementById('revenueChart');
-  if (!ctx) {
-    console.log('Revenue chart canvas not found');
-    return;
-  }
-
-  // Calculate monthly revenue - handle different date formats
-  const monthlyRevenue = {};
-  const currentYear = new Date().getFullYear();
-  
-  // Initialize all months with 0
-  const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-  months.forEach(month => {
-    monthlyRevenue[month] = 0;
-  });
-
-  bookingsSnapshot.forEach(doc => {
-    const booking = doc.data();
-    let bookingDate;
-    
-    // Handle different date formats
-    if (booking.timestamp && booking.timestamp.toDate) {
-      bookingDate = booking.timestamp.toDate();
-    } else if (booking.date && booking.date.toDate) {
-      bookingDate = booking.date.toDate();
-    } else if (booking.date) {
-      try {
-        bookingDate = new Date(booking.date);
-      } catch (e) {
-        console.log('Invalid date format:', booking.date);
-        return; // Skip this booking
+    function initRevenueChart(bookingsSnapshot) {
+      const ctx = document.getElementById('revenueChart');
+      if (!ctx) {
+        console.log('Revenue chart canvas not found');
+        return;
       }
-    } else {
-      return; // Skip if no valid date
-    }
-    
-    // Only process current year bookings and valid dates
-    if (bookingDate && bookingDate.getFullYear && bookingDate.getFullYear() === currentYear) {
-      const month = bookingDate.toLocaleString('default', { month: 'short' });
-      const price = parseFloat(booking.price) || 0;
-      monthlyRevenue[month] += price;
-    }
-  });
 
-  const revenueData = months.map(month => monthlyRevenue[month]);
+      // Calculate monthly revenue - handle different date formats
+      const monthlyRevenue = {};
+      const currentYear = new Date().getFullYear();
 
-  // Create chart with fixed size
-  new Chart(ctx, {
-    type: 'line',
-    data: {
-      labels: months,
-      datasets: [{
-        label: 'Revenue (RM)',
-        data: revenueData,
-        borderColor: '#4361ee',
-        backgroundColor: 'rgba(67, 97, 238, 0.1)',
-        borderWidth: 2,
-        fill: true,
-        tension: 0.4
-      }]
-    },
-    options: {
-      responsive: true,
-      maintainAspectRatio: false,
-      plugins: {
-        legend: {
-          display: false
-        }
-      },
-      scales: {
-        y: {
-          beginAtZero: true,
-          grid: {
-            drawBorder: false
+      // Initialize all months with 0
+      const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+      months.forEach(month => {
+        monthlyRevenue[month] = 0;
+      });
+
+      bookingsSnapshot.forEach(doc => {
+        const booking = doc.data();
+        let bookingDate;
+
+        // Handle different date formats
+        if (booking.timestamp && booking.timestamp.toDate) {
+          bookingDate = booking.timestamp.toDate();
+        } else if (booking.date && booking.date.toDate) {
+          bookingDate = booking.date.toDate();
+        } else if (booking.date) {
+          try {
+            bookingDate = new Date(booking.date);
+          } catch (e) {
+            console.log('Invalid date format:', booking.date);
+            return; // Skip this booking
           }
+        } else {
+          return; // Skip if no valid date
+        }
+
+        // Only process current year bookings and valid dates
+        if (bookingDate && bookingDate.getFullYear && bookingDate.getFullYear() === currentYear) {
+          const month = bookingDate.toLocaleString('default', { month: 'short' });
+          const price = parseFloat(booking.price) || 0;
+          monthlyRevenue[month] += price;
+        }
+      });
+
+      const revenueData = months.map(month => monthlyRevenue[month]);
+
+      // Create chart with fixed size
+      new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: months,
+          datasets: [{
+            label: 'Revenue (RM)',
+            data: revenueData,
+            borderColor: '#4361ee',
+            backgroundColor: 'rgba(67, 97, 238, 0.1)',
+            borderWidth: 2,
+            fill: true,
+            tension: 0.4
+          }]
         },
-        x: {
-          grid: {
-            display: false
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: {
+              display: false
+            }
+          },
+          scales: {
+            y: {
+              beginAtZero: true,
+              grid: {
+                drawBorder: false
+              }
+            },
+            x: {
+              grid: {
+                display: false
+              }
+            }
           }
         }
-      }
+      });
     }
-  });
-}
-// Helper function to safely convert Firestore dates
-function safeDateConvert(dateField) {
-  if (!dateField) return null;
-  
-  if (dateField.toDate && typeof dateField.toDate === 'function') {
-    return dateField.toDate();
-  }
-  
-  if (dateField instanceof Date) {
-    return dateField;
-  }
-  
-  if (typeof dateField === 'string' || typeof dateField === 'number') {
-    try {
-      return new Date(dateField);
-    } catch (e) {
-      console.error('Invalid date format:', dateField);
+    // Helper function to safely convert Firestore dates
+    function safeDateConvert(dateField) {
+      if (!dateField) return null;
+
+      if (dateField.toDate && typeof dateField.toDate === 'function') {
+        return dateField.toDate();
+      }
+
+      if (dateField instanceof Date) {
+        return dateField;
+      }
+
+      if (typeof dateField === 'string' || typeof dateField === 'number') {
+        try {
+          return new Date(dateField);
+        } catch (e) {
+          console.error('Invalid date format:', dateField);
+          return null;
+        }
+      }
+
       return null;
     }
-  }
-  
-  return null;
-}
 
     // Load page content based on selection
     async function loadPageContent(page) {
@@ -1861,6 +1873,9 @@ function safeDateConvert(dateField) {
         <button class="btn btn-sm btn-danger" onclick="deleteFacility('${facility.id}')" title="Delete Facility">
             <i class="fas fa-trash"></i>
         </button>
+        <button class="btn btn-sm btn-map" onclick="LocateFacility('${facility.id}')" title="Locate Facility">
+            <i class="bi bi-geo-alt"></i>
+        </button>
     </div>
 </td>
             </tr>
@@ -1936,6 +1951,13 @@ function safeDateConvert(dateField) {
                         <input type="text" class="form-control" name="location" required>
                       </div>
                     </div>
+                    <div class="mb-3">
+  <label for="locationLink" class="form-label">Location Link</label>
+  <input type="url" class="form-control" id="locationLink" name="locationLink" 
+         placeholder="https://maps.google.com/..." 
+         pattern="https://.*">
+  <div class="form-text">Enter Google Maps link or directions URL</div>
+</div>
                     <div class="col-md-6">
                       <div class="form-group">
                         <label class="form-label">Price (RM)</label>
@@ -1969,10 +1991,14 @@ function safeDateConvert(dateField) {
                   </div>
                   
                   <div class="form-group">
-                    <label class="form-label">Image URL</label>
-                    <input type="url" class="form-control" name="imageUrl" placeholder="https://example.com/image.jpg">
-                    <small class="form-text text-muted">Provide a direct link to the facility image</small>
-                  </div>
+  <label class="form-label">Upload Image</label>
+  <input type="file" id="facilityImage" class="form-control" accept="image/*">
+</div>
+
+<div class="mt-3">
+  <img id="imagePreview" style="max-width:150px; display:none; border-radius:10px;">
+</div>
+
                   
                   <div class="form-group">
                     <label class="form-label">Amenities</label>
@@ -2003,127 +2029,150 @@ function safeDateConvert(dateField) {
           </div>
         </div>
       `;
+      document.getElementById("facilityImage").addEventListener("change", function () {
+        const file = this.files[0];
+        if (!file) return;
+
+        document.getElementById("imagePreview").src = URL.createObjectURL(file);
+        document.getElementById("imagePreview").style.display = "block";
+      });
+      const cloudName = "dagqzn57w";
+      const uploadPreset = "ml_default";
+    }
+
+    async function uploadImageToCloudinary(file) {
+      const formData = new FormData();
+      formData.append("file", file);
+      formData.append("upload_preset", uploadPreset);
+
+      const response = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/image/upload`, {
+        method: "POST",
+        body: formData
+      });
+
+      const data = await response.json();
+      return data.secure_url;  // final image url
     }
 
     async function loadBookingManagementPage() {
-  try {
-    console.log('Loading booking management page...');
-    
-    // Fetch bookings for admin's facilities
-    const facilityIds = adminFacilities.map(f => f.id);
-    let bookings = [];
+      try {
+        console.log('Loading booking management page...');
 
-    if (facilityIds.length > 0) {
-      console.log(`Fetching bookings for facilities: ${facilityIds.join(', ')}`);
-      
-      const bookingsSnapshot = await db.collection("bookings")
-        .where("facilityId", "in", facilityIds)
-        .get();
+        // Fetch bookings for admin's facilities
+        const facilityIds = adminFacilities.map(f => f.id);
+        let bookings = [];
 
-      console.log(`Found ${bookingsSnapshot.size} bookings in database`);
+        if (facilityIds.length > 0) {
+          console.log(`Fetching bookings for facilities: ${facilityIds.join(', ')}`);
 
-      bookingsSnapshot.forEach(doc => {
-        const bookingData = doc.data();
-        console.log(`Booking ${doc.id}:`, {
-          facilityId: bookingData.facilityId,
-          facilityName: bookingData.facilityName,
-          userName: bookingData.userName,
-          userEmail: bookingData.userEmail,
-          date: bookingData.date,
-          slot: bookingData.slots,
-          status: bookingData.status,
-          price: bookingData.price
-        });
+          const bookingsSnapshot = await db.collection("bookings")
+            .where("facilityId", "in", facilityIds)
+            .get();
 
-        bookings.push({
-          id: doc.id,
-          ...bookingData,
-          // Ensure proper date handling
-          rawDate: bookingData.date,
-          rawTimestamp: bookingData.timestamp
-        });
-      });
-    } else {
-      console.log('No facilities found for this admin');
-    }
+          console.log(`Found ${bookingsSnapshot.size} bookings in database`);
 
-    let bookingsHTML = '';
+          bookingsSnapshot.forEach(doc => {
+            const bookingData = doc.data();
+            console.log(`Booking ${doc.id}:`, {
+              facilityId: bookingData.facilityId,
+              facilityName: bookingData.facilityName,
+              userName: bookingData.userName,
+              userEmail: bookingData.userEmail,
+              date: bookingData.date,
+              slot: bookingData.slots,
+              status: bookingData.status,
+              price: bookingData.price
+            });
 
-    if (bookings.length === 0) {
-      bookingsHTML = `
+            bookings.push({
+              id: doc.id,
+              ...bookingData,
+              // Ensure proper date handling
+              rawDate: bookingData.date,
+              rawTimestamp: bookingData.timestamp
+            });
+          });
+        } else {
+          console.log('No facilities found for this admin');
+        }
+
+        let bookingsHTML = '';
+
+        if (bookings.length === 0) {
+          bookingsHTML = `
         <tr>
           <td colspan="7" class="text-center py-4">
             <div class="text-muted">
               <i class="fas fa-calendar-times fa-2x mb-3"></i>
               <p>No bookings found</p>
               <small>
-                ${facilityIds.length === 0 ? 
-                  'No facilities configured. Add facilities first.' : 
-                  'No bookings have been made for your facilities yet.'}
+                ${facilityIds.length === 0 ?
+              'No facilities configured. Add facilities first.' :
+              'No bookings have been made for your facilities yet.'}
               </small>
             </div>
           </td>
         </tr>
       `;
-    } else {
-      // Sort bookings by date (newest first)
-      bookings.sort((a, b) => {
-        let dateA, dateB;
-        
-        // Handle date comparison safely
-        if (a.timestamp && a.timestamp.toDate) {
-          dateA = a.timestamp.toDate();
-        } else if (a.date && a.date.toDate) {
-          dateA = a.date.toDate();
-        } else if (a.date) {
-          dateA = new Date(a.date);
         } else {
-          dateA = new Date(0);
-        }
+          // Sort bookings by date (newest first)
+          bookings.sort((a, b) => {
+            let dateA, dateB;
 
-        if (b.timestamp && b.timestamp.toDate) {
-          dateB = b.timestamp.toDate();
-        } else if (b.date && b.date.toDate) {
-          dateB = b.date.toDate();
-        } else if (b.date) {
-          dateB = new Date(b.date);
-        } else {
-          dateB = new Date(0);
-        }
+            // Handle date comparison safely
+            if (a.timestamp && a.timestamp.toDate) {
+              dateA = a.timestamp.toDate();
+            } else if (a.date && a.date.toDate) {
+              dateA = a.date.toDate();
+            } else if (a.date) {
+              dateA = new Date(a.date);
+            } else {
+              dateA = new Date(0);
+            }
 
-        return dateB - dateA;
-      });
+            if (b.timestamp && b.timestamp.toDate) {
+              dateB = b.timestamp.toDate();
+            } else if (b.date && b.date.toDate) {
+              dateB = b.date.toDate();
+            } else if (b.date) {
+              dateB = new Date(b.date);
+            } else {
+              dateB = new Date(0);
+            }
 
-      bookings.forEach(booking => {
-        // Format date for display
-        let displayDate = 'N/A';
-        let displayTime = booking.slots || booking.timeSlot || 'N/A';
-        const status = booking.status || 'pending';
-        
-        // Handle different date formats
-        if (booking.timestamp && booking.timestamp.toDate) {
-          displayDate = booking.timestamp.toDate().toLocaleDateString();
-        } else if (booking.date && booking.date.toDate) {
-          displayDate = booking.date.toDate().toLocaleDateString();
-        } else if (booking.date) {
-          try {
-            displayDate = new Date(booking.date).toLocaleDateString();
-          } catch (e) {
-            displayDate = String(booking.date).substring(0, 10);
-          }
-        }
+            return dateB - dateA;
+          });
 
-        // Get status badge class
-        let statusBadgeClass = 'badge-pending';
-        if (status === 'approved' || status === 'confirmed') {
-          statusBadgeClass = 'badge-approved';
-        } else if (status === 'cancelled' || status === 'rejected') {
-          statusBadgeClass = 'badge-cancelled';
-        } else if (status === 'completed') {
-          statusBadgeClass = 'badge-completed';
-        }
+          bookings.forEach(booking => {
+            // Format date for display
+            let displayDate = 'N/A';
+            let displayTime = booking.slots || booking.timeSlot || 'N/A';
+            const status = booking.status || 'pending';
 
-        bookingsHTML += `
+            // Handle different date formats
+            if (booking.timestamp && booking.timestamp.toDate) {
+              displayDate = booking.timestamp.toDate().toLocaleDateString();
+            } else if (booking.date && booking.date.toDate) {
+              displayDate = booking.date.toDate().toLocaleDateString();
+            } else if (booking.date) {
+              try {
+                displayDate = new Date(booking.date).toLocaleDateString();
+              } catch (e) {
+                displayDate = String(booking.date).substring(0, 10);
+              }
+            }
+
+            // Get status badge class
+            let statusBadgeClass = 'badge-pending';
+            if (status === 'approved' || status === 'confirmed') {
+              statusBadgeClass = 'badge-approved';
+            } else if (status === 'cancelled' || status === 'rejected') {
+              statusBadgeClass = 'badge-cancelled';
+            } else if (status === 'completed') {
+              statusBadgeClass = 'badge-completed';
+            }
+
+            bookingsHTML += `
           <tr>
             <td>
               <div class="d-flex align-items-center">
@@ -2167,10 +2216,10 @@ function safeDateConvert(dateField) {
             </td>
           </tr>
         `;
-      });
-    }
+          });
+        }
 
-    return `
+        return `
       <div class="d-flex justify-content-between align-items-center mb-4">
         <h3>Booking Management</h3>
         <div class="d-flex">
@@ -2238,9 +2287,9 @@ function safeDateConvert(dateField) {
         </div>
       </div>
     `;
-  } catch (error) {
-    console.error("Error loading booking management page:", error);
-    return `
+      } catch (error) {
+        console.error("Error loading booking management page:", error);
+        return `
       <div class="alert alert-danger">
         <h4>Error Loading Bookings</h4>
         <p>There was an error loading booking data: ${error.message}</p>
@@ -2253,8 +2302,8 @@ function safeDateConvert(dateField) {
         </button>
       </div>
     `;
-  }
-}
+      }
+    }
 
     async function loadUserManagementPage() {
       try {
@@ -2512,21 +2561,21 @@ function safeDateConvert(dateField) {
     }
 
     // Enhanced viewUser function with better error handling
-async function viewUser(userId) {
-    try {
+    async function viewUser(userId) {
+      try {
         console.log('Viewing user ID:', userId);
 
         if (!userId) {
-            showToast('Invalid user ID', 'danger');
-            return;
+          showToast('Invalid user ID', 'danger');
+          return;
         }
 
         // Fetch user details
         const userDoc = await db.collection('users').doc(userId).get();
-        
+
         if (!userDoc.exists) {
-            showToast('User not found', 'danger');
-            return;
+          showToast('User not found', 'danger');
+          return;
         }
 
         const user = userDoc.data();
@@ -2537,20 +2586,20 @@ async function viewUser(userId) {
         let userBookings = [];
 
         if (facilityIds.length > 0) {
-            const bookingsSnapshot = await db.collection('bookings')
-                .where('userId', '==', userId)
-                .where('facilityId', 'in', facilityIds)
-                .get();
+          const bookingsSnapshot = await db.collection('bookings')
+            .where('userId', '==', userId)
+            .where('facilityId', 'in', facilityIds)
+            .get();
 
-            bookingsSnapshot.forEach(doc => {
-                const bookingData = doc.data();
-                userBookings.push({ 
-                    id: doc.id, 
-                    ...bookingData,
-                    // Ensure proper date handling
-                    date: bookingData.date || bookingData.timestamp
-                });
+          bookingsSnapshot.forEach(doc => {
+            const bookingData = doc.data();
+            userBookings.push({
+              id: doc.id,
+              ...bookingData,
+              // Ensure proper date handling
+              date: bookingData.date || bookingData.timestamp
             });
+          });
         }
 
         console.log(`Found ${userBookings.length} bookings for user`);
@@ -2558,32 +2607,32 @@ async function viewUser(userId) {
         // Calculate user statistics
         const totalBookings = userBookings.length;
         const totalSpent = userBookings.reduce((sum, booking) => sum + parseFloat(booking.price || 0), 0);
-        
+
         // Sort bookings by date (newest first)
         const sortedBookings = userBookings.sort((a, b) => {
-            let dateA, dateB;
-            
-            if (a.timestamp && a.timestamp.toDate) {
-                dateA = a.timestamp.toDate();
-            } else if (a.date && a.date.toDate) {
-                dateA = a.date.toDate();
-            } else if (a.date) {
-                dateA = new Date(a.date);
-            } else {
-                dateA = new Date(0);
-            }
+          let dateA, dateB;
 
-            if (b.timestamp && b.timestamp.toDate) {
-                dateB = b.timestamp.toDate();
-            } else if (b.date && b.date.toDate) {
-                dateB = b.date.toDate();
-            } else if (b.date) {
-                dateB = new Date(b.date);
-            } else {
-                dateB = new Date(0);
-            }
+          if (a.timestamp && a.timestamp.toDate) {
+            dateA = a.timestamp.toDate();
+          } else if (a.date && a.date.toDate) {
+            dateA = a.date.toDate();
+          } else if (a.date) {
+            dateA = new Date(a.date);
+          } else {
+            dateA = new Date(0);
+          }
 
-            return dateB - dateA;
+          if (b.timestamp && b.timestamp.toDate) {
+            dateB = b.timestamp.toDate();
+          } else if (b.date && b.date.toDate) {
+            dateB = b.date.toDate();
+          } else if (b.date) {
+            dateB = new Date(b.date);
+          } else {
+            dateB = new Date(0);
+          }
+
+          return dateB - dateA;
         });
 
         const lastBooking = sortedBookings.length > 0 ? sortedBookings[0] : null;
@@ -2595,13 +2644,13 @@ async function viewUser(userId) {
         const userMembership = user.membership || 'Regular';
         const userStatus = user.status || 'Active';
         const userPhoto = user.photoURL || user.photoUrl || 'https://via.placeholder.com/150x150?text=No+Image';
-        
+
         // Format creation date
         let memberSince = 'N/A';
         if (user.createdAt && user.createdAt.toDate) {
-            memberSince = user.createdAt.toDate().toLocaleDateString();
+          memberSince = user.createdAt.toDate().toLocaleDateString();
         } else if (user.createdAt) {
-            memberSince = new Date(user.createdAt).toLocaleDateString();
+          memberSince = new Date(user.createdAt).toLocaleDateString();
         }
 
         // Create modal content
@@ -2735,7 +2784,7 @@ async function viewUser(userId) {
         // Remove existing modal if any
         const existingModal = document.getElementById('viewUserModal');
         if (existingModal) {
-            existingModal.remove();
+          existingModal.remove();
         }
 
         // Add modal to page
@@ -2747,33 +2796,33 @@ async function viewUser(userId) {
 
         // Remove modal from DOM when hidden
         document.getElementById('viewUserModal').addEventListener('hidden.bs.modal', function () {
-            this.remove();
+          this.remove();
         });
 
-    } catch (error) {
+      } catch (error) {
         console.error('Error viewing user:', error);
         showToast('Error loading user details: ' + error.message, 'danger');
+      }
     }
-}
-// Helper function to format booking dates safely
-function formatBookingDate(booking) {
-    if (!booking) return 'N/A';
-    
-    try {
+    // Helper function to format booking dates safely
+    function formatBookingDate(booking) {
+      if (!booking) return 'N/A';
+
+      try {
         if (booking.timestamp && booking.timestamp.toDate) {
-            return booking.timestamp.toDate().toLocaleDateString();
+          return booking.timestamp.toDate().toLocaleDateString();
         } else if (booking.date && booking.date.toDate) {
-            return booking.date.toDate().toLocaleDateString();
+          return booking.date.toDate().toLocaleDateString();
         } else if (booking.date) {
-            return new Date(booking.date).toLocaleDateString();
+          return new Date(booking.date).toLocaleDateString();
         } else {
-            return 'N/A';
+          return 'N/A';
         }
-    } catch (error) {
+      } catch (error) {
         console.error('Error formatting booking date:', error);
         return 'Invalid Date';
+      }
     }
-}
 
     // Comprehensive Export Functionality
     function exportToCSV(data, filename, headers) {
@@ -2956,6 +3005,7 @@ function formatBookingDate(booking) {
 
           bookingsSnapshot.forEach(doc => {
             const booking = doc.data();
+            const commission = booking.price * 0.05;
             if (booking.price) {
               payments.push({
                 'Payment ID': doc.id,
@@ -2965,6 +3015,7 @@ function formatBookingDate(booking) {
                 'Time': booking.slot || 'N/A',
                 'Amount': `RM${parseFloat(booking.price).toFixed(2)}`,
                 'Status': booking.status || 'approved',
+                'Commission': commission || 0,
                 'Payment Method': booking.paymentMethod || 'Online',
                 'Transaction Date': booking.timestamp ? booking.timestamp.toDate().toLocaleString() : 'N/A',
                 'Duration': booking.duration || '1 hour'
@@ -2990,6 +3041,7 @@ function formatBookingDate(booking) {
           'Name': facility.name || 'N/A',
           'Type': facility.type || 'N/A',
           'Location': facility.location || 'N/A',
+          'locationLink': facility.locationLink || '',
           'Price': `RM${facility.price || '0'}`,
           'Capacity': facility.capacity || 'N/A',
           'Status': facility.status || 'Active',
@@ -3447,11 +3499,13 @@ function formatBookingDate(booking) {
 
         bookingsSnapshot.forEach(doc => {
           const booking = doc.data();
+          const commission = booking.price * 0.05;
           if (booking.price) {
             totalRevenue += parseFloat(booking.price);
             payments.push({
               id: doc.id,
               ...booking,
+              commission: commission,
               paymentDate: booking.timestamp ? booking.timestamp.toDate() : new Date()
             });
           }
@@ -3472,6 +3526,7 @@ function formatBookingDate(booking) {
               <td>${payment.facilityName || 'Unknown Facility'}</td>
               <td>${date}</td>
               <td>RM${payment.price || '0'}</td>
+              <td>RM${payment.commission || '0'}</td>
               <td>${payment.paymentMethod || 'Online'}</td>
               <td><span class="badge badge-status badge-approved">Paid</span></td>
             </tr>
@@ -3533,6 +3588,7 @@ function formatBookingDate(booking) {
                   <th>Facility</th>
                   <th>Date</th>
                   <th>Amount</th>
+                  <th>Commission</th>
                   <th>Method</th>
                   <th>Status</th>
                 </tr>
@@ -5007,138 +5063,138 @@ function formatBookingDate(booking) {
     }
 
     async function loadAIInsightsPage() {
-  try {
-    // Fetch real data from Firestore
-    const facilityIds = adminFacilities.map(f => f.id);
-    let bookings = [];
-    let totalRevenue = 0;
-    let peakHours = {};
-    let popularFacilities = {};
-    let monthlyRevenue = {};
-    let facilityPerformance = {};
-    let bookingTrends = {};
-    let statusDistribution = {};
+      try {
+        // Fetch real data from Firestore
+        const facilityIds = adminFacilities.map(f => f.id);
+        let bookings = [];
+        let totalRevenue = 0;
+        let peakHours = {};
+        let popularFacilities = {};
+        let monthlyRevenue = {};
+        let facilityPerformance = {};
+        let bookingTrends = {};
+        let statusDistribution = {};
 
-    if (facilityIds.length > 0) {
-      const bookingsSnapshot = await db.collection("bookings")
-        .where("facilityId", "in", facilityIds)
-        .get();
+        if (facilityIds.length > 0) {
+          const bookingsSnapshot = await db.collection("bookings")
+            .where("facilityId", "in", facilityIds)
+            .get();
 
-      bookingsSnapshot.forEach(doc => {
-        const booking = doc.data();
-        bookings.push({ id: doc.id, ...booking });
+          bookingsSnapshot.forEach(doc => {
+            const booking = doc.data();
+            bookings.push({ id: doc.id, ...booking });
 
-        // Calculate total revenue
-        if (booking.price) {
-          totalRevenue += parseFloat(booking.price);
+            // Calculate total revenue
+            if (booking.price) {
+              totalRevenue += (parseFloat(booking.price) - (commission || 0));
+            }
+
+            // Track peak hours
+            if (booking.slot) {
+              const timeSlot = booking.slot.split('-')[0];
+              const hour = timeSlot.includes(':') ? timeSlot.split(':')[0] : timeSlot;
+              peakHours[hour] = (peakHours[hour] || 0) + 1;
+            }
+
+            // Track popular facilities
+            if (booking.facilityName) {
+              popularFacilities[booking.facilityName] = (popularFacilities[booking.facilityName] || 0) + 1;
+            }
+
+            // Calculate monthly revenue
+            if (booking.timestamp) {
+              const month = booking.timestamp.toDate().toLocaleString('default', { month: 'short', year: 'numeric' });
+              const price = parseFloat(booking.price) || 0;
+              monthlyRevenue[month] = (monthlyRevenue[month] || 0) + price;
+            }
+
+            // Track facility performance
+            if (booking.facilityName) {
+              if (!facilityPerformance[booking.facilityName]) {
+                facilityPerformance[booking.facilityName] = {
+                  bookings: 0,
+                  revenue: 0
+                };
+              }
+              facilityPerformance[booking.facilityName].bookings++;
+              facilityPerformance[booking.facilityName].revenue += parseFloat(booking.price) || 0;
+            }
+
+            // Track booking trends (last 30 days)
+            if (booking.timestamp) {
+              const bookingDate = booking.timestamp.toDate();
+              const today = new Date();
+              const thirtyDaysAgo = new Date(today.getTime() - 30 * 24 * 60 * 60 * 1000);
+
+              if (bookingDate >= thirtyDaysAgo) {
+                const day = bookingDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+                bookingTrends[day] = (bookingTrends[day] || 0) + 1;
+              }
+            }
+
+            // Track status distribution
+            const status = booking.status || 'pending';
+            statusDistribution[status] = (statusDistribution[status] || 0) + 1;
+          });
         }
 
-        // Track peak hours
-        if (booking.slot) {
-          const timeSlot = booking.slot.split('-')[0];
-          const hour = timeSlot.includes(':') ? timeSlot.split(':')[0] : timeSlot;
-          peakHours[hour] = (peakHours[hour] || 0) + 1;
-        }
-
-        // Track popular facilities
-        if (booking.facilityName) {
-          popularFacilities[booking.facilityName] = (popularFacilities[booking.facilityName] || 0) + 1;
-        }
-
-        // Calculate monthly revenue
-        if (booking.timestamp) {
-          const month = booking.timestamp.toDate().toLocaleString('default', { month: 'short', year: 'numeric' });
-          const price = parseFloat(booking.price) || 0;
-          monthlyRevenue[month] = (monthlyRevenue[month] || 0) + price;
-        }
-
-        // Track facility performance
-        if (booking.facilityName) {
-          if (!facilityPerformance[booking.facilityName]) {
-            facilityPerformance[booking.facilityName] = {
-              bookings: 0,
-              revenue: 0
-            };
+        // Find peak hour
+        let peakHour = 'N/A';
+        let maxBookings = 0;
+        for (const [hour, count] of Object.entries(peakHours)) {
+          if (count > maxBookings) {
+            maxBookings = count;
+            peakHour = `${hour}:00`;
           }
-          facilityPerformance[booking.facilityName].bookings++;
-          facilityPerformance[booking.facilityName].revenue += parseFloat(booking.price) || 0;
         }
 
-        // Track booking trends (last 30 days)
-        if (booking.timestamp) {
-          const bookingDate = booking.timestamp.toDate();
-          const today = new Date();
-          const thirtyDaysAgo = new Date(today.getTime() - 30 * 24 * 60 * 60 * 1000);
-
-          if (bookingDate >= thirtyDaysAgo) {
-            const day = bookingDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-            bookingTrends[day] = (bookingTrends[day] || 0) + 1;
+        // Find most popular facility
+        let popularFacility = 'N/A';
+        let maxFacilityBookings = 0;
+        for (const [facility, count] of Object.entries(popularFacilities)) {
+          if (count > maxFacilityBookings) {
+            maxFacilityBookings = count;
+            popularFacility = facility;
           }
         }
 
-        // Track status distribution
-        const status = booking.status || 'pending';
-        statusDistribution[status] = (statusDistribution[status] || 0) + 1;
-      });
-    }
+        // Calculate utilization rate
+        const totalSlotsPerDay = adminFacilities.length * 14; // Assuming 14 slots per day (7 AM to 9 PM)
+        const daysInMonth = 30; // Approximation
+        const totalPossibleSlots = totalSlotsPerDay * daysInMonth;
+        const utilizationRate = totalPossibleSlots > 0 ? (bookings.length / totalPossibleSlots * 100).toFixed(1) : 0;
 
-    // Find peak hour
-    let peakHour = 'N/A';
-    let maxBookings = 0;
-    for (const [hour, count] of Object.entries(peakHours)) {
-      if (count > maxBookings) {
-        maxBookings = count;
-        peakHour = `${hour}:00`;
-      }
-    }
+        // Calculate average booking value
+        const avgBookingValue = bookings.length > 0 ? (totalRevenue / bookings.length).toFixed(2) : 0;
 
-    // Find most popular facility
-    let popularFacility = 'N/A';
-    let maxFacilityBookings = 0;
-    for (const [facility, count] of Object.entries(popularFacilities)) {
-      if (count > maxFacilityBookings) {
-        maxFacilityBookings = count;
-        popularFacility = facility;
-      }
-    }
+        // Get top performing facilities
+        const topFacilities = Object.entries(facilityPerformance)
+          .sort(([, a], [, b]) => b.revenue - a.revenue)
+          .slice(0, 3)
+          .map(([name, data]) => ({ name, ...data }));
 
-    // Calculate utilization rate
-    const totalSlotsPerDay = adminFacilities.length * 14; // Assuming 14 slots per day (7 AM to 9 PM)
-    const daysInMonth = 30; // Approximation
-    const totalPossibleSlots = totalSlotsPerDay * daysInMonth;
-    const utilizationRate = totalPossibleSlots > 0 ? (bookings.length / totalPossibleSlots * 100).toFixed(1) : 0;
+        // Generate recommendations based on real data
+        const recommendations = generateAIRecommendations({
+          peakHour,
+          popularFacility,
+          utilizationRate,
+          avgBookingValue,
+          topFacilities,
+          totalBookings: bookings.length,
+          totalRevenue,
+          statusDistribution
+        });
 
-    // Calculate average booking value
-    const avgBookingValue = bookings.length > 0 ? (totalRevenue / bookings.length).toFixed(2) : 0;
+        // Store data for charts
+        window.aiInsightsData = {
+          monthlyRevenue,
+          bookingTrends,
+          facilityPerformance,
+          statusDistribution,
+          bookings
+        };
 
-    // Get top performing facilities
-    const topFacilities = Object.entries(facilityPerformance)
-      .sort(([, a], [, b]) => b.revenue - a.revenue)
-      .slice(0, 3)
-      .map(([name, data]) => ({ name, ...data }));
-
-    // Generate recommendations based on real data
-    const recommendations = generateAIRecommendations({
-      peakHour,
-      popularFacility,
-      utilizationRate,
-      avgBookingValue,
-      topFacilities,
-      totalBookings: bookings.length,
-      totalRevenue,
-      statusDistribution
-    });
-
-    // Store data for charts
-    window.aiInsightsData = {
-      monthlyRevenue,
-      bookingTrends,
-      facilityPerformance,
-      statusDistribution,
-      bookings
-    };
-
-    return `
+        return `
       <div class="d-flex justify-content-between align-items-center mb-4">
         <h3>AI Insights & Analytics</h3>
         <button class="btn btn-primary" onclick="refreshInsights()">
@@ -5257,9 +5313,9 @@ function formatBookingDate(booking) {
         </div>
       </div>
     `;
-  } catch (error) {
-    console.error("Error loading AI insights:", error);
-    return `
+      } catch (error) {
+        console.error("Error loading AI insights:", error);
+        return `
       <div class="alert alert-danger">
         <h4>Error Loading Insights</h4>
         <p>There was an error loading AI insights data. Please try again.</p>
@@ -5269,8 +5325,8 @@ function formatBookingDate(booking) {
         </button>
       </div>
     `;
-  }
-}
+      }
+    }
     // Add this to your initializePageFunctionality function
     function initializePageFunctionality(page) {
       switch (page) {
@@ -5284,313 +5340,313 @@ function formatBookingDate(booking) {
     }
 
     // AI Recommendation Engine
-function generateAIRecommendations(data) {
-  const recommendations = [];
+    function generateAIRecommendations(data) {
+      const recommendations = [];
 
-  // Peak hour recommendations
-  if (data.peakHour && data.peakHour !== 'N/A') {
-    recommendations.push(`Increase pricing by 10-15% during ${data.peakHour} peak hours to maximize revenue`);
-  }
+      // Peak hour recommendations
+      if (data.peakHour && data.peakHour !== 'N/A') {
+        recommendations.push(`Increase pricing by 10-15% during ${data.peakHour} peak hours to maximize revenue`);
+      }
 
-  // Popular facility recommendations
-  if (data.popularFacility && data.popularFacility !== 'N/A') {
-    recommendations.push(`Promote ${data.popularFacility.split(' ')[0]} more as it's your most booked facility`);
-    recommendations.push(`Consider adding similar facilities to meet high demand for ${data.popularFacility.split(' ')[0]}`);
-  }
+      // Popular facility recommendations
+      if (data.popularFacility && data.popularFacility !== 'N/A') {
+        recommendations.push(`Promote ${data.popularFacility.split(' ')[0]} more as it's your most booked facility`);
+        recommendations.push(`Consider adding similar facilities to meet high demand for ${data.popularFacility.split(' ')[0]}`);
+      }
 
-  // Utilization rate recommendations
-  if (parseFloat(data.utilizationRate) < 30) {
-    recommendations.push('Launch off-peak discounts (20-30% off) to boost facility utilization');
-    recommendations.push('Run targeted promotions during low-usage periods');
-  } else if (parseFloat(data.utilizationRate) > 80) {
-    recommendations.push('Consider expanding capacity or adding more time slots due to high demand');
-  }
+      // Utilization rate recommendations
+      if (parseFloat(data.utilizationRate) < 30) {
+        recommendations.push('Launch off-peak discounts (20-30% off) to boost facility utilization');
+        recommendations.push('Run targeted promotions during low-usage periods');
+      } else if (parseFloat(data.utilizationRate) > 80) {
+        recommendations.push('Consider expanding capacity or adding more time slots due to high demand');
+      }
 
-  // Revenue-based recommendations
-  if (data.totalRevenue > 1000) {
-    recommendations.push('Introduce premium membership packages for loyal customers');
-  } else if (data.totalRevenue < 500) {
-    recommendations.push('Focus on marketing campaigns to increase booking volume');
-  }
+      // Revenue-based recommendations
+      if (data.totalRevenue > 1000) {
+        recommendations.push('Introduce premium membership packages for loyal customers');
+      } else if (data.totalRevenue < 500) {
+        recommendations.push('Focus on marketing campaigns to increase booking volume');
+      }
 
-  // Status-based recommendations
-  if (data.statusDistribution) {
-    const pendingCount = data.statusDistribution.pending || 0;
-    const totalBookings = data.totalBookings || 1;
+      // Status-based recommendations
+      if (data.statusDistribution) {
+        const pendingCount = data.statusDistribution.pending || 0;
+        const totalBookings = data.totalBookings || 1;
 
-    if (pendingCount / totalBookings > 0.2) {
-      recommendations.push('Speed up booking approvals - high number of pending bookings');
+        if (pendingCount / totalBookings > 0.2) {
+          recommendations.push('Speed up booking approvals - high number of pending bookings');
+        }
+
+        if (data.statusDistribution.cancelled && data.statusDistribution.cancelled / totalBookings > 0.1) {
+          recommendations.push('Review cancellation reasons and consider flexible rescheduling options');
+        }
+      }
+
+      // Ensure minimum recommendations
+      if (recommendations.length < 4) {
+        recommendations.push('Collect customer feedback to identify service improvement areas');
+        recommendations.push('Monitor booking patterns to optimize pricing strategies');
+        recommendations.push('Consider partnerships with local sports clubs or organizations');
+        recommendations.push('Analyze seasonal trends to plan marketing campaigns effectively');
+      }
+
+      return recommendations.slice(0, 6);
     }
-
-    if (data.statusDistribution.cancelled && data.statusDistribution.cancelled / totalBookings > 0.1) {
-      recommendations.push('Review cancellation reasons and consider flexible rescheduling options');
-    }
-  }
-
-  // Ensure minimum recommendations
-  if (recommendations.length < 4) {
-    recommendations.push('Collect customer feedback to identify service improvement areas');
-    recommendations.push('Monitor booking patterns to optimize pricing strategies');
-    recommendations.push('Consider partnerships with local sports clubs or organizations');
-    recommendations.push('Analyze seasonal trends to plan marketing campaigns effectively');
-  }
-
-  return recommendations.slice(0, 6);
-}
 
     // Enhanced chart initialization function
-function initializeAICharts() {
-  try {
-    console.log('Initializing AI charts...');
-    
-    const data = window.aiInsightsData;
-    if (!data) {
-      console.error('No AI insights data found');
-      return;
-    }
+    function initializeAICharts() {
+      try {
+        console.log('Initializing AI charts...');
 
-    // 1. Revenue Chart
-    const revenueCtx = document.getElementById('revenueChart');
-    if (revenueCtx) {
-      const monthlyData = data.monthlyRevenue || {};
-      
-      // Get last 6 months for better display
-      const months = getLastMonths(6);
-      const revenueData = months.map(month => monthlyData[month] || 0);
-      
-      // If no data, show message
-      if (revenueData.every(val => val === 0)) {
-        revenueCtx.parentElement.innerHTML = `
+        const data = window.aiInsightsData;
+        if (!data) {
+          console.error('No AI insights data found');
+          return;
+        }
+
+        // 1. Revenue Chart
+        const revenueCtx = document.getElementById('revenueChart');
+        if (revenueCtx) {
+          const monthlyData = data.monthlyRevenue || {};
+
+          // Get last 6 months for better display
+          const months = getLastMonths(6);
+          const revenueData = months.map(month => monthlyData[month] || 0);
+
+          // If no data, show message
+          if (revenueData.every(val => val === 0)) {
+            revenueCtx.parentElement.innerHTML = `
           <div class="text-center py-5">
             <i class="fas fa-chart-line fa-3x text-muted mb-3"></i>
             <p class="text-muted">No revenue data available for the last 6 months</p>
           </div>
         `;
-      } else {
-        new Chart(revenueCtx, {
-          type: 'line',
-          data: {
-            labels: months,
-            datasets: [{
-              label: 'Monthly Revenue (RM)',
-              data: revenueData,
-              borderColor: '#4361ee',
-              backgroundColor: 'rgba(67, 97, 238, 0.1)',
-              borderWidth: 3,
-              fill: true,
-              tension: 0.4,
-              pointBackgroundColor: '#4361ee',
-              pointBorderColor: '#ffffff',
-              pointBorderWidth: 2,
-              pointRadius: 5
-            }]
-          },
-          options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: {
-              legend: {
-                display: true,
-                position: 'top'
+          } else {
+            new Chart(revenueCtx, {
+              type: 'line',
+              data: {
+                labels: months,
+                datasets: [{
+                  label: 'Monthly Revenue (RM)',
+                  data: revenueData,
+                  borderColor: '#4361ee',
+                  backgroundColor: 'rgba(67, 97, 238, 0.1)',
+                  borderWidth: 3,
+                  fill: true,
+                  tension: 0.4,
+                  pointBackgroundColor: '#4361ee',
+                  pointBorderColor: '#ffffff',
+                  pointBorderWidth: 2,
+                  pointRadius: 5
+                }]
               },
-              tooltip: {
-                callbacks: {
-                  label: function(context) {
-                    return `Revenue: RM${context.parsed.y.toFixed(2)}`;
+              options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                  legend: {
+                    display: true,
+                    position: 'top'
+                  },
+                  tooltip: {
+                    callbacks: {
+                      label: function (context) {
+                        return `Revenue: RM${context.parsed.y.toFixed(2)}`;
+                      }
+                    }
+                  }
+                },
+                scales: {
+                  y: {
+                    beginAtZero: true,
+                    title: {
+                      display: true,
+                      text: 'Revenue (RM)'
+                    },
+                    grid: {
+                      color: 'rgba(0,0,0,0.1)'
+                    }
+                  },
+                  x: {
+                    title: {
+                      display: true,
+                      text: 'Month'
+                    },
+                    grid: {
+                      display: false
+                    }
                   }
                 }
               }
-            },
-            scales: {
-              y: {
-                beginAtZero: true,
-                title: {
-                  display: true,
-                  text: 'Revenue (RM)'
-                },
-                grid: {
-                  color: 'rgba(0,0,0,0.1)'
-                }
-              },
-              x: {
-                title: {
-                  display: true,
-                  text: 'Month'
-                },
-                grid: {
-                  display: false
-                }
-              }
-            }
+            });
           }
-        });
-      }
-    }
+        }
 
-    // 2. Trends Chart
-    const trendsCtx = document.getElementById('trendsChart');
-    if (trendsCtx) {
-      const trendsData = data.bookingTrends || {};
-      
-      // Get last 14 days for trends
-      const days = getLastDays(14);
-      const bookingsData = days.map(day => trendsData[day] || 0);
-      
-      if (bookingsData.every(val => val === 0)) {
-        trendsCtx.parentElement.innerHTML = `
+        // 2. Trends Chart
+        const trendsCtx = document.getElementById('trendsChart');
+        if (trendsCtx) {
+          const trendsData = data.bookingTrends || {};
+
+          // Get last 14 days for trends
+          const days = getLastDays(14);
+          const bookingsData = days.map(day => trendsData[day] || 0);
+
+          if (bookingsData.every(val => val === 0)) {
+            trendsCtx.parentElement.innerHTML = `
           <div class="text-center py-5">
             <i class="fas fa-chart-bar fa-3x text-muted mb-3"></i>
             <p class="text-muted">No booking data available for the last 14 days</p>
           </div>
         `;
-      } else {
-        new Chart(trendsCtx, {
-          type: 'bar',
-          data: {
-            labels: days,
-            datasets: [{
-              label: 'Daily Bookings',
-              data: bookingsData,
-              backgroundColor: '#4cc9f0',
-              borderColor: '#3a0ca3',
-              borderWidth: 1
-            }]
-          },
-          options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: {
-              legend: {
-                display: true,
-                position: 'top'
-              }
-            },
-            scales: {
-              y: {
-                beginAtZero: true,
-                title: {
-                  display: true,
-                  text: 'Number of Bookings'
-                },
-                grid: {
-                  color: 'rgba(0,0,0,0.1)'
-                }
+          } else {
+            new Chart(trendsCtx, {
+              type: 'bar',
+              data: {
+                labels: days,
+                datasets: [{
+                  label: 'Daily Bookings',
+                  data: bookingsData,
+                  backgroundColor: '#4cc9f0',
+                  borderColor: '#3a0ca3',
+                  borderWidth: 1
+                }]
               },
-              x: {
-                title: {
-                  display: true,
-                  text: 'Date'
+              options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                  legend: {
+                    display: true,
+                    position: 'top'
+                  }
                 },
-                grid: {
-                  display: false
+                scales: {
+                  y: {
+                    beginAtZero: true,
+                    title: {
+                      display: true,
+                      text: 'Number of Bookings'
+                    },
+                    grid: {
+                      color: 'rgba(0,0,0,0.1)'
+                    }
+                  },
+                  x: {
+                    title: {
+                      display: true,
+                      text: 'Date'
+                    },
+                    grid: {
+                      display: false
+                    }
+                  }
                 }
               }
-            }
+            });
           }
-        });
-      }
-    }
+        }
 
-    // 3. Status Distribution Chart
-    const statusCtx = document.getElementById('statusChart');
-    if (statusCtx) {
-      const statusData = data.statusDistribution || {};
-      
-      const statusLabels = Object.keys(statusData).map(status => 
-        status.charAt(0).toUpperCase() + status.slice(1)
-      );
-      const statusValues = Object.values(statusData);
-      
-      const backgroundColors = [
-        '#4361ee', // Primary blue for approved/confirmed
-        '#4cc9f0', // Light blue for pending
-        '#f94144', // Red for cancelled
-        '#f9c74f', // Yellow for other statuses
-        '#90be6d', // Green for completed
-        '#577590'  // Dark blue for others
-      ];
+        // 3. Status Distribution Chart
+        const statusCtx = document.getElementById('statusChart');
+        if (statusCtx) {
+          const statusData = data.statusDistribution || {};
 
-      if (statusValues.length === 0) {
-        statusCtx.parentElement.innerHTML = `
+          const statusLabels = Object.keys(statusData).map(status =>
+            status.charAt(0).toUpperCase() + status.slice(1)
+          );
+          const statusValues = Object.values(statusData);
+
+          const backgroundColors = [
+            '#4361ee', // Primary blue for approved/confirmed
+            '#4cc9f0', // Light blue for pending
+            '#f94144', // Red for cancelled
+            '#f9c74f', // Yellow for other statuses
+            '#90be6d', // Green for completed
+            '#577590'  // Dark blue for others
+          ];
+
+          if (statusValues.length === 0) {
+            statusCtx.parentElement.innerHTML = `
           <div class="text-center py-4">
             <i class="fas fa-chart-pie fa-2x text-muted mb-2"></i>
             <p class="text-muted">No status data available</p>
           </div>
         `;
-      } else {
-        new Chart(statusCtx, {
-          type: 'doughnut',
-          data: {
-            labels: statusLabels,
-            datasets: [{
-              data: statusValues,
-              backgroundColor: backgroundColors.slice(0, statusLabels.length),
-              borderWidth: 2,
-              borderColor: '#ffffff'
-            }]
-          },
-          options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: {
-              legend: {
-                position: 'bottom',
-                labels: {
-                  padding: 15,
-                  usePointStyle: true
-                }
+          } else {
+            new Chart(statusCtx, {
+              type: 'doughnut',
+              data: {
+                labels: statusLabels,
+                datasets: [{
+                  data: statusValues,
+                  backgroundColor: backgroundColors.slice(0, statusLabels.length),
+                  borderWidth: 2,
+                  borderColor: '#ffffff'
+                }]
               },
-              tooltip: {
-                callbacks: {
-                  label: function(context) {
-                    const total = context.dataset.data.reduce((a, b) => a + b, 0);
-                    const percentage = Math.round((context.parsed / total) * 100);
-                    return `${context.label}: ${context.parsed} (${percentage}%)`;
+              options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                  legend: {
+                    position: 'bottom',
+                    labels: {
+                      padding: 15,
+                      usePointStyle: true
+                    }
+                  },
+                  tooltip: {
+                    callbacks: {
+                      label: function (context) {
+                        const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                        const percentage = Math.round((context.parsed / total) * 100);
+                        return `${context.label}: ${context.parsed} (${percentage}%)`;
+                      }
+                    }
                   }
-                }
+                },
+                cutout: '60%'
               }
-            },
-            cutout: '60%'
+            });
           }
-        });
+        }
+
+        console.log('AI charts initialized successfully');
+
+      } catch (error) {
+        console.error('Error initializing AI charts:', error);
+        showToast('Error loading charts: ' + error.message, 'danger');
       }
     }
 
-    console.log('AI charts initialized successfully');
+    // Helper function to get last N months
+    function getLastMonths(n) {
+      const months = [];
+      const date = new Date();
 
-  } catch (error) {
-    console.error('Error initializing AI charts:', error);
-    showToast('Error loading charts: ' + error.message, 'danger');
-  }
-}
+      for (let i = n - 1; i >= 0; i--) {
+        const tempDate = new Date(date);
+        tempDate.setMonth(date.getMonth() - i);
+        months.push(tempDate.toLocaleString('default', { month: 'short', year: 'numeric' }));
+      }
 
-// Helper function to get last N months
-function getLastMonths(n) {
-  const months = [];
-  const date = new Date();
-  
-  for (let i = n - 1; i >= 0; i--) {
-    const tempDate = new Date(date);
-    tempDate.setMonth(date.getMonth() - i);
-    months.push(tempDate.toLocaleString('default', { month: 'short', year: 'numeric' }));
-  }
-  
-  return months;
-}
+      return months;
+    }
 
-// Helper function to get last N days
-function getLastDays(n) {
-  const days = [];
-  const date = new Date();
-  
-  for (let i = n - 1; i >= 0; i--) {
-    const tempDate = new Date(date);
-    tempDate.setDate(date.getDate() - i);
-    days.push(tempDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }));
-  }
-  
-  return days;
-}
+    // Helper function to get last N days
+    function getLastDays(n) {
+      const days = [];
+      const date = new Date();
+
+      for (let i = n - 1; i >= 0; i--) {
+        const tempDate = new Date(date);
+        tempDate.setDate(date.getDate() - i);
+        days.push(tempDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }));
+      }
+
+      return days;
+    }
     // Refresh insights function
     function refreshInsights() {
       showToast('Refreshing AI insights with latest data', 'info');
@@ -6209,175 +6265,175 @@ function getLastDays(n) {
     }
 
     // Enhanced savePromo function
-async function savePromo() {
-  try {
-    const promoId = document.getElementById('promoId').value;
-    const collectionName = document.getElementById('promoCollection').value || 'promos';
-
-    const promoData = {
-      code: document.getElementById('promoCode').value.trim().toUpperCase(),
-      type: document.getElementById('promoType').value,
-      discountValue: parseFloat(document.getElementById('promoDiscount').value),
-      minPurchase: document.getElementById('promoMinPurchase').value ?
-        parseFloat(document.getElementById('promoMinPurchase').value) : null,
-      maxUsage: document.getElementById('promoMaxUsage').value ?
-        parseInt(document.getElementById('promoMaxUsage').value) : null,
-      usagePerCustomer: parseInt(document.getElementById('promoUsagePerCustomer').value) || 1,
-      description: document.getElementById('promoDescription').value.trim(),
-      validFrom: new Date(document.getElementById('promoValidFrom').value),
-      validTo: new Date(document.getElementById('promoValidTo').value),
-      status: document.getElementById('promoActive').checked ? 'active' : 'inactive',
-      facilities: Array.from(document.getElementById('promoFacilities').selectedOptions)
-        .map(option => option.value),
-      updatedAt: firebase.firestore.FieldValue.serverTimestamp()
-    };
-
-    // Validation
-    if (!promoData.code) {
-      showToast('Please enter a promo code', 'warning');
-      return;
-    }
-
-    if (promoData.validTo <= promoData.validFrom) {
-      showToast('Valid To date must be after Valid From date', 'warning');
-      return;
-    }
-
-    if (promoData.discountValue <= 0) {
-      showToast('Discount value must be greater than 0', 'warning');
-      return;
-    }
-
-    console.log('Saving promo data:', promoData);
-    console.log('Collection:', collectionName, 'Promo ID:', promoId);
-
-    let newPromoId = promoId;
-
-    if (promoId) {
-      // Update existing promo
-      await db.collection(collectionName).doc(promoId).update(promoData);
-      showToast('Promo updated successfully', 'success');
-    } else {
-      // Create new promo
-      promoData.createdAt = firebase.firestore.FieldValue.serverTimestamp();
-      promoData.usageCount = 0;
-      const result = await db.collection(collectionName).add(promoData);
-      newPromoId = result.id;
-      console.log('New promo created with ID:', newPromoId);
-      showToast('Promo created successfully', 'success');
-    }
-
-    // Add simple promo string to respective facility collections
-    await addPromoToFacilities(promoData.code, promoData.facilities);
-
-    // Close modal and reload
-    const modal = bootstrap.Modal.getInstance(document.getElementById('promoModal'));
-    if (modal) {
-      modal.hide();
-    }
-
-    // Reload the promo page
-    setTimeout(() => {
-      loadPageContent('promo-vouchers');
-    }, 500);
-
-  } catch (error) {
-    console.error('Error saving promo:', error);
-    showToast('Error saving promo: ' + error.message, 'danger');
-  }
-}
-
-// Simple function to add promo string to facilities
-async function addPromoToFacilities(promoCode, facilityIds) {
-  try {
-    if (!facilityIds || facilityIds.length === 0) {
-      console.log('No facilities selected for this promo');
-      return;
-    }
-
-    console.log('Adding promo to facilities:', facilityIds);
-
-    // Update each selected facility with simple promo string
-    const updatePromises = facilityIds.map(async (facilityId) => {
+    async function savePromo() {
       try {
-        await db.collection('facilities').doc(facilityId).update({
-          promo: promoCode, // Simple string field
+        const promoId = document.getElementById('promoId').value;
+        const collectionName = document.getElementById('promoCollection').value || 'promos';
+
+        const promoData = {
+          code: document.getElementById('promoCode').value.trim().toUpperCase(),
+          type: document.getElementById('promoType').value,
+          discountValue: parseFloat(document.getElementById('promoDiscount').value),
+          minPurchase: document.getElementById('promoMinPurchase').value ?
+            parseFloat(document.getElementById('promoMinPurchase').value) : null,
+          maxUsage: document.getElementById('promoMaxUsage').value ?
+            parseInt(document.getElementById('promoMaxUsage').value) : null,
+          usagePerCustomer: parseInt(document.getElementById('promoUsagePerCustomer').value) || 1,
+          description: document.getElementById('promoDescription').value.trim(),
+          validFrom: new Date(document.getElementById('promoValidFrom').value),
+          validTo: new Date(document.getElementById('promoValidTo').value),
+          status: document.getElementById('promoActive').checked ? 'active' : 'inactive',
+          facilities: Array.from(document.getElementById('promoFacilities').selectedOptions)
+            .map(option => option.value),
           updatedAt: firebase.firestore.FieldValue.serverTimestamp()
-        });
-        console.log(`Promo "${promoCode}" added to facility: ${facilityId}`);
+        };
+
+        // Validation
+        if (!promoData.code) {
+          showToast('Please enter a promo code', 'warning');
+          return;
+        }
+
+        if (promoData.validTo <= promoData.validFrom) {
+          showToast('Valid To date must be after Valid From date', 'warning');
+          return;
+        }
+
+        if (promoData.discountValue <= 0) {
+          showToast('Discount value must be greater than 0', 'warning');
+          return;
+        }
+
+        console.log('Saving promo data:', promoData);
+        console.log('Collection:', collectionName, 'Promo ID:', promoId);
+
+        let newPromoId = promoId;
+
+        if (promoId) {
+          // Update existing promo
+          await db.collection(collectionName).doc(promoId).update(promoData);
+          showToast('Promo updated successfully', 'success');
+        } else {
+          // Create new promo
+          promoData.createdAt = firebase.firestore.FieldValue.serverTimestamp();
+          promoData.usageCount = 0;
+          const result = await db.collection(collectionName).add(promoData);
+          newPromoId = result.id;
+          console.log('New promo created with ID:', newPromoId);
+          showToast('Promo created successfully', 'success');
+        }
+
+        // Add simple promo string to respective facility collections
+        await addPromoToFacilities(promoData.code, promoData.facilities);
+
+        // Close modal and reload
+        const modal = bootstrap.Modal.getInstance(document.getElementById('promoModal'));
+        if (modal) {
+          modal.hide();
+        }
+
+        // Reload the promo page
+        setTimeout(() => {
+          loadPageContent('promo-vouchers');
+        }, 500);
+
       } catch (error) {
-        console.error(`Error updating facility ${facilityId}:`, error);
+        console.error('Error saving promo:', error);
+        showToast('Error saving promo: ' + error.message, 'danger');
       }
-    });
-
-    await Promise.all(updatePromises);
-    
-    console.log(`Successfully added promo to ${facilityIds.length} facilities`);
-    showToast(`Promo "${promoCode}" added to ${facilityIds.length} facility(s)`, 'success');
-
-  } catch (error) {
-    console.error('Error adding promo to facilities:', error);
-    showToast('Error adding promo to facilities', 'warning');
-  }
-}
-
-// Function to remove promo from facilities
-async function removePromoFromFacilities(promoCode, facilityIds) {
-  try {
-    if (!facilityIds || facilityIds.length === 0) {
-      return;
     }
 
-    const updatePromises = facilityIds.map(async (facilityId) => {
+    // Simple function to add promo string to facilities
+    async function addPromoToFacilities(promoCode, facilityIds) {
       try {
-        await db.collection('facilities').doc(facilityId).update({
-          promo: firebase.firestore.FieldValue.delete(), // Remove the promo field
-          updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+        if (!facilityIds || facilityIds.length === 0) {
+          console.log('No facilities selected for this promo');
+          return;
+        }
+
+        console.log('Adding promo to facilities:', facilityIds);
+
+        // Update each selected facility with simple promo string
+        const updatePromises = facilityIds.map(async (facilityId) => {
+          try {
+            await db.collection('facilities').doc(facilityId).update({
+              promo: promoCode, // Simple string field
+              updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+            });
+            console.log(`Promo "${promoCode}" added to facility: ${facilityId}`);
+          } catch (error) {
+            console.error(`Error updating facility ${facilityId}:`, error);
+          }
         });
-        console.log(`Promo removed from facility: ${facilityId}`);
+
+        await Promise.all(updatePromises);
+
+        console.log(`Successfully added promo to ${facilityIds.length} facilities`);
+        showToast(`Promo "${promoCode}" added to ${facilityIds.length} facility(s)`, 'success');
+
       } catch (error) {
-        console.error(`Error removing promo from facility ${facilityId}:`, error);
+        console.error('Error adding promo to facilities:', error);
+        showToast('Error adding promo to facilities', 'warning');
       }
-    });
-
-    await Promise.all(updatePromises);
-    console.log(`Successfully removed promo from ${facilityIds.length} facilities`);
-
-  } catch (error) {
-    console.error('Error removing promo from facilities:', error);
-  }
-}
-
-// Enhanced deletePromo function
-async function deletePromo(promoId, collectionName = 'promos') {
-  try {
-    if (!confirm('Are you sure you want to delete this promo? This will also remove it from all associated facilities.')) {
-      return;
     }
 
-    // Get promo data first to know which facilities to update
-    const promoDoc = await db.collection(collectionName).doc(promoId).get();
-    if (promoDoc.exists) {
-      const promoData = promoDoc.data();
-      // Remove promo from facilities
-      await removePromoFromFacilities(promoData.code, promoData.facilities);
+    // Function to remove promo from facilities
+    async function removePromoFromFacilities(promoCode, facilityIds) {
+      try {
+        if (!facilityIds || facilityIds.length === 0) {
+          return;
+        }
+
+        const updatePromises = facilityIds.map(async (facilityId) => {
+          try {
+            await db.collection('facilities').doc(facilityId).update({
+              promo: firebase.firestore.FieldValue.delete(), // Remove the promo field
+              updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+            });
+            console.log(`Promo removed from facility: ${facilityId}`);
+          } catch (error) {
+            console.error(`Error removing promo from facility ${facilityId}:`, error);
+          }
+        });
+
+        await Promise.all(updatePromises);
+        console.log(`Successfully removed promo from ${facilityIds.length} facilities`);
+
+      } catch (error) {
+        console.error('Error removing promo from facilities:', error);
+      }
     }
 
-    // Then delete the promo document
-    await db.collection(collectionName).doc(promoId).delete();
-    
-    showToast('Promo deleted successfully', 'success');
-    
-    // Reload the promo page
-    setTimeout(() => {
-      loadPageContent('promo-vouchers');
-    }, 500);
+    // Enhanced deletePromo function
+    async function deletePromo(promoId, collectionName = 'promos') {
+      try {
+        if (!confirm('Are you sure you want to delete this promo? This will also remove it from all associated facilities.')) {
+          return;
+        }
 
-  } catch (error) {
-    console.error('Error deleting promo:', error);
-    showToast('Error deleting promo', 'danger');
-  }
-}
+        // Get promo data first to know which facilities to update
+        const promoDoc = await db.collection(collectionName).doc(promoId).get();
+        if (promoDoc.exists) {
+          const promoData = promoDoc.data();
+          // Remove promo from facilities
+          await removePromoFromFacilities(promoData.code, promoData.facilities);
+        }
+
+        // Then delete the promo document
+        await db.collection(collectionName).doc(promoId).delete();
+
+        showToast('Promo deleted successfully', 'success');
+
+        // Reload the promo page
+        setTimeout(() => {
+          loadPageContent('promo-vouchers');
+        }, 500);
+
+      } catch (error) {
+        console.error('Error deleting promo:', error);
+        showToast('Error deleting promo', 'danger');
+      }
+    }
 
 
     // Make sure to update the window object with the new functions
@@ -7303,41 +7359,41 @@ async function deletePromo(promoId, collectionName = 'promos') {
     window.createNotification = createNotification;
 
     async function loadEventsTournamentsPage() {
-  try {
-    // Fetch events from Firestore
-    let eventsSnapshot;
-    let events = [];
-
-    try {
-      eventsSnapshot = await db.collection("events").get();
-    } catch (error) {
-      console.log("Trying 'tournaments' collection...");
       try {
-        eventsSnapshot = await db.collection("tournaments").get();
-      } catch (error2) {
-        console.log("No events collection found");
-        eventsSnapshot = { empty: true, forEach: () => {} };
-      }
-    }
+        // Fetch events from Firestore
+        let eventsSnapshot;
+        let events = [];
 
-    if (eventsSnapshot && !eventsSnapshot.empty) {
-      eventsSnapshot.forEach(doc => {
-        const eventData = doc.data();
-        events.push({
-          id: doc.id,
-          ...eventData,
-          // Ensure proper date formatting
-          startDate: eventData.startDate ? eventData.startDate.toDate() : null,
-          endDate: eventData.endDate ? eventData.endDate.toDate() : null,
-          registrationDeadline: eventData.registrationDeadline ? eventData.registrationDeadline.toDate() : null
-        });
-      });
-    }
+        try {
+          eventsSnapshot = await db.collection("events").get();
+        } catch (error) {
+          console.log("Trying 'tournaments' collection...");
+          try {
+            eventsSnapshot = await db.collection("tournaments").get();
+          } catch (error2) {
+            console.log("No events collection found");
+            eventsSnapshot = { empty: true, forEach: () => { } };
+          }
+        }
 
-    let eventsHTML = '';
+        if (eventsSnapshot && !eventsSnapshot.empty) {
+          eventsSnapshot.forEach(doc => {
+            const eventData = doc.data();
+            events.push({
+              id: doc.id,
+              ...eventData,
+              // Ensure proper date formatting
+              startDate: eventData.startDate ? eventData.startDate.toDate() : null,
+              endDate: eventData.endDate ? eventData.endDate.toDate() : null,
+              registrationDeadline: eventData.registrationDeadline ? eventData.registrationDeadline.toDate() : null
+            });
+          });
+        }
 
-    if (events.length === 0) {
-      eventsHTML = `
+        let eventsHTML = '';
+
+        if (events.length === 0) {
+          eventsHTML = `
         <tr>
           <td colspan="7" class="text-center py-4">
             <div class="text-muted">
@@ -7348,31 +7404,31 @@ async function deletePromo(promoId, collectionName = 'promos') {
           </td>
         </tr>
       `;
-    } else {
-      events.forEach(event => {
-        const startDate = event.startDate ? event.startDate.toLocaleDateString() : 'N/A';
-        const endDate = event.endDate ? event.endDate.toLocaleDateString() : 'N/A';
-        const registrationDeadline = event.registrationDeadline ? event.registrationDeadline.toLocaleDateString() : 'N/A';
-        
-        // Check event status
-        const now = new Date();
-        let status = 'Upcoming';
-        let statusClass = 'bg-primary';
-        
-        if (event.startDate && event.startDate < now) {
-          status = 'Ongoing';
-          statusClass = 'bg-success';
-        }
-        if (event.endDate && event.endDate < now) {
-          status = 'Completed';
-          statusClass = 'bg-secondary';
-        }
-        if (event.status === 'cancelled') {
-          status = 'Cancelled';
-          statusClass = 'bg-danger';
-        }
+        } else {
+          events.forEach(event => {
+            const startDate = event.startDate ? event.startDate.toLocaleDateString() : 'N/A';
+            const endDate = event.endDate ? event.endDate.toLocaleDateString() : 'N/A';
+            const registrationDeadline = event.registrationDeadline ? event.registrationDeadline.toLocaleDateString() : 'N/A';
 
-        eventsHTML += `
+            // Check event status
+            const now = new Date();
+            let status = 'Upcoming';
+            let statusClass = 'bg-primary';
+
+            if (event.startDate && event.startDate < now) {
+              status = 'Ongoing';
+              statusClass = 'bg-success';
+            }
+            if (event.endDate && event.endDate < now) {
+              status = 'Completed';
+              statusClass = 'bg-secondary';
+            }
+            if (event.status === 'cancelled') {
+              status = 'Cancelled';
+              statusClass = 'bg-danger';
+            }
+
+            eventsHTML += `
           <tr>
             <td>
               <div class="fw-semibold">${event.name || 'N/A'}</div>
@@ -7401,10 +7457,10 @@ async function deletePromo(promoId, collectionName = 'promos') {
             </td>
           </tr>
         `;
-      });
-    }
+          });
+        }
 
-    return `
+        return `
       <div class="d-flex justify-content-between align-items-center mb-4">
         <h3>Events & Tournaments Management</h3>
         <button class="btn btn-primary" onclick="showEventModal()">
@@ -7424,9 +7480,9 @@ async function deletePromo(promoId, collectionName = 'promos') {
           <div class="stats-card">
             <i class="fas fa-running"></i>
             <div class="number">${events.filter(e => {
-              const now = new Date();
-              return e.startDate && e.startDate > now;
-            }).length}</div>
+          const now = new Date();
+          return e.startDate && e.startDate > now;
+        }).length}</div>
             <div class="label">Upcoming Events</div>
           </div>
         </div>
@@ -7468,9 +7524,9 @@ async function deletePromo(promoId, collectionName = 'promos') {
         </div>
       </div>
     `;
-  } catch (error) {
-    console.error("Error loading events page:", error);
-    return `
+      } catch (error) {
+        console.error("Error loading events page:", error);
+        return `
       <div class="alert alert-danger">
         <h4>Error Loading Events</h4>
         <p>There was an error loading events data. Please try again.</p>
@@ -7479,14 +7535,14 @@ async function deletePromo(promoId, collectionName = 'promos') {
         </button>
       </div>
     `;
-  }
-}
+      }
+    }
 
-// Show Event Modal Function
-function showEventModal(eventId = null, eventData = null) {
-  console.log('Showing event modal for:', eventId ? 'edit' : 'create');
-  
-  const modalContent = `
+    // Show Event Modal Function
+    function showEventModal(eventId = null, eventData = null) {
+      console.log('Showing event modal for:', eventId ? 'edit' : 'create');
+
+      const modalContent = `
     <div class="modal fade" id="eventModal" tabindex="-1" aria-labelledby="eventModalLabel" aria-hidden="true">
       <div class="modal-dialog modal-lg">
         <div class="modal-content">
@@ -7544,11 +7600,11 @@ function showEventModal(eventId = null, eventData = null) {
                     <label class="form-label">Facility</label>
                     <select class="form-select" id="eventFacility">
                       <option value="">Select Facility (Optional)</option>
-                      ${adminFacilities.map(facility => 
-                        `<option value="${facility.id}" ${eventData?.facilityId === facility.id ? 'selected' : ''}>
+                      ${adminFacilities.map(facility =>
+        `<option value="${facility.id}" ${eventData?.facilityId === facility.id ? 'selected' : ''}>
                           ${facility.name} (${facility.type})
                         </option>`
-                      ).join('')}
+      ).join('')}
                     </select>
                   </div>
                 </div>
@@ -7659,209 +7715,209 @@ function showEventModal(eventId = null, eventData = null) {
     </div>
   `;
 
-  // Remove existing modal if any
-  const existingModal = document.getElementById('eventModal');
-  if (existingModal) {
-    existingModal.remove();
-  }
+      // Remove existing modal if any
+      const existingModal = document.getElementById('eventModal');
+      if (existingModal) {
+        existingModal.remove();
+      }
 
-  // Add modal to page
-  document.body.insertAdjacentHTML('beforeend', modalContent);
+      // Add modal to page
+      document.body.insertAdjacentHTML('beforeend', modalContent);
 
-  // Set default dates if creating new event
-  if (!eventId) {
-    setTimeout(() => {
-      const now = new Date();
-      const tomorrow = new Date(now);
-      tomorrow.setDate(now.getDate() + 1);
-      
-      const nextWeek = new Date(now);
-      nextWeek.setDate(now.getDate() + 7);
+      // Set default dates if creating new event
+      if (!eventId) {
+        setTimeout(() => {
+          const now = new Date();
+          const tomorrow = new Date(now);
+          tomorrow.setDate(now.getDate() + 1);
 
-      document.getElementById('eventStartDate').value = tomorrow.toISOString().slice(0, 16);
-      document.getElementById('eventEndDate').value = nextWeek.toISOString().slice(0, 16);
-      document.getElementById('eventRegDeadline').value = now.toISOString().slice(0, 16);
-    }, 100);
-  }
+          const nextWeek = new Date(now);
+          nextWeek.setDate(now.getDate() + 7);
 
-  // Show modal
-  const eventModal = new bootstrap.Modal(document.getElementById('eventModal'));
-  eventModal.show();
+          document.getElementById('eventStartDate').value = tomorrow.toISOString().slice(0, 16);
+          document.getElementById('eventEndDate').value = nextWeek.toISOString().slice(0, 16);
+          document.getElementById('eventRegDeadline').value = now.toISOString().slice(0, 16);
+        }, 100);
+      }
 
-  // Remove modal when hidden
-  document.getElementById('eventModal').addEventListener('hidden.bs.modal', function () {
-    this.remove();
-  });
-}
+      // Show modal
+      const eventModal = new bootstrap.Modal(document.getElementById('eventModal'));
+      eventModal.show();
 
-// Save Event Function
-async function saveEvent() {
-  try {
-    // Get form values
-    const eventId = document.getElementById('eventId').value;
-    const eventName = document.getElementById('eventName').value;
-    const eventType = document.getElementById('eventType').value;
-    const eventSport = document.getElementById('eventSport').value;
-    const eventFacility = document.getElementById('eventFacility').value;
-    const eventStartDate = document.getElementById('eventStartDate').value;
-    const eventEndDate = document.getElementById('eventEndDate').value;
-    const eventRegDeadline = document.getElementById('eventRegDeadline').value;
-    const eventMaxParticipants = document.getElementById('eventMaxParticipants').value;
-    const eventEntryFee = document.getElementById('eventEntryFee').value;
-    const eventPrizePool = document.getElementById('eventPrizePool').value;
-    const eventDescription = document.getElementById('eventDescription').value;
-    const eventRules = document.getElementById('eventRules').value;
-    const eventContact = document.getElementById('eventContact').value;
-    const eventPublic = document.getElementById('eventPublic').checked;
-    const eventActive = document.getElementById('eventActive').checked;
-
-    // Validation
-    if (!eventName || !eventType || !eventSport || !eventStartDate || !eventEndDate) {
-      showToast('Please fill in all required fields', 'warning');
-      return;
+      // Remove modal when hidden
+      document.getElementById('eventModal').addEventListener('hidden.bs.modal', function () {
+        this.remove();
+      });
     }
 
-    if (new Date(eventStartDate) >= new Date(eventEndDate)) {
-      showToast('End date must be after start date', 'warning');
-      return;
-    }
+    // Save Event Function
+    async function saveEvent() {
+      try {
+        // Get form values
+        const eventId = document.getElementById('eventId').value;
+        const eventName = document.getElementById('eventName').value;
+        const eventType = document.getElementById('eventType').value;
+        const eventSport = document.getElementById('eventSport').value;
+        const eventFacility = document.getElementById('eventFacility').value;
+        const eventStartDate = document.getElementById('eventStartDate').value;
+        const eventEndDate = document.getElementById('eventEndDate').value;
+        const eventRegDeadline = document.getElementById('eventRegDeadline').value;
+        const eventMaxParticipants = document.getElementById('eventMaxParticipants').value;
+        const eventEntryFee = document.getElementById('eventEntryFee').value;
+        const eventPrizePool = document.getElementById('eventPrizePool').value;
+        const eventDescription = document.getElementById('eventDescription').value;
+        const eventRules = document.getElementById('eventRules').value;
+        const eventContact = document.getElementById('eventContact').value;
+        const eventPublic = document.getElementById('eventPublic').checked;
+        const eventActive = document.getElementById('eventActive').checked;
 
-    // Prepare event data
-    const eventData = {
-      name: eventName,
-      type: eventType,
-      sport: eventSport,
-      facilityId: eventFacility || null,
-      startDate: firebase.firestore.Timestamp.fromDate(new Date(eventStartDate)),
-      endDate: firebase.firestore.Timestamp.fromDate(new Date(eventEndDate)),
-      description: eventDescription,
-      rules: eventRules,
-      contactInfo: eventContact,
-      isPublic: eventPublic,
-      status: eventActive ? 'active' : 'inactive',
-      updatedAt: firebase.firestore.FieldValue.serverTimestamp()
-    };
+        // Validation
+        if (!eventName || !eventType || !eventSport || !eventStartDate || !eventEndDate) {
+          showToast('Please fill in all required fields', 'warning');
+          return;
+        }
 
-    // Add optional fields if provided
-    if (eventRegDeadline) {
-      eventData.registrationDeadline = firebase.firestore.Timestamp.fromDate(new Date(eventRegDeadline));
-    }
-    if (eventMaxParticipants) {
-      eventData.maxParticipants = parseInt(eventMaxParticipants);
-    }
-    if (eventEntryFee) {
-      eventData.entryFee = parseFloat(eventEntryFee);
-    }
-    if (eventPrizePool) {
-      eventData.prizePool = parseFloat(eventPrizePool);
-    }
+        if (new Date(eventStartDate) >= new Date(eventEndDate)) {
+          showToast('End date must be after start date', 'warning');
+          return;
+        }
 
-    // Add createdBy for new events
-    if (!eventId) {
-      eventData.createdBy = currentUser.uid;
-      eventData.createdAt = firebase.firestore.FieldValue.serverTimestamp();
-      eventData.participants = [];
-    }
+        // Prepare event data
+        const eventData = {
+          name: eventName,
+          type: eventType,
+          sport: eventSport,
+          facilityId: eventFacility || null,
+          startDate: firebase.firestore.Timestamp.fromDate(new Date(eventStartDate)),
+          endDate: firebase.firestore.Timestamp.fromDate(new Date(eventEndDate)),
+          description: eventDescription,
+          rules: eventRules,
+          contactInfo: eventContact,
+          isPublic: eventPublic,
+          status: eventActive ? 'active' : 'inactive',
+          updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+        };
 
-    // Save to Firestore
-    if (eventId) {
-      // Update existing event
-      await db.collection("events").doc(eventId).update(eventData);
-      showToast('Event updated successfully', 'success');
-    } else {
-      // Create new event
-      await db.collection("events").add(eventData);
-      showToast('Event created successfully', 'success');
-    }
+        // Add optional fields if provided
+        if (eventRegDeadline) {
+          eventData.registrationDeadline = firebase.firestore.Timestamp.fromDate(new Date(eventRegDeadline));
+        }
+        if (eventMaxParticipants) {
+          eventData.maxParticipants = parseInt(eventMaxParticipants);
+        }
+        if (eventEntryFee) {
+          eventData.entryFee = parseFloat(eventEntryFee);
+        }
+        if (eventPrizePool) {
+          eventData.prizePool = parseFloat(eventPrizePool);
+        }
 
-    // Close modal and refresh page
-    const modal = bootstrap.Modal.getInstance(document.getElementById('eventModal'));
-    modal.hide();
-    
-    // Refresh events page
-    loadPageContent('events-tournaments');
+        // Add createdBy for new events
+        if (!eventId) {
+          eventData.createdBy = currentUser.uid;
+          eventData.createdAt = firebase.firestore.FieldValue.serverTimestamp();
+          eventData.participants = [];
+        }
 
-  } catch (error) {
-    console.error('Error saving event:', error);
-    showToast('Error saving event: ' + error.message, 'danger');
-  }
-}
+        // Save to Firestore
+        if (eventId) {
+          // Update existing event
+          await db.collection("events").doc(eventId).update(eventData);
+          showToast('Event updated successfully', 'success');
+        } else {
+          // Create new event
+          await db.collection("events").add(eventData);
+          showToast('Event created successfully', 'success');
+        }
 
-// Enhanced View Event Function with detailed modal
-async function viewEvent(eventId) {
-  try {
-    console.log('Viewing event ID:', eventId);
+        // Close modal and refresh page
+        const modal = bootstrap.Modal.getInstance(document.getElementById('eventModal'));
+        modal.hide();
 
-    if (!eventId) {
-      showToast('Invalid event ID', 'danger');
-      return;
-    }
+        // Refresh events page
+        loadPageContent('events-tournaments');
 
-    // Fetch event details
-    const eventDoc = await db.collection("events").doc(eventId).get();
-    
-    if (!eventDoc.exists) {
-      showToast('Event not found', 'danger');
-      return;
-    }
-
-    const event = eventDoc.data();
-    console.log('Event data loaded:', event);
-
-    // Format dates for display
-    const startDate = event.startDate ? event.startDate.toDate() : null;
-    const endDate = event.endDate ? event.endDate.toDate() : null;
-    const registrationDeadline = event.registrationDeadline ? event.registrationDeadline.toDate() : null;
-    const createdAt = event.createdAt ? event.createdAt.toDate() : null;
-
-    // Calculate event status
-    const now = new Date();
-    let status = 'Upcoming';
-    let statusClass = 'bg-primary';
-    let statusIcon = 'fas fa-clock';
-    
-    if (startDate && startDate < now) {
-      status = 'Ongoing';
-      statusClass = 'bg-success';
-      statusIcon = 'fas fa-play-circle';
-    }
-    if (endDate && endDate < now) {
-      status = 'Completed';
-      statusClass = 'bg-secondary';
-      statusIcon = 'fas fa-flag-checkered';
-    }
-    if (event.status === 'cancelled') {
-      status = 'Cancelled';
-      statusClass = 'bg-danger';
-      statusIcon = 'fas fa-times-circle';
-    }
-    if (event.status === 'inactive') {
-      status = 'Inactive';
-      statusClass = 'bg-warning';
-      statusIcon = 'fas fa-pause-circle';
-    }
-
-    // Get facility name if available
-    let facilityName = 'Not specified';
-    if (event.facilityId) {
-      const facility = adminFacilities.find(f => f.id === event.facilityId);
-      if (facility) {
-        facilityName = facility.name;
+      } catch (error) {
+        console.error('Error saving event:', error);
+        showToast('Error saving event: ' + error.message, 'danger');
       }
     }
 
-    // Get participant count
-    const participantCount = event.participants ? event.participants.length : 0;
-    const maxParticipants = event.maxParticipants || 'No limit';
-    const participationRate = event.maxParticipants ? 
-      Math.round((participantCount / event.maxParticipants) * 100) : 100;
+    // Enhanced View Event Function with detailed modal
+    async function viewEvent(eventId) {
+      try {
+        console.log('Viewing event ID:', eventId);
 
-    // Format currency values
-    const entryFee = event.entryFee ? `RM${parseFloat(event.entryFee).toFixed(2)}` : 'Free';
-    const prizePool = event.prizePool ? `RM${parseFloat(event.prizePool).toFixed(2)}` : 'No prize pool';
+        if (!eventId) {
+          showToast('Invalid event ID', 'danger');
+          return;
+        }
 
-    // Create detailed modal content
-    const modalContent = `
+        // Fetch event details
+        const eventDoc = await db.collection("events").doc(eventId).get();
+
+        if (!eventDoc.exists) {
+          showToast('Event not found', 'danger');
+          return;
+        }
+
+        const event = eventDoc.data();
+        console.log('Event data loaded:', event);
+
+        // Format dates for display
+        const startDate = event.startDate ? event.startDate.toDate() : null;
+        const endDate = event.endDate ? event.endDate.toDate() : null;
+        const registrationDeadline = event.registrationDeadline ? event.registrationDeadline.toDate() : null;
+        const createdAt = event.createdAt ? event.createdAt.toDate() : null;
+
+        // Calculate event status
+        const now = new Date();
+        let status = 'Upcoming';
+        let statusClass = 'bg-primary';
+        let statusIcon = 'fas fa-clock';
+
+        if (startDate && startDate < now) {
+          status = 'Ongoing';
+          statusClass = 'bg-success';
+          statusIcon = 'fas fa-play-circle';
+        }
+        if (endDate && endDate < now) {
+          status = 'Completed';
+          statusClass = 'bg-secondary';
+          statusIcon = 'fas fa-flag-checkered';
+        }
+        if (event.status === 'cancelled') {
+          status = 'Cancelled';
+          statusClass = 'bg-danger';
+          statusIcon = 'fas fa-times-circle';
+        }
+        if (event.status === 'inactive') {
+          status = 'Inactive';
+          statusClass = 'bg-warning';
+          statusIcon = 'fas fa-pause-circle';
+        }
+
+        // Get facility name if available
+        let facilityName = 'Not specified';
+        if (event.facilityId) {
+          const facility = adminFacilities.find(f => f.id === event.facilityId);
+          if (facility) {
+            facilityName = facility.name;
+          }
+        }
+
+        // Get participant count
+        const participantCount = event.participants ? event.participants.length : 0;
+        const maxParticipants = event.maxParticipants || 'No limit';
+        const participationRate = event.maxParticipants ?
+          Math.round((participantCount / event.maxParticipants) * 100) : 100;
+
+        // Format currency values
+        const entryFee = event.entryFee ? `RM${parseFloat(event.entryFee).toFixed(2)}` : 'Free';
+        const prizePool = event.prizePool ? `RM${parseFloat(event.prizePool).toFixed(2)}` : 'No prize pool';
+
+        // Create detailed modal content
+        const modalContent = `
       <div class="modal fade" id="viewEventModal" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog modal-xl">
           <div class="modal-content">
@@ -7928,9 +7984,9 @@ async function viewEvent(eventId) {
                             </p>
                           ` : ''}
                           <p><strong>Duration:</strong><br>
-                            ${startDate && endDate ? 
-                              Math.ceil((endDate - startDate) / (1000 * 60 * 60 * 24)) + ' days' : 
-                              'Not specified'}
+                            ${startDate && endDate ?
+            Math.ceil((endDate - startDate) / (1000 * 60 * 60 * 24)) + ' days' :
+            'Not specified'}
                           </p>
                         </div>
                       </div>
@@ -8061,171 +8117,191 @@ async function viewEvent(eventId) {
       </div>
     `;
 
-    // Remove existing modal if any
-    const existingModal = document.getElementById('viewEventModal');
-    if (existingModal) {
-      existingModal.remove();
+        // Remove existing modal if any
+        const existingModal = document.getElementById('viewEventModal');
+        if (existingModal) {
+          existingModal.remove();
+        }
+
+        // Add modal to page
+        document.body.insertAdjacentHTML('beforeend', modalContent);
+
+        // Show modal
+        const modal = new bootstrap.Modal(document.getElementById('viewEventModal'));
+        modal.show();
+
+        // Remove modal from DOM when hidden
+        document.getElementById('viewEventModal').addEventListener('hidden.bs.modal', function () {
+          this.remove();
+        });
+
+      } catch (error) {
+        console.error('Error viewing event:', error);
+        showToast('Error loading event details: ' + error.message, 'danger');
+      }
     }
 
-    // Add modal to page
-    document.body.insertAdjacentHTML('beforeend', modalContent);
+    // Additional helper functions for event management
+    async function viewParticipants(eventId) {
+      try {
+        const eventDoc = await db.collection("events").doc(eventId).get();
+        if (!eventDoc.exists) {
+          showToast('Event not found', 'danger');
+          return;
+        }
 
-    // Show modal
-    const modal = new bootstrap.Modal(document.getElementById('viewEventModal'));
-    modal.show();
+        const event = eventDoc.data();
+        const participants = event.participants || [];
 
-    // Remove modal from DOM when hidden
-    document.getElementById('viewEventModal').addEventListener('hidden.bs.modal', function () {
-      this.remove();
-    });
+        if (participants.length === 0) {
+          showToast('No participants registered for this event', 'info');
+          return;
+        }
 
-  } catch (error) {
-    console.error('Error viewing event:', error);
-    showToast('Error loading event details: ' + error.message, 'danger');
-  }
+        // You can implement a detailed participants modal here
+        showToast(`Viewing ${participants.length} participants for this event`, 'info');
+
+        // For now, just show a simple alert with participant count
+        alert(`This event has ${participants.length} participant(s) registered.`);
+
+      } catch (error) {
+        console.error('Error viewing participants:', error);
+        showToast('Error loading participants', 'danger');
+      }
+    }
+
+    async function exportEventData(eventId) {
+      try {
+        const eventDoc = await db.collection("events").doc(eventId).get();
+        if (!eventDoc.exists) {
+          showToast('Event not found', 'danger');
+          return;
+        }
+
+        const event = eventDoc.data();
+
+        // Create CSV data
+        const csvData = [
+          ['Event ID', eventId],
+          ['Event Name', event.name || ''],
+          ['Sport', event.sport || ''],
+          ['Type', event.type || ''],
+          ['Start Date', event.startDate ? event.startDate.toDate().toLocaleString() : ''],
+          ['End Date', event.endDate ? event.endDate.toDate().toLocaleString() : ''],
+          ['Participants', event.participants ? event.participants.length : 0],
+          ['Max Participants', event.maxParticipants || 'No limit'],
+          ['Entry Fee', event.entryFee ? `RM${event.entryFee}` : 'Free'],
+          ['Prize Pool', event.prizePool ? `RM${event.prizePool}` : 'No prize pool'],
+          ['Status', event.status || 'active']
+        ];
+
+        // Convert to CSV string
+        const csvContent = csvData.map(row => row.map(field => `"${field}"`).join(',')).join('\n');
+
+        // Create and download file
+        const blob = new Blob([csvContent], { type: 'text/csv' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `event_${eventId}_data.csv`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+
+        showToast('Event data exported successfully', 'success');
+
+      } catch (error) {
+        console.error('Error exporting event data:', error);
+        showToast('Error exporting event data', 'danger');
+      }
+    }
+
+    // Edit Event Function
+    async function editEvent(eventId) {
+      try {
+        const eventDoc = await db.collection("events").doc(eventId).get();
+        if (!eventDoc.exists) {
+          showToast('Event not found', 'danger');
+          return;
+        }
+
+        const eventData = eventDoc.data();
+        showEventModal(eventId, eventData);
+      } catch (error) {
+        console.error('Error editing event:', error);
+        showToast('Error loading event for editing', 'danger');
+      }
+    }
+
+
+    // Delete Event Function
+    async function deleteEvent(eventId) {
+      try {
+        if (!confirm('Are you sure you want to delete this event? This action cannot be undone.')) {
+          return;
+        }
+
+        await db.collection("events").doc(eventId).delete();
+        showToast('Event deleted successfully', 'success');
+
+        // Refresh events page
+        loadPageContent('events-tournaments');
+      } catch (error) {
+        console.error('Error deleting event:', error);
+        showToast('Error deleting event', 'danger');
+      }
+    }
+    async function uploadToCloudinary(file) {
+  const CLOUD_NAME = "dagqzn57w";  
+  const UPLOAD_PRESET = "ml_default";  
+
+  const url = `https://api.cloudinary.com/v1_1/${CLOUD_NAME}/image/upload`;
+
+  const formData = new FormData();
+  formData.append("file", file);
+  formData.append("upload_preset", UPLOAD_PRESET);
+
+  const res = await fetch(url, {
+    method: "POST",
+    body: formData
+  });
+
+  const data = await res.json();
+  return data.secure_url;
 }
 
-// Additional helper functions for event management
-async function viewParticipants(eventId) {
-  try {
-    const eventDoc = await db.collection("events").doc(eventId).get();
-    if (!eventDoc.exists) {
-      showToast('Event not found', 'danger');
-      return;
-    }
-
-    const event = eventDoc.data();
-    const participants = event.participants || [];
-    
-    if (participants.length === 0) {
-      showToast('No participants registered for this event', 'info');
-      return;
-    }
-
-    // You can implement a detailed participants modal here
-    showToast(`Viewing ${participants.length} participants for this event`, 'info');
-    
-    // For now, just show a simple alert with participant count
-    alert(`This event has ${participants.length} participant(s) registered.`);
-    
-  } catch (error) {
-    console.error('Error viewing participants:', error);
-    showToast('Error loading participants', 'danger');
-  }
-}
-
-async function exportEventData(eventId) {
-  try {
-    const eventDoc = await db.collection("events").doc(eventId).get();
-    if (!eventDoc.exists) {
-      showToast('Event not found', 'danger');
-      return;
-    }
-
-    const event = eventDoc.data();
-    
-    // Create CSV data
-    const csvData = [
-      ['Event ID', eventId],
-      ['Event Name', event.name || ''],
-      ['Sport', event.sport || ''],
-      ['Type', event.type || ''],
-      ['Start Date', event.startDate ? event.startDate.toDate().toLocaleString() : ''],
-      ['End Date', event.endDate ? event.endDate.toDate().toLocaleString() : ''],
-      ['Participants', event.participants ? event.participants.length : 0],
-      ['Max Participants', event.maxParticipants || 'No limit'],
-      ['Entry Fee', event.entryFee ? `RM${event.entryFee}` : 'Free'],
-      ['Prize Pool', event.prizePool ? `RM${event.prizePool}` : 'No prize pool'],
-      ['Status', event.status || 'active']
-    ];
-
-    // Convert to CSV string
-    const csvContent = csvData.map(row => row.map(field => `"${field}"`).join(',')).join('\n');
-    
-    // Create and download file
-    const blob = new Blob([csvContent], { type: 'text/csv' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = `event_${eventId}_data.csv`;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(url);
-
-    showToast('Event data exported successfully', 'success');
-    
-  } catch (error) {
-    console.error('Error exporting event data:', error);
-    showToast('Error exporting event data', 'danger');
-  }
-}
-
-// Edit Event Function
-async function editEvent(eventId) {
-  try {
-    const eventDoc = await db.collection("events").doc(eventId).get();
-    if (!eventDoc.exists) {
-      showToast('Event not found', 'danger');
-      return;
-    }
-
-    const eventData = eventDoc.data();
-    showEventModal(eventId, eventData);
-  } catch (error) {
-    console.error('Error editing event:', error);
-    showToast('Error loading event for editing', 'danger');
-  }
-}
-
-// Delete Event Function
-async function deleteEvent(eventId) {
-  try {
-    if (!confirm('Are you sure you want to delete this event? This action cannot be undone.')) {
-      return;
-    }
-
-    await db.collection("events").doc(eventId).delete();
-    showToast('Event deleted successfully', 'success');
-    
-    // Refresh events page
-    loadPageContent('events-tournaments');
-  } catch (error) {
-    console.error('Error deleting event:', error);
-    showToast('Error deleting event', 'danger');
-  }
-}
 
     async function loadMarketplacePage() {
-  try {
-    // Fetch products from Firestore
-    let productsSnapshot;
-    let products = [];
+      try {
+        // Fetch products from Firestore
+        let productsSnapshot;
+        let products = [];
 
-    try {
-      productsSnapshot = await db.collection("products").get();
-    } catch (error) {
-      console.log("No products collection found");
-      productsSnapshot = { empty: true, forEach: () => {} };
-    }
+        try {
+          productsSnapshot = await db.collection("products").get();
+        } catch (error) {
+          console.log("No products collection found");
+          productsSnapshot = { empty: true, forEach: () => { } };
+        }
 
-    if (productsSnapshot && !productsSnapshot.empty) {
-      productsSnapshot.forEach(doc => {
-        const productData = doc.data();
-        products.push({
-          id: doc.id,
-          ...productData,
-          // Ensure proper date formatting
-          createdAt: productData.createdAt ? productData.createdAt.toDate() : null,
-          updatedAt: productData.updatedAt ? productData.updatedAt.toDate() : null
-        });
-      });
-    }
+        if (productsSnapshot && !productsSnapshot.empty) {
+          productsSnapshot.forEach(doc => {
+            const productData = doc.data();
+            products.push({
+              id: doc.id,
+              ...productData,
+              // Ensure proper date formatting
+              createdAt: productData.createdAt ? productData.createdAt.toDate() : null,
+              updatedAt: productData.updatedAt ? productData.updatedAt.toDate() : null
+            });
+          });
+        }
 
-    let productsHTML = '';
+        let productsHTML = '';
 
-    if (products.length === 0) {
-      productsHTML = `
+        if (products.length === 0) {
+          productsHTML = `
         <tr>
           <td colspan="8" class="text-center py-4">
             <div class="text-muted">
@@ -8236,26 +8312,26 @@ async function deleteEvent(eventId) {
           </td>
         </tr>
       `;
-    } else {
-      products.forEach(product => {
-        const createdAt = product.createdAt ? product.createdAt.toLocaleDateString() : 'N/A';
-        const price = product.price ? `RM${parseFloat(product.price).toFixed(2)}` : 'N/A';
-        const stock = product.stock || 0;
-        const status = product.status || 'active';
-        
-        // Determine stock status
-        let stockStatus = 'In Stock';
-        let stockClass = 'bg-success';
-        
-        if (stock === 0) {
-          stockStatus = 'Out of Stock';
-          stockClass = 'bg-danger';
-        } else if (stock < 10) {
-          stockStatus = 'Low Stock';
-          stockClass = 'bg-warning';
-        }
+        } else {
+          products.forEach(product => {
+            const createdAt = product.createdAt ? product.createdAt.toLocaleDateString() : 'N/A';
+            const price = product.price ? `RM${parseFloat(product.price).toFixed(2)}` : 'N/A';
+            const stock = product.stock || 0;
+            const status = product.status || 'active';
 
-        productsHTML += `
+            // Determine stock status
+            let stockStatus = 'In Stock';
+            let stockClass = 'bg-success';
+
+            if (stock === 0) {
+              stockStatus = 'Out of Stock';
+              stockClass = 'bg-danger';
+            } else if (stock < 10) {
+              stockStatus = 'Low Stock';
+              stockClass = 'bg-warning';
+            }
+
+            productsHTML += `
           <tr>
             <td>
               <div class="d-flex align-items-center">
@@ -8298,10 +8374,10 @@ async function deleteEvent(eventId) {
             </td>
           </tr>
         `;
-      });
-    }
+          });
+        }
 
-    return `
+        return `
       <div class="d-flex justify-content-between align-items-center mb-4">
         <h3>Marketplace Management</h3>
         <button class="btn btn-primary" onclick="showProductModal()">
@@ -8362,9 +8438,9 @@ async function deleteEvent(eventId) {
         </div>
       </div>
     `;
-  } catch (error) {
-    console.error("Error loading marketplace page:", error);
-    return `
+      } catch (error) {
+        console.error("Error loading marketplace page:", error);
+        return `
       <div class="alert alert-danger">
         <h4>Error Loading Products</h4>
         <p>There was an error loading marketplace data. Please try again.</p>
@@ -8373,14 +8449,14 @@ async function deleteEvent(eventId) {
         </button>
       </div>
     `;
-  }
-}
+      }
+    }
 
-// Show Product Modal Function
-function showProductModal(productId = null, productData = null) {
-  console.log('Showing product modal for:', productId ? 'edit' : 'create');
-  
-  const modalContent = `
+    // Show Product Modal Function
+    function showProductModal(productId = null, productData = null) {
+      console.log('Showing product modal for:', productId ? 'edit' : 'create');
+
+      const modalContent = `
     <div class="modal fade" id="productModal" tabindex="-1" aria-labelledby="productModalLabel" aria-hidden="true">
       <div class="modal-dialog modal-lg">
         <div class="modal-content">
@@ -8476,12 +8552,15 @@ function showProductModal(productId = null, productData = null) {
               </div>
               
               <div class="form-group mb-3">
-                <label class="form-label">Product Image URL</label>
-                <input type="url" class="form-control" id="productImage" 
-                       value="${productData?.imageUrl || ''}" 
-                       placeholder="https://example.com/product-image.jpg">
-                <small class="form-text text-muted">Direct link to product image</small>
-              </div>
+  <label class="form-label">Product Image *</label>
+  <input type="file" class="form-control" id="productImageFile" accept="image/*">
+
+  <div class="mt-2">
+    <img id="imagePreview" 
+         src="${productData?.imageUrl || ''}" 
+         style="width:120px;height:120px;object-fit:cover;border-radius:8px;display:${productData?.imageUrl ? 'block' : 'none'};">
+  </div>
+</div>
               
               <div class="form-group mb-3">
                 <label class="form-label">Description</label>
@@ -8527,27 +8606,34 @@ function showProductModal(productId = null, productData = null) {
       </div>
     </div>
   `;
+document.getElementById("productImageFile")?.addEventListener("change", function(e) {
+  const file = e.target.files[0];
+  if (!file) return;
 
-  // Remove existing modal if any
-  const existingModal = document.getElementById('productModal');
-  if (existingModal) {
-    existingModal.remove();
-  }
+  const preview = document.getElementById("imagePreview");
+  preview.src = URL.createObjectURL(file);
+  preview.style.display = "block";
+});
+      // Remove existing modal if any
+      const existingModal = document.getElementById('productModal');
+      if (existingModal) {
+        existingModal.remove();
+      }
 
-  // Add modal to page
-  document.body.insertAdjacentHTML('beforeend', modalContent);
+      // Add modal to page
+      document.body.insertAdjacentHTML('beforeend', modalContent);
 
-  // Show modal
-  const productModal = new bootstrap.Modal(document.getElementById('productModal'));
-  productModal.show();
+      // Show modal
+      const productModal = new bootstrap.Modal(document.getElementById('productModal'));
+      productModal.show();
 
-  // Remove modal when hidden
-  document.getElementById('productModal').addEventListener('hidden.bs.modal', function () {
-    this.remove();
-  });
-}
+      // Remove modal when hidden
+      document.getElementById('productModal').addEventListener('hidden.bs.modal', function () {
+        this.remove();
+      });
+    }
 
-// Save Product Function
+    // Save Product Function
 async function saveProduct() {
   try {
     // Get form values
@@ -8560,7 +8646,24 @@ async function saveProduct() {
     const productStock = document.getElementById('productStock').value;
     const productCost = document.getElementById('productCost').value;
     const productWeight = document.getElementById('productWeight').value;
-    const productImage = document.getElementById('productImage').value;
+
+    // --- FIXED IMAGE HANDLING ---
+    let productImageUrl = null;
+
+    // If editing -> load existing preview image
+    if (productId) {
+      const previewEl = document.getElementById("imagePreview");
+      if (previewEl && previewEl.src && !previewEl.src.includes("blank")) {
+        productImageUrl = previewEl.src;
+      }
+    }
+
+    // If admin uploads a new file -> upload to Cloudinary
+    const imageFile = document.getElementById("productImageFile").files[0];
+    if (imageFile) {
+      productImageUrl = await uploadToCloudinary(imageFile);
+    }
+
     const productDescription = document.getElementById('productDescription').value;
     const productFeatures = document.getElementById('productFeatures').value;
     const productFeatured = document.getElementById('productFeatured').checked;
@@ -8604,8 +8707,10 @@ async function saveProduct() {
     if (productWeight) {
       productData.weight = parseFloat(productWeight);
     }
-    if (productImage) {
-      productData.imageUrl = productImage;
+
+    // ⬅️ Add Image URL here
+    if (productImageUrl) {
+      productData.imageUrl = productImageUrl;
     }
 
     // Add createdBy for new products
@@ -8618,11 +8723,9 @@ async function saveProduct() {
 
     // Save to Firestore
     if (productId) {
-      // Update existing product
       await db.collection("products").doc(productId).update(productData);
       showToast('Product updated successfully', 'success');
     } else {
-      // Create new product
       await db.collection("products").add(productData);
       showToast('Product created successfully', 'success');
     }
@@ -8630,8 +8733,6 @@ async function saveProduct() {
     // Close modal and refresh page
     const modal = bootstrap.Modal.getInstance(document.getElementById('productModal'));
     modal.hide();
-    
-    // Refresh marketplace page
     loadPageContent('marketplace');
 
   } catch (error) {
@@ -8640,19 +8741,20 @@ async function saveProduct() {
   }
 }
 
-// View Product Function
-async function viewProduct(productId) {
-  try {
-    const productDoc = await db.collection("products").doc(productId).get();
-    if (!productDoc.exists) {
-      showToast('Product not found', 'danger');
-      return;
-    }
 
-    const product = productDoc.data();
-    
-    // Show product details in a modal
-    const modalContent = `
+    // View Product Function
+    async function viewProduct(productId) {
+      try {
+        const productDoc = await db.collection("products").doc(productId).get();
+        if (!productDoc.exists) {
+          showToast('Product not found', 'danger');
+          return;
+        }
+
+        const product = productDoc.data();
+
+        // Show product details in a modal
+        const modalContent = `
       <div class="modal fade" id="viewProductModal" tabindex="-1">
         <div class="modal-dialog modal-lg">
           <div class="modal-content">
@@ -8716,64 +8818,64 @@ async function viewProduct(productId) {
       </div>
     `;
 
-    // Remove existing modal if any
-    const existingModal = document.getElementById('viewProductModal');
-    if (existingModal) {
-      existingModal.remove();
+        // Remove existing modal if any
+        const existingModal = document.getElementById('viewProductModal');
+        if (existingModal) {
+          existingModal.remove();
+        }
+
+        // Add modal to page
+        document.body.insertAdjacentHTML('beforeend', modalContent);
+
+        // Show modal
+        const modal = new bootstrap.Modal(document.getElementById('viewProductModal'));
+        modal.show();
+
+        // Remove modal when hidden
+        document.getElementById('viewProductModal').addEventListener('hidden.bs.modal', function () {
+          this.remove();
+        });
+
+      } catch (error) {
+        console.error('Error viewing product:', error);
+        showToast('Error loading product details', 'danger');
+      }
     }
 
-    // Add modal to page
-    document.body.insertAdjacentHTML('beforeend', modalContent);
+    // Edit Product Function
+    async function editProduct(productId) {
+      try {
+        const productDoc = await db.collection("products").doc(productId).get();
+        if (!productDoc.exists) {
+          showToast('Product not found', 'danger');
+          return;
+        }
 
-    // Show modal
-    const modal = new bootstrap.Modal(document.getElementById('viewProductModal'));
-    modal.show();
-
-    // Remove modal when hidden
-    document.getElementById('viewProductModal').addEventListener('hidden.bs.modal', function () {
-      this.remove();
-    });
-
-  } catch (error) {
-    console.error('Error viewing product:', error);
-    showToast('Error loading product details', 'danger');
-  }
-}
-
-// Edit Product Function
-async function editProduct(productId) {
-  try {
-    const productDoc = await db.collection("products").doc(productId).get();
-    if (!productDoc.exists) {
-      showToast('Product not found', 'danger');
-      return;
+        const productData = productDoc.data();
+        showProductModal(productId, productData);
+      } catch (error) {
+        console.error('Error editing product:', error);
+        showToast('Error loading product for editing', 'danger');
+      }
     }
 
-    const productData = productDoc.data();
-    showProductModal(productId, productData);
-  } catch (error) {
-    console.error('Error editing product:', error);
-    showToast('Error loading product for editing', 'danger');
-  }
-}
+    // Delete Product Function
+    async function deleteProduct(productId) {
+      try {
+        if (!confirm('Are you sure you want to delete this product? This action cannot be undone.')) {
+          return;
+        }
 
-// Delete Product Function
-async function deleteProduct(productId) {
-  try {
-    if (!confirm('Are you sure you want to delete this product? This action cannot be undone.')) {
-      return;
+        await db.collection("products").doc(productId).delete();
+        showToast('Product deleted successfully', 'success');
+
+        // Refresh marketplace page
+        loadPageContent('marketplace');
+      } catch (error) {
+        console.error('Error deleting product:', error);
+        showToast('Error deleting product', 'danger');
+      }
     }
-
-    await db.collection("products").doc(productId).delete();
-    showToast('Product deleted successfully', 'success');
-    
-    // Refresh marketplace page
-    loadPageContent('marketplace');
-  } catch (error) {
-    console.error('Error deleting product:', error);
-    showToast('Error deleting product', 'danger');
-  }
-}
 
     async function loadSettingsPage() {
       return `
@@ -9085,41 +9187,78 @@ async function deleteProduct(productId) {
       showToast('Navigating to next month', 'info');
     }
 
-    // CRUD operations for various entities
+    // ========================
+    // SAVE FACILITY FUNCTION
+    // ========================
     async function saveFacility() {
-      const form = document.getElementById('addFacilityForm');
-      const formData = new FormData(form);
-
-      const facilityData = {
-        name: formData.get('name'),
-        type: formData.get('type'),
-        location: formData.get('location'),
-        price: parseFloat(formData.get('price')),
-        capacity: parseInt(formData.get('capacity')),
-        status: formData.get('status'),
-        description: formData.get('description'),
-        imageUrl: formData.get('imageUrl'),
-        amenities: Array.from(formData.getAll('amenities')),
-        userId: currentUser.uid, // Changed from adminId to userId
-        createdAt: firebase.firestore.FieldValue.serverTimestamp()
-      };
-
       try {
-        await db.collection('facilities').add(facilityData);
-        showToast('Facility added successfully', 'success');
-        bootstrap.Modal.getInstance(document.getElementById('addFacilityModal')).hide();
+        const form = document.getElementById("addFacilityForm");
+        const formData = new FormData(form);
+
+        // Get image file
+        const fileInput = document.getElementById("facilityImage");
+        const file = fileInput ? fileInput.files[0] : null;
+
+        let imageUrl = "";
+
+        // Upload to Cloudinary if file is selected
+        if (file) {
+          const cloudName = "dagqzn57w";
+          const preset = "ml_default";
+
+          const uploadData = new FormData();
+          uploadData.append("file", file);
+          uploadData.append("upload_preset", preset);
+
+          const res = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/image/upload`, {
+            method: "POST",
+            body: uploadData
+          });
+
+          const data = await res.json();
+          imageUrl = data.secure_url;
+        }
+
+        // Prepare facility data
+        const facilityData = {
+          name: formData.get("name"),
+          type: formData.get("type"),
+          location: formData.get("location"),
+          locationLink: formData.get("locationLink"),
+          price: parseFloat(formData.get("price")),
+          capacity: parseInt(formData.get("capacity")),
+          status: formData.get("status"),
+          description: formData.get("description"),
+          imageUrl: imageUrl, // store cloudinary url
+          amenities: formData.getAll("amenities"),
+          userId: currentUser.uid,
+          createdAt: firebase.firestore.FieldValue.serverTimestamp()
+        };
+
+        // Save to Firestore
+        await db.collection("facilities").add(facilityData);
+
+        showToast("Facility added successfully!", "success");
+
+        // Close modal
+        const modal = bootstrap.Modal.getInstance(document.getElementById("addFacilityModal"));
+        modal.hide();
+
+        // Reset form
         form.reset();
+        document.getElementById("imagePreview").style.display = "none";
 
         // Reload facilities
         await loadAdminFacilities();
-        if (document.querySelector('.sidebar-menu a.active').getAttribute('data-page') === 'facility-management') {
-          loadPageContent('facility-management');
-        }
+        loadPageContent("facility-management");
+
       } catch (error) {
-        console.error('Error adding facility:', error);
-        showToast('Error adding facility', 'danger');
+        console.error("Save Facility Error:", error);
+        showToast("Error adding facility!", "danger");
       }
     }
+
+
 
     async function updateBookingStatus(bookingId, status) {
       try {
@@ -9915,6 +10054,12 @@ async function deleteProduct(productId) {
                                         </div>
                                     </div>
                                     <div class="col-md-6">
+                                      <div class="form-group">
+                                        <label class="form-label">Location Link</label>
+                                        <input type="url" class="form-control" name="locationLink" value="${facility.locationLink || ''}" >
+                                      </div>
+                                    </div>
+                                    <div class="col-md-6">
                                         <div class="form-group">
                                             <label class="form-label">Price (RM)</label>
                                             <input type="number" class="form-control" name="price" value="${facility.price || 0}" min="0" step="0.01" required>
@@ -9947,10 +10092,18 @@ async function deleteProduct(productId) {
                                 </div>
                                 
                                 <div class="form-group">
-                                    <label class="form-label">Image URL</label>
-                                    <input type="url" class="form-control" name="imageUrl" value="${facility.imageUrl || ''}" placeholder="https://example.com/image.jpg">
-                                    <small class="form-text text-muted">Provide a direct link to the facility image</small>
-                                </div>
+    <label class="form-label">Facility Image</label>
+    <input type="file" class="form-control" id="editFacilityImage" accept="image/*">
+
+    <div class="mt-2">
+        <img id="editImagePreview" src="${facility.imageUrl || ''}"
+             style="max-width:150px; border-radius:8px; display:${facility.imageUrl ? 'block' : 'none'};">
+    </div>
+
+    <!-- store old image url -->
+    <input type="hidden" id="existingEditImageUrl" value="${facility.imageUrl || ''}">
+</div>
+
                                 
                                 <div class="form-group">
                                     <label class="form-label">Amenities</label>
@@ -9984,6 +10137,17 @@ async function deleteProduct(productId) {
             </div>
         `;
 
+        document.addEventListener("change", function (e) {
+          if (e.target.id === "editFacilityImage") {
+            const file = e.target.files[0];
+            if (file) {
+              document.getElementById("editImagePreview").src = URL.createObjectURL(file);
+              document.getElementById("editImagePreview").style.display = "block";
+            }
+          }
+        });
+
+
         // Remove existing modal if any
         const existingModal = document.getElementById('editFacilityModal');
         if (existingModal) {
@@ -10008,50 +10172,48 @@ async function deleteProduct(productId) {
       }
     }
 
-    // Update Facility Function
     async function updateFacility(id) {
       try {
         const form = document.getElementById('editFacilityForm');
         const formData = new FormData(form);
 
+        let imageUrl = document.getElementById("existingEditImageUrl").value;
+        const newImageFile = document.getElementById("editFacilityImage").files[0];
+
+        // Upload new image only if user selected a new one
+        if (newImageFile) {
+          imageUrl = await uploadImageToCloudinary(newImageFile);
+        }
+
         const facilityData = {
           name: formData.get('name'),
           type: formData.get('type'),
           location: formData.get('location'),
+          locationLink: formData.get('locationLink'),
           price: parseFloat(formData.get('price')),
           capacity: parseInt(formData.get('capacity')),
           status: formData.get('status'),
           description: formData.get('description'),
-          imageUrl: formData.get('imageUrl'),
-          amenities: Array.from(formData.getAll('amenities')),
+          amenities: formData.getAll('amenities'),
+          imageUrl: imageUrl,
           updatedAt: firebase.firestore.FieldValue.serverTimestamp()
         };
-
-        // Remove empty fields
-        Object.keys(facilityData).forEach(key => {
-          if (facilityData[key] === undefined || facilityData[key] === null || facilityData[key] === '') {
-            delete facilityData[key];
-          }
-        });
 
         await db.collection('facilities').doc(id).update(facilityData);
 
         showToast('Facility updated successfully', 'success');
 
-        // Close modal
         bootstrap.Modal.getInstance(document.getElementById('editFacilityModal')).hide();
 
-        // Reload facilities and refresh the page
         await loadAdminFacilities();
-        if (document.querySelector('.sidebar-menu a.active').getAttribute('data-page') === 'facility-management') {
-          loadPageContent('facility-management');
-        }
+        loadPageContent("facility-management");
 
       } catch (error) {
-        console.error('Error updating facility:', error);
-        showToast('Error updating facility', 'danger');
+        console.error("Error updating facility:", error);
+        showToast("Error updating facility", "danger");
       }
     }
+
 
     // Delete Facility Function (Enhanced)
     async function deleteFacility(id) {
@@ -10101,6 +10263,9 @@ async function deleteProduct(productId) {
             </button>
             <button class="btn btn-sm btn-danger" onclick="deleteFacility('${facility.id}')" title="Delete Facility">
                 <i class="fas fa-trash"></i>
+            </button>
+            <button class="btn btn-sm btn-map" onclick="LocateFacility('${facility.id}')" title="Locate Facility">
+                <i class="bi bi-geo-alt"></i>
             </button>
         </div>
     `;
@@ -10180,6 +10345,31 @@ async function deleteProduct(productId) {
         console.error('Error viewing facility details:', error);
         showToast('Error loading facility details', 'danger');
       }
+    }
+
+    function LocateFacility(facilityId) {
+      // Get the facility data from Firestore
+      db.collection("facilities").doc(facilityId).get()
+        .then((doc) => {
+          if (doc.exists) {
+            const facilityData = doc.data();
+
+            // Check if location link exists
+            if (facilityData.locationLink) {
+              // Open the location link in a new tab
+              window.open(facilityData.locationLink, '_blank');
+            } else {
+              // Fallback: Show a message or use default location
+              alert('No location link available for this facility');
+              // Or open default maps
+              // window.open('https://maps.google.com', '_blank');
+            }
+          }
+        })
+        .catch((error) => {
+          console.error("Error getting facility:", error);
+          alert('Error loading facility location');
+        });
     }
 
     async function viewBooking(bookingId) {
