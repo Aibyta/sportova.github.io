@@ -1000,6 +1000,69 @@
             --bs-gutter-x: 1.5rem;
             --bs-gutter-y: 1.5rem;
         }
+
+        /* Settings Page Styles */
+        .user-avatar-large {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--secondary), #6a11cb);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 2rem;
+            font-weight: bold;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .list-group-item.active {
+            background-color: var(--secondary);
+            border-color: var(--secondary);
+            color: white;
+        }
+
+        .list-group-item {
+            border-left: none;
+            border-right: none;
+            padding: 12px 15px;
+            transition: all 0.3s;
+        }
+
+        .list-group-item:first-child {
+            border-top: none;
+        }
+
+        .list-group-item:hover {
+            background-color: rgba(52, 152, 219, 0.05);
+        }
+
+        .tab-content {
+            animation: fadeIn 0.3s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        .form-check-input:checked {
+            background-color: var(--secondary);
+            border-color: var(--secondary);
+        }
+
+        .input-group-text {
+            background-color: #f8f9fa;
+            border-color: #dee2e6;
+        }
+
+        .card.border-danger {
+            border: 2px solid var(--danger);
+        }
+
+        .bg-danger.bg-opacity-10 {
+            background-color: rgba(231, 76, 60, 0.1);
+        }
     </style>
 </head>
 <body>
@@ -1653,14 +1716,351 @@
                 </div>
 
                 
+                <!-- Add this to the settings-content div (around line 745) -->
                 <div id="settings-content" class="page-content d-none">
-                    <!-- Settings content -->
-                    <div class="welcome-banner">
-                        <h3>Settings</h3>
-                        <p>Configure your account and preferences</p>
+                    <!-- Settings Tabs -->
+                    <div class="row mb-4">
+                        <div class="col-lg-3">
+                            <div class="card user-stats-card">
+                                <div class="list-group list-group-flush" id="settings-tabs" role="tablist">
+                                    <a class="list-group-item list-group-item-action active" data-bs-toggle="list" 
+                                       href="#profile-settings" role="tab">
+                                        <i class="fas fa-user-circle me-2"></i> Profile Settings
+                                    </a>
+                                    <a class="list-group-item list-group-item-action" data-bs-toggle="list" 
+                                       href="#security-settings" role="tab">
+                                        <i class="fas fa-shield-alt me-2"></i> Security
+                                    </a>
+                                    <a class="list-group-item list-group-item-action" data-bs-toggle="list" 
+                                       href="#system-settings" role="tab">
+                                        <i class="fas fa-server me-2"></i> System Settings
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    
+                        <div class="col-lg-9">
+                            <div class="tab-content">
+                                <!-- Profile Settings Tab -->
+                                <div class="tab-pane fade show active" id="profile-settings" role="tabpanel">
+                                    <div class="card user-stats-card">
+                                        <div class="card-header bg-transparent border-0">
+                                            <h5 class="card-title mb-0">Profile Information</h5>
+                                        </div>
+                                        <div class="card-body">
+                                            <form id="profile-form">
+                                                <div class="row mb-4">
+                                                    <div class="col-md-8">
+                                                        <div class="form-group">
+                                                            <label class="form-label">Full Name</label>
+                                                            <input type="text" class="form-control" id="profile-name" 
+                                                                   value="Facility Owner" required>
+                                                        </div>
+                                                    </div>
+                                                    <div class="col-md-4 text-center">
+                                                        <div class="user-avatar-large mb-2 mx-auto" id="profile-avatar">O</div>
+                                                        <button type="button" class="btn btn-sm btn-outline" id="change-avatar-btn">
+                                                            <i class="fas fa-camera"></i> Change Avatar
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            
+                                                <div class="row mb-3">
+                                                    <div class="col-md-6">
+                                                        <div class="form-group">
+                                                            <label class="form-label">Email Address</label>
+                                                            <input type="email" class="form-control" id="profile-email" 
+                                                                   value="owner@sportova.com" required>
+                                                        </div>
+                                                    </div>
+                                                    <div class="col-md-6">
+                                                        <div class="form-group">
+                                                            <label class="form-label">Phone Number</label>
+                                                            <input type="tel" class="form-control" id="profile-phone" 
+                                                                   value="+6012-3456789">
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            
+                                                <div class="form-group mb-3">
+                                                    <label class="form-label">Bio / Description</label>
+                                                    <textarea class="form-control" id="profile-bio" rows="3" 
+                                                              placeholder="Tell us about yourself...">Facility owner and administrator</textarea>
+                                                </div>
+                                            
+                                                <div class="row mb-3">
+                                                    <div class="col-md-6">
+                                                        <div class="form-group">
+                                                            <label class="form-label">Company Name</label>
+                                                            <input type="text" class="form-control" id="profile-company" 
+                                                                   value="Sportova Management">
+                                                        </div>
+                                                    </div>
+                                                    <div class="col-md-6">
+                                                        <div class="form-group">
+                                                            <label class="form-label">Position</label>
+                                                            <input type="text" class="form-control" id="profile-position" 
+                                                                   value="Administrator">
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            
+                                                <div class="form-group">
+                                                    <label class="form-label">Address</label>
+                                                    <textarea class="form-control" id="profile-address" rows="2">123 Sports Complex, Kuala Lumpur</textarea>
+                                                </div>
+                                            
+                                                <div class="d-flex justify-content-end mt-4">
+                                                    <button type="button" class="btn btn-secondary me-2" id="cancel-profile">Cancel</button>
+                                                    <button type="submit" class="btn btn-primary" id="save-profile">
+                                                        <i class="fas fa-save me-1"></i> Save Changes
+                                                    </button>
+                                                </div>
+                                            </form>
+                                        </div>
+                                    </div>
+                                </div>
+                            
+                                <!-- Security Settings Tab -->
+                                <div class="tab-pane fade" id="security-settings" role="tabpanel">
+                                    <div class="card user-stats-card">
+                                        <div class="card-header bg-transparent border-0">
+                                            <h5 class="card-title mb-0">Security Settings</h5>
+                                        </div>
+                                        <div class="card-body">
+                                            <form id="security-form">
+                                                <h6 class="mb-3">Change Password</h6>
+                                                <div class="row mb-4">
+                                                    <div class="col-md-6">
+                                                        <div class="form-group">
+                                                            <label class="form-label">Current Password</label>
+                                                            <input type="password" class="form-control" id="current-password" 
+                                                                   placeholder="Enter current password">
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <div class="row mb-4">
+                                                    <div class="col-md-6">
+                                                        <div class="form-group">
+                                                            <label class="form-label">New Password</label>
+                                                            <input type="password" class="form-control" id="new-password" 
+                                                                   placeholder="Enter new password">
+                                                            <small class="text-muted">Minimum 8 characters with letters and numbers</small>
+                                                        </div>
+                                                    </div>
+                                                    <div class="col-md-6">
+                                                        <div class="form-group">
+                                                            <label class="form-label">Confirm New Password</label>
+                                                            <input type="password" class="form-control" id="confirm-password" 
+                                                                   placeholder="Confirm new password">
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            
+                                                <div class="d-flex justify-content-end mt-4">
+                                                    <button type="button" class="btn btn-outline me-2" id="view-sessions">
+                                                        <i class="fas fa-desktop me-1"></i> View Active Sessions
+                                                    </button>
+                                                    <button type="submit" class="btn btn-primary" id="save-security">
+                                                        <i class="fas fa-shield-alt me-1"></i> Update Security
+                                                    </button>
+                                                </div>
+                                            </form>
+                                        </div>
+                                    </div>
+                                </div>
+    
+                                <!-- System Settings Tab -->
+                                <div class="tab-pane fade" id="system-settings" role="tabpanel">
+                                    <div class="card user-stats-card">
+                                        <div class="card-header bg-transparent border-0">
+                                            <h5 class="card-title mb-0">System Configuration</h5>
+                                        </div>
+                                        <div class="card-body">
+                                            <form id="system-form">
+                                                <h6 class="mb-3">General Settings</h6>
+                                                <div class="row mb-4">
+                                                    <div class="col-md-6">
+                                                        <div class="form-group">
+                                                            <label class="form-label">System Name</label>
+                                                            <input type="text" class="form-control" id="system-name" 
+                                                                   value="Sportova Management System" required>
+                                                        </div>
+                                                    </div>
+                                                    <div class="col-md-6">
+                                                        <div class="form-group">
+                                                            <label class="form-label">Currency</label>
+                                                            <select class="form-select" id="system-currency">
+                                                                <option value="MYR" selected>Malaysian Ringgit (RM)</option>
+                                                                <option value="USD">US Dollar ($)</option>
+                                                                <option value="EUR">Euro (€)</option>
+                                                                <option value="SGD">Singapore Dollar (S$)</option>
+                                                            </select>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            
+                                                <h6 class="mb-3">Booking Settings</h6>
+                                                <div class="row mb-4">
+                                                    <div class="col-md-6">
+                                                        <div class="form-group">
+                                                            <label class="form-label">Max Booking Days Ahead</label>
+                                                            <div class="input-group">
+                                                                <input type="number" class="form-control" id="max-booking-days" 
+                                                                       value="30" min="1" max="365">
+                                                                <span class="input-group-text">days</span>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                    <div class="col-md-6">
+                                                        <div class="form-group">
+                                                            <label class="form-label">Cancellation Period</label>
+                                                            <div class="input-group">
+                                                                <input type="number" class="form-control" id="cancellation-period" 
+                                                                       value="24" min="1" max="168">
+                                                                <span class="input-group-text">hours</span>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            
+                                                <div class="row mb-4">
+                                                    <div class="col-md-6">
+                                                        <div class="form-group">
+                                                            <label class="form-label">Default Booking Duration</label>
+                                                            <div class="input-group">
+                                                                <input type="number" class="form-control" id="default-duration" 
+                                                                       value="1" min="0.5" max="24" step="0.5">
+                                                                <span class="input-group-text">hours</span>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                    <div class="col-md-6">
+                                                        <div class="form-group">
+                                                            <label class="form-label">Buffer Time Between Bookings</label>
+                                                            <div class="input-group">
+                                                                <input type="number" class="form-control" id="buffer-time" 
+                                                                       value="15" min="0" max="60">
+                                                                <span class="input-group-text">minutes</span>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            
+                                                <h6 class="mb-3">Maintenance Mode</h6>
+                                                <div class="row mb-4">
+                                                    <div class="col-md-12">
+                                                        <div class="form-check form-switch mb-3">
+                                                            <input class="form-check-input" type="checkbox" id="maintenance-mode">
+                                                            <label class="form-check-label" for="maintenance-mode">
+                                                                Enable Maintenance Mode
+                                                            </label>
+                                                            <small class="d-block text-muted">When enabled, users cannot make new bookings</small>
+                                                        </div>
+                                                        <div class="form-group mt-2">
+                                                            <label class="form-label">Maintenance Message</label>
+                                                            <textarea class="form-control" id="maintenance-message" rows="2" 
+                                                                      placeholder="System is under maintenance..."></textarea>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            
+                                                <h6 class="mb-3">Data Management</h6>
+                                                <div class="row mb-4">
+                                                    <div class="col-md-6">
+                                                        <div class="form-group">
+                                                            <label class="form-label">Auto Delete Old Logs</label>
+                                                            <select class="form-select" id="log-retention">
+                                                                <option value="30">30 days</option>
+                                                                <option value="90" selected>90 days</option>
+                                                                <option value="180">180 days</option>
+                                                                <option value="365">1 year</option>
+                                                                <option value="never">Never</option>
+                                                            </select>
+                                                        </div>
+                                                    </div>
+                                                    <div class="col-md-6">
+                                                        <div class="form-group">
+                                                            <label class="form-label">Backup Frequency</label>
+                                                            <select class="form-select" id="backup-frequency">
+                                                                <option value="daily">Daily</option>
+                                                                <option value="weekly" selected>Weekly</option>
+                                                                <option value="monthly">Monthly</option>
+                                                            </select>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            
+                                                <div class="row mb-3">
+                                                    <div class="col-md-12">
+                                                        <div class="d-flex gap-2">
+                                                            <button type="button" class="btn btn-outline" id="backup-now">
+                                                                <i class="fas fa-download me-1"></i> Backup Now
+                                                            </button>
+                                                            <button type="button" class="btn btn-outline" id="clear-cache">
+                                                                <i class="fas fa-broom me-1"></i> Clear Cache
+                                                            </button>
+                                                            <button type="button" class="btn btn-outline" id="system-logs">
+                                                                <i class="fas fa-clipboard-list me-1"></i> View System Logs
+                                                            </button>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            
+                                                <div class="d-flex justify-content-end mt-4">
+                                                    <button type="button" class="btn btn-danger me-2" id="reset-system">
+                                                        <i class="fas fa-redo me-1"></i> Factory Reset
+                                                    </button>
+                                                    <button type="submit" class="btn btn-primary" id="save-system">
+                                                        <i class="fas fa-server me-1"></i> Save System Settings
+                                                    </button>
+                                                </div>
+                                            </form>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
                     </div>
-                    <div class="alert alert-info">
-                        Settings features will be implemented soon.
+                
+                    <!-- Danger Zone -->
+                    <div class="card user-stats-card border-danger">
+                        <div class="card-header bg-danger bg-opacity-10 border-danger">
+                            <h5 class="card-title mb-0 text-danger">
+                                <i class="fas fa-exclamation-triangle me-2"></i> Danger Zone
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="row align-items-center">
+                                <div class="col-md-8">
+                                    <h6>Delete Account</h6>
+                                    <p class="text-muted mb-0">
+                                        Permanently delete your account and all associated data. This action cannot be undone.
+                                    </p>
+                                </div>
+                                <div class="col-md-4 text-end">
+                                    <button type="button" class="btn btn-danger" id="delete-account-btn">
+                                        <i class="fas fa-trash-alt me-1"></i> Delete Account
+                                    </button>
+                                </div>
+                            </div>
+
+                            <hr class="my-4">
+
+                            <div class="row align-items-center">
+                                <div class="col-md-8">
+                                    <h6>Export All Data</h6>
+                                    <p class="text-muted mb-0">
+                                        Download a complete backup of all your data including users, facilities, and bookings.
+                                    </p>
+                                </div>
+                                <div class="col-md-4 text-end">
+                                    <button type="button" class="btn btn-outline" id="export-all-data">
+                                        <i class="fas fa-file-export me-1"></i> Export All Data
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -1951,6 +2351,12 @@
                         loadUserManagementData();
                     } else if (page === 'facilities') {
                         loadFacilitiesData();
+                    } else if (page === 'financial') {
+                        loadFinancialData();
+                    } else if (page === 'bookings') {
+                        loadBookingsPageData();
+                    } else if (page === 'settings') {
+                        loadSettingsPage();
                     }
                 }
             });
@@ -2077,6 +2483,124 @@
                     $('#custom-date-range').addClass('d-none');
                     $('#custom-date-range-to').addClass('d-none');
                 }
+            });
+
+            // Profile Form
+            $('#profile-form').submit(function(e) {
+                e.preventDefault();
+                saveProfile();
+            });
+        
+            $('#cancel-profile').click(function() {
+                loadUserProfile();
+            });
+        
+            $('#change-avatar-btn').click(function() {
+                alert('Avatar change functionality will be implemented soon.');
+            });
+        
+            // Account Form
+            $('#account-form').submit(function(e) {
+                e.preventDefault();
+                saveAccountPreferences();
+            });
+        
+            $('#reset-account').click(function() {
+                if (confirm('Reset all account preferences to default?')) {
+                    localStorage.removeItem('accountPreferences');
+                    loadAccountPreferences();
+                    showToast('Account preferences reset to default', 'success');
+                }
+            });
+        
+            // Notification Form
+            $('#notification-form').submit(function(e) {
+                e.preventDefault();
+                saveNotificationSettings();
+            });
+        
+            $('#disable-all').click(function() {
+                if (confirm('Disable all notifications?')) {
+                    $('.notification-form input[type="checkbox"]').prop('checked', false);
+                    $('#email-frequency').val('never');
+                    $('#push-frequency').val('daily');
+                    showToast('All notifications disabled', 'warning');
+                }
+            });
+        
+            // Security Form
+            $('#security-form').submit(function(e) {
+                e.preventDefault();
+                saveSecuritySettings();
+            });
+        
+            $('#view-sessions').click(function() {
+                alert('Active sessions functionality will be implemented soon.');
+            });
+        
+            // Commission Form
+            $('#commission-form').submit(function(e) {
+                e.preventDefault();
+                saveCommissionSettings();
+            });
+        
+            $('#reset-commission').click(function() {
+                if (confirm('Reset commission settings to default?')) {
+                    localStorage.removeItem('commissionSettings');
+                    loadCommissionSettings();
+                    showToast('Commission settings reset to default', 'success');
+                }
+            });
+        
+            // System Form
+            $('#system-form').submit(function(e) {
+                e.preventDefault();
+                saveSystemSettings();
+            });
+        
+            $('#backup-now').click(function() {
+                if (confirm('Create a system backup now?')) {
+                    showToast('System backup initiated...', 'info');
+                    // Backup functionality would be implemented here
+                }
+            });
+        
+            $('#clear-cache').click(function() {
+                if (confirm('Clear all cached data?')) {
+                    localStorage.clear();
+                    showToast('Cache cleared successfully', 'success');
+                    setTimeout(() => {
+                        location.reload();
+                    }, 1000);
+                }
+            });
+        
+            $('#system-logs').click(function() {
+                alert('System logs functionality will be implemented soon.');
+            });
+        
+            $('#reset-system').click(function() {
+                if (confirm('WARNING: This will reset all system settings to factory defaults. Are you sure?')) {
+                    if (confirm('This action cannot be undone. Type "RESET" to confirm:')) {
+                        showToast('System reset initiated...', 'warning');
+                        // Factory reset functionality would be implemented here
+                    }
+                }
+            });
+        
+            // Danger Zone
+            $('#delete-account-btn').click(function() {
+                if (confirm('WARNING: This will permanently delete your account and all data. This cannot be undone.')) {
+                    const confirmText = prompt('Type "DELETE MY ACCOUNT" to confirm:');
+                    if (confirmText === 'DELETE MY ACCOUNT') {
+                        showToast('Account deletion requested...', 'danger');
+                        // Account deletion functionality would be implemented here
+                    }
+                }
+            });
+        
+            $('#export-all-data').click(function() {
+                exportAllData();
             });
 
             // Initialize modals
@@ -4223,6 +4747,259 @@
 
         // Add event listener for export button
         document.getElementById("export-bookings").addEventListener("click", exportBookings);
+        // Settings Page Functions
+        function loadSettingsPage() {
+            console.log("Loading settings page...");
+
+            // Load user profile data
+            loadUserProfile();
+
+            // Load security settings
+            loadSecuritySettings();
+
+            // Load system settings
+            loadSystemSettings();
+        }
+
+        async function loadUserProfile() {
+            try {
+                if (currentUser) {
+                    // Load user data from Firestore
+                    const userDoc = await db.collection("users").doc(currentUser.uid).get();
+                    if (userDoc.exists) {
+                        const userData = userDoc.data();
+
+                        // Populate profile form
+                        $('#profile-name').val(userData.name || 'Facility Owner');
+                        $('#profile-email').val(userData.email || 'owner@sportova.com');
+                        $('#profile-phone').val(userData.phone || '+6012-3456789');
+                        $('#profile-bio').val(userData.bio || 'Facility owner and administrator');
+                        $('#profile-company').val(userData.company || 'Sportova Management');
+                        $('#profile-position').val(userData.position || 'Administrator');
+                        $('#profile-address').val(userData.address || '123 Sports Complex, Kuala Lumpur');
+
+                        // Set avatar initial
+                        const avatarInitial = userData.name ? userData.name.charAt(0).toUpperCase() : 'O';
+                        $('#profile-avatar').text(avatarInitial);
+                    }
+                }
+            } catch (error) {
+                console.error("Error loading user profile:", error);
+            }
+        }
+
+        function loadSystemSettings() {
+            const system = JSON.parse(localStorage.getItem('systemSettings')) || {
+                systemName: 'Sportova Management System',
+                currency: 'MYR',
+                maxBookingDays: 30,
+                cancellationPeriod: 24,
+                defaultDuration: 1,
+                bufferTime: 15,
+                maintenanceMode: false,
+                maintenanceMessage: '',
+                logRetention: '90',
+                backupFrequency: 'weekly'
+            };
+
+            $('#system-name').val(system.systemName);
+            $('#system-currency').val(system.currency);
+            $('#max-booking-days').val(system.maxBookingDays);
+            $('#cancellation-period').val(system.cancellationPeriod);
+            $('#default-duration').val(system.defaultDuration);
+            $('#buffer-time').val(system.bufferTime);
+            $('#maintenance-mode').prop('checked', system.maintenanceMode);
+            $('#maintenance-message').val(system.maintenanceMessage);
+            $('#log-retention').val(system.logRetention);
+            $('#backup-frequency').val(system.backupFrequency);
+        }
+
+        // Save Functions
+        async function saveProfile() {
+            try {
+                const profileData = {
+                    name: $('#profile-name').val(),
+                    phone: $('#profile-phone').val(),
+                    bio: $('#profile-bio').val(),
+                    company: $('#profile-company').val(),
+                    position: $('#profile-position').val(),
+                    address: $('#profile-address').val(),
+                    updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+                };
+            
+                await db.collection("users").doc(currentUser.uid).update(profileData);
+
+                // Update header
+                $('#user-name').text(profileData.name);
+                $('#user-avatar').text(profileData.name.charAt(0).toUpperCase());
+                $('#profile-avatar').text(profileData.name.charAt(0).toUpperCase());
+
+                showToast('Profile updated successfully', 'success');
+            } catch (error) {
+                console.error("Error saving profile:", error);
+                showToast('Error saving profile: ' + error.message, 'danger');
+            }
+        }
+
+        function saveSecuritySettings() {
+            const currentPassword = $('#current-password').val();
+            const newPassword = $('#new-password').val();
+            const confirmPassword = $('#confirm-password').val();
+
+            // Validate password change if fields are filled
+            if (currentPassword || newPassword || confirmPassword) {
+                if (!currentPassword) {
+                    showToast('Please enter current password', 'warning');
+                    return;
+                }
+                if (!newPassword) {
+                    showToast('Please enter new password', 'warning');
+                    return;
+                }
+                if (newPassword.length < 8) {
+                    showToast('New password must be at least 8 characters', 'warning');
+                    return;
+                }
+                if (newPassword !== confirmPassword) {
+                    showToast('New passwords do not match', 'warning');
+                    return;
+                }
+
+                // Password change would be implemented here with Firebase Auth
+                showToast('Password change functionality will be implemented soon', 'info');
+            }
+
+            localStorage.setItem('securitySettings', JSON.stringify(security));
+            showToast('Security settings saved', 'success');
+
+            // Clear password fields
+            $('#current-password').val('');
+            $('#new-password').val('');
+            $('#confirm-password').val('');
+        }
+
+        function saveSystemSettings() {
+            const system = {
+                systemName: $('#system-name').val(),
+                currency: $('#system-currency').val(),
+                maxBookingDays: parseInt($('#max-booking-days').val()) || 30,
+                cancellationPeriod: parseInt($('#cancellation-period').val()) || 24,
+                defaultDuration: parseFloat($('#default-duration').val()) || 1,
+                bufferTime: parseInt($('#buffer-time').val()) || 15,
+                maintenanceMode: $('#maintenance-mode').prop('checked'),
+                maintenanceMessage: $('#maintenance-message').val(),
+                logRetention: $('#log-retention').val(),
+                backupFrequency: $('#backup-frequency').val()
+            };
+
+            localStorage.setItem('systemSettings', JSON.stringify(system));
+            showToast('System settings saved', 'success');
+
+            // Update page title if system name changed
+            if (system.systemName) {
+                document.title = system.systemName + ' Portal';
+            }
+        }
+
+
+        function showToast(message, type = 'info') {
+            // Create toast element
+            const toastId = 'toast-' + Date.now();
+            const toastHtml = `
+                <div id="${toastId}" class="toast align-items-center text-bg-${type} border-0" role="alert" aria-live="assertive" aria-atomic="true">
+                    <div class="d-flex">
+                        <div class="toast-body">
+                            ${message}
+                        </div>
+                        <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+                    </div>
+                </div>
+            `;
+            
+            // Add to container
+            if (!$('#toast-container').length) {
+                $('body').append('<div id="toast-container" class="toast-container position-fixed top-0 end-0 p-3"></div>');
+            }
+
+            $('#toast-container').append(toastHtml);
+
+            // Show toast
+            const toastElement = document.getElementById(toastId);
+            const toast = new bootstrap.Toast(toastElement, {
+                autohide: true,
+                delay: 3000
+            });
+            toast.show();
+
+            // Remove after hidden
+            toastElement.addEventListener('hidden.bs.toast', function () {
+                $(this).remove();
+            });
+        }
+
+        async function exportAllData() {
+            try {
+                showToast('Preparing data export...', 'info');
+
+                // Collect all data
+                const exportData = {
+                    timestamp: new Date().toISOString(),
+                    exportedBy: currentUser.email,
+                    users: [],
+                    facilities: [],
+                    bookings: [],
+                    transactions: []
+                };
+
+                // Export users
+                const usersSnap = await db.collection("users").get();
+                usersSnap.forEach(doc => {
+                    exportData.users.push({
+                        id: doc.id,
+                        ...doc.data()
+                    });
+                });
+
+                // Export facilities
+                const facilitiesSnap = await db.collection("facilities").get();
+                facilitiesSnap.forEach(doc => {
+                    exportData.facilities.push({
+                        id: doc.id,
+                        ...doc.data()
+                    });
+                });
+
+                // Export bookings
+                const bookingsSnap = await db.collection("bookings").get();
+                bookingsSnap.forEach(doc => {
+                    exportData.bookings.push({
+                        id: doc.id,
+                        ...doc.data()
+                    });
+                });
+
+                // Convert to JSON
+                const jsonData = JSON.stringify(exportData, null, 2);
+                const blob = new Blob([jsonData], { type: 'application/json' });
+                const url = URL.createObjectURL(blob);
+
+                // Create download link
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `sportova_backup_${new Date().toISOString().split('T')[0]}.json`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+
+                // Clean up
+                URL.revokeObjectURL(url);
+                showToast('Data exported successfully', 'success');
+
+            } catch (error) {
+                console.error("Error exporting data:", error);
+                showToast('Error exporting data: ' + error.message, 'danger');
+            }
+        }
     </script>
 </body>
 </html>
