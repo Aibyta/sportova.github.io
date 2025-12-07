@@ -1,0 +1,4228 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sportova Management Portal</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+    <style>
+        /* (Keep all existing CSS styles from the original file up to the dashboard cards) */
+        :root {
+            --primary: #2c3e50;
+            --secondary: #3498db;
+            --success: #2ecc71;
+            --warning: #f39c12;
+            --danger: #e74c3c;
+            --light: #ecf0f1;
+            --dark: #34495e;
+            --sidebar-width: 250px;
+            --sidebar-collapsed-width: 70px;
+            --header-height: 70px;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f8f9fa;
+            margin: 0;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        /* Sidebar Styles */
+        .sidebar {
+            width: var(--sidebar-width);
+            background: linear-gradient(180deg, var(--primary) 0%, var(--dark) 100%);
+            color: white;
+            height: 100vh;
+            position: fixed;
+            left: 0;
+            top: 0;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            z-index: 1000;
+            overflow-y: auto;
+            box-shadow: 3px 0 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .sidebar.collapsed {
+            width: var(--sidebar-collapsed-width);
+        }
+
+        .sidebar.collapsed .sidebar-header h2,
+        .sidebar.collapsed .sidebar-menu span,
+        .sidebar.collapsed .menu-text {
+            display: none;
+        }
+
+        .sidebar.collapsed .sidebar-menu li a {
+            justify-content: center;
+            padding: 12px;
+        }
+
+        .sidebar.collapsed .sidebar-header {
+            padding: 20px 10px;
+            justify-content: center;
+        }
+
+        .sidebar.collapsed .toggle-btn i {
+            transform: rotate(180deg);
+        }
+
+        .sidebar-header {
+            padding: 20px;
+            background: rgba(0, 0, 0, 0.2);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            position: relative;
+        }
+
+        .sidebar-header h2 {
+            font-size: 1.5rem;
+            margin: 0;
+            font-weight: 700;
+            transition: opacity 0.3s;
+            white-space: nowrap;
+        }
+
+        .toggle-btn {
+            position: absolute;
+            right: 10px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: rgba(255, 255, 255, 0.1);
+            border: none;
+            color: white;
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .toggle-btn:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        .sidebar-menu {
+            padding: 15px 0;
+        }
+
+        .sidebar-menu ul {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        .sidebar-menu li {
+            transition: all 0.3s;
+            margin: 5px 10px;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        .sidebar-menu li a {
+            color: white;
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 12px 15px;
+            transition: all 0.3s;
+            white-space: nowrap;
+        }
+
+        .sidebar-menu li:hover {
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .sidebar-menu li.active {
+            background: var(--secondary);
+            box-shadow: 0 4px 8px rgba(52, 152, 219, 0.3);
+        }
+
+        /* Main Content Styles */
+        .main-content {
+            margin-left: var(--sidebar-width);
+            min-height: 100vh;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            background-color: #f5f7fa;
+            width: calc(100% - var(--sidebar-width));
+        }
+
+        .main-content.expanded {
+            margin-left: var(--sidebar-collapsed-width);
+            width: calc(100% - var(--sidebar-collapsed-width));
+        }
+
+        /* Header Styles */
+        .header {
+            height: var(--header-height);
+            background: white;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 30px;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            width: 100%;
+        }
+
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .header-left h1 {
+            font-size: 1.8rem;
+            color: var(--primary);
+            margin: 0;
+            font-weight: 700;
+        }
+
+        .menu-toggle-btn {
+            background: none;
+            border: none;
+            color: var(--primary);
+            font-size: 1.5rem;
+            cursor: pointer;
+            padding: 5px;
+            border-radius: 5px;
+            transition: background 0.3s;
+            display: none;
+        }
+
+        .menu-toggle-btn:hover {
+            background: #f0f0f0;
+        }
+
+        .header-right {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .notification {
+            position: relative;
+            cursor: pointer;
+            padding: 8px;
+            border-radius: 50%;
+            transition: background 0.3s;
+        }
+
+        .notification:hover {
+            background: #f0f0f0;
+        }
+
+        .notification-badge {
+            position: absolute;
+            top: 0;
+            right: 0;
+            background: var(--danger);
+            color: white;
+            border-radius: 50%;
+            width: 18px;
+            height: 18px;
+            font-size: 0.7rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .user-profile {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            cursor: pointer;
+            padding: 5px 10px;
+            border-radius: 20px;
+            transition: background 0.3s;
+        }
+
+        .user-profile:hover {
+            background: #f0f0f0;
+        }
+
+        .user-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--secondary), #6a11cb);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+            box-shadow: 0 3px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        /* Content Area */
+        .content {
+            padding: 30px;
+            width: 100%;
+            max-width: 100%;
+        }
+
+        .section-title {
+            border-bottom: 3px solid var(--secondary);
+            padding-bottom: 10px;
+            margin-bottom: 25px;
+            display: inline-block;
+            font-weight: 700;
+            color: var(--primary);
+            width: auto;
+        }
+
+        /* Dashboard Cards - Keep Original Style */
+        .dashboard-card {
+            transition: transform 0.2s, box-shadow 0.2s;
+            border-radius: 12px;
+            overflow: hidden;
+            border: none;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+            height: 100%;
+            background: white;
+            width: 100%;
+        }
+
+        .dashboard-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+        }
+
+        .stat-icon {
+            font-size: 2.5rem;
+            margin-bottom: 15px;
+            opacity: 0.8;
+        }
+
+        .revenue-icon {
+            color: #2ecc71;
+        }
+
+        .commission-icon {
+            color: #3498db;
+        }
+
+        .users-icon {
+            color: #9b59b6;
+        }
+
+        .facilities-icon {
+            color: #e74c3c;
+        }
+
+        .card-title {
+            font-size: 0.9rem;
+            color: #7f8c8d;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .card-value {
+            font-size: 1.8rem;
+            font-weight: 700;
+            margin-bottom: 5px;
+            color: var(--primary);
+        }
+
+        .card-change {
+            font-size: 0.8rem;
+            font-weight: 600;
+        }
+
+        .card-change.positive {
+            color: var(--success);
+        }
+
+        .card-change.negative {
+            color: var(--danger);
+        }
+
+        /* Welcome Banner */
+        .welcome-banner {
+            background: linear-gradient(135deg, #6a11cb 0%, #2575fc 100%);
+            color: white;
+            padding: 25px 30px;
+            border-radius: 12px;
+            margin-bottom: 30px;
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.1);
+            width: 100%;
+        }
+
+        .welcome-banner h3 {
+            margin: 0 0 10px 0;
+            font-weight: 700;
+            font-size: 1.8rem;
+        }
+
+        .welcome-banner p {
+            margin: 0;
+            opacity: 0.9;
+            font-size: 1.1rem;
+        }
+
+        /* User Management Cards - Match Dashboard Style */
+        .user-stats-card {
+            background: white;
+            border-radius: 12px;
+            padding: 25px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+            height: 100%;
+            transition: transform 0.2s, box-shadow 0.2s;
+            border: none;
+        }
+
+        .user-stats-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+        }
+
+        .user-stat-icon {
+            font-size: 2.5rem;
+            margin-bottom: 15px;
+            opacity: 0.8;
+        }
+
+        .user-stat-icon.total {
+            color: #9b59b6;
+        }
+
+        .user-stat-icon.active {
+            color: #2ecc71;
+        }
+
+        .user-stat-icon.owners {
+            color: #3498db;
+        }
+
+        .user-stat-icon.inactive {
+            color: #e74c3c;
+        }
+
+        .user-stat-value {
+            font-size: 1.8rem;
+            font-weight: 700;
+            margin-bottom: 5px;
+            color: var(--primary);
+        }
+
+        .user-stat-label {
+            font-size: 0.9rem;
+            color: #7f8c8d;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        /* Filter Bar - Match Original Style */
+        .filter-bar {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            align-items: center;
+        }
+
+        .search-box {
+            flex: 1;
+            min-width: 250px;
+            position: relative;
+        }
+
+        .search-box input {
+            width: 100%;
+            padding: 10px 15px 10px 40px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            font-size: 0.95rem;
+            transition: all 0.3s;
+        }
+
+        .search-box input:focus {
+            outline: none;
+            border-color: var(--secondary);
+            box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
+        }
+
+        .search-box i {
+            position: absolute;
+            left: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #7f8c8d;
+        }
+
+        .filter-select {
+            padding: 10px 15px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            background: white;
+            color: var(--primary);
+            font-size: 0.95rem;
+            min-width: 150px;
+            cursor: pointer;
+        }
+
+        .filter-select:focus {
+            outline: none;
+            border-color: var(--secondary);
+        }
+
+        /* User Table - Match Original Table Style */
+        .table-container {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+            overflow: hidden;
+            margin-bottom: 30px;
+            width: 100%;
+            overflow-x: auto;
+        }
+
+        .table-header {
+            padding: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid #eee;
+            background: #f8f9fa;
+            min-width: 1000px;
+        }
+
+        .table-title {
+            font-size: 1.2rem;
+            font-weight: 600;
+            color: var(--primary);
+        }
+
+        .table-actions {
+            display: flex;
+            gap: 10px;
+            flex-shrink: 0;
+        }
+
+        .btn {
+            padding: 8px 15px;
+            border-radius: 6px;
+            border: none;
+            cursor: pointer;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            transition: all 0.3s;
+            font-size: 0.9rem;
+            white-space: nowrap;
+        }
+
+        .btn-primary {
+            background: var(--secondary);
+            color: white;
+        }
+
+        .btn-success {
+            background: var(--success);
+            color: white;
+        }
+
+        .btn-danger {
+            background: var(--danger);
+            color: white;
+        }
+
+        .btn-warning {
+            background: var(--warning);
+            color: white;
+        }
+
+        .btn-outline {
+            background: transparent;
+            border: 1px solid var(--secondary);
+            color: var(--secondary);
+        }
+
+        .btn:hover {
+            opacity: 0.9;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            min-width: 1000px;
+        }
+
+        th, td {
+            padding: 15px;
+            text-align: left;
+            border-bottom: 1px solid #eee;
+        }
+
+        th {
+            background: #f8f9fa;
+            font-weight: 600;
+            color: var(--dark);
+        }
+
+        tr:hover {
+            background: #f8f9fa;
+        }
+
+        .user-avatar-small {
+            width: 35px;
+            height: 35px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--secondary), #6a11cb);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+            font-size: 0.9rem;
+        }
+
+        .user-info-cell {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .user-name {
+            font-weight: 600;
+            color: var(--primary);
+        }
+
+        .user-email {
+            font-size: 0.85rem;
+            color: #7f8c8d;
+        }
+
+        .role-badge {
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            display: inline-block;
+        }
+
+        .role-facility-owner {
+            background: rgba(52, 152, 219, 0.1);
+            color: var(--secondary);
+        }
+
+        .role-user {
+            background: rgba(155, 89, 182, 0.1);
+            color: #9b59b6;
+        }
+
+        .status {
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            display: inline-block;
+            white-space: nowrap;
+        }
+
+        .status-active {
+            background: #e8f5e9;
+            color: var(--success);
+        }
+
+        .status-inactive {
+            background: #ffebee;
+            color: var(--danger);
+        }
+
+        .status-suspended {
+            background: #fff3e0;
+            color: var(--warning);
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 5px;
+        }
+
+        .action-btn {
+            width: 32px;
+            height: 32px;
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .action-btn:hover {
+            transform: scale(1.1);
+        }
+
+        .edit-btn {
+            background: #e3f2fd;
+            color: var(--secondary);
+        }
+
+        .delete-btn {
+            background: #ffebee;
+            color: var(--danger);
+        }
+
+        .view-btn {
+            background: #e8f5e9;
+            color: var(--success);
+        }
+
+        .suspend-btn {
+            background: #fff3e0;
+            color: var(--warning);
+        }
+
+        /* Pagination */
+        .pagination-container {
+            display: flex;
+            justify-content: center;
+            padding: 20px;
+            background: #f8f9fa;
+            border-top: 1px solid #eee;
+        }
+
+        .pagination {
+            display: flex;
+            gap: 5px;
+        }
+
+        .page-item {
+            list-style: none;
+        }
+
+        .page-link {
+            padding: 8px 12px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            color: var(--primary);
+            text-decoration: none;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-weight: 500;
+        }
+
+        .page-link:hover {
+            background: var(--secondary);
+            color: white;
+            border-color: var(--secondary);
+        }
+
+        .page-item.active .page-link {
+            background: var(--secondary);
+            color: white;
+            border-color: var(--secondary);
+        }
+
+        /* Modal Styles - Match Original */
+        .modal-header {
+            background: linear-gradient(135deg, #6a11cb 0%, #2575fc 100%);
+            color: white;
+            border-bottom: none;
+            border-radius: 12px 12px 0 0;
+        }
+
+        .modal-title {
+            font-weight: 600;
+        }
+
+        .modal-body {
+            padding: 25px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-label {
+            font-weight: 600;
+            color: var(--primary);
+            margin-bottom: 8px;
+        }
+
+        .form-control {
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            padding: 10px 15px;
+            font-size: 0.95rem;
+            transition: all 0.3s;
+        }
+
+        .form-control:focus {
+            border-color: var(--secondary);
+            box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
+        }
+
+        .form-select {
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            padding: 10px 15px;
+            font-size: 0.95rem;
+            cursor: pointer;
+        }
+
+        .form-select:focus {
+            border-color: var(--secondary);
+            box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
+        }
+
+        .modal-footer {
+            border-top: 1px solid #eee;
+            padding: 20px 25px;
+        }
+
+        /* Loading Spinner */
+        .loading-spinner {
+            width: 3rem;
+            height: 3rem;
+            margin: 2rem auto;
+            display: block;
+        }
+
+        /* Responsive - Keep Original */
+        @media (max-width: 1400px) {
+            .content {
+                padding: 25px;
+            }
+        }
+
+        @media (max-width: 1200px) {
+            .content {
+                padding: 20px;
+            }
+            
+            .header {
+                padding: 0 25px;
+            }
+            
+            .welcome-banner {
+                padding: 20px 25px;
+            }
+            
+            .welcome-banner h3 {
+                font-size: 1.6rem;
+            }
+        }
+
+        @media (max-width: 992px) {
+            .menu-toggle-btn {
+                display: block;
+            }
+            
+            .sidebar {
+                transform: translateX(-100%);
+                width: 250px;
+            }
+            
+            .sidebar.show {
+                transform: translateX(0);
+            }
+            
+            .sidebar.collapsed {
+                transform: translateX(-100%);
+            }
+            
+            .main-content {
+                margin-left: 0 !important;
+                width: 100% !important;
+            }
+            
+            .main-content.expanded {
+                margin-left: 0 !important;
+                width: 100% !important;
+            }
+            
+            .header-left h1 {
+                font-size: 1.5rem;
+            }
+            
+            .content {
+                padding: 20px;
+            }
+            
+            table {
+                min-width: 800px;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .content {
+                padding: 15px;
+            }
+            
+            .header {
+                padding: 0 20px;
+                height: 60px;
+            }
+            
+            .welcome-banner {
+                padding: 20px;
+                margin-bottom: 20px;
+            }
+            
+            .welcome-banner h3 {
+                font-size: 1.4rem;
+            }
+            
+            .section-title {
+                font-size: 1.3rem;
+                margin-bottom: 20px;
+            }
+            
+            .card-value {
+                font-size: 1.5rem;
+            }
+            
+            .stat-icon {
+                font-size: 2rem;
+            }
+            
+            .dashboard-card {
+                padding: 20px !important;
+            }
+            
+            .user-stats-card {
+                padding: 20px !important;
+            }
+            
+            .user-stat-value {
+                font-size: 1.5rem;
+            }
+            
+            .user-stat-icon {
+                font-size: 2rem;
+            }
+            
+            .filter-bar {
+                padding: 15px;
+            }
+            
+            .search-box {
+                min-width: 100%;
+            }
+            
+            .table-actions {
+                width: 100%;
+                justify-content: flex-start;
+            }
+        }
+
+        @media (max-width: 576px) {
+            .content {
+                padding: 12px;
+            }
+            
+            .header {
+                padding: 0 15px;
+            }
+            
+            .header-right {
+                gap: 10px;
+            }
+            
+            .user-info {
+                display: none;
+            }
+            
+            .welcome-banner {
+                padding: 15px;
+            }
+            
+            .welcome-banner h3 {
+                font-size: 1.3rem;
+                margin-bottom: 8px;
+            }
+            
+            .welcome-banner p {
+                font-size: 1rem;
+            }
+            
+            .section-title {
+                font-size: 1.2rem;
+                margin-bottom: 15px;
+            }
+            
+            .btn {
+                padding: 6px 12px;
+                font-size: 0.85rem;
+            }
+            
+            .modal-body {
+                padding: 20px;
+            }
+        }
+
+        /* Grid Layout Fixes */
+        .row {
+            margin-left: 0;
+            margin-right: 0;
+        }
+
+        .row > * {
+            padding-left: 12px;
+            padding-right: 12px;
+        }
+
+        .row-cols-1 > * {
+            width: 100%;
+        }
+
+        .row-cols-md-2 > * {
+            width: 50%;
+        }
+
+        .row-cols-xl-4 > * {
+            width: 25%;
+        }
+
+        /* Fix for bootstrap gutters */
+        .g-4 {
+            --bs-gutter-x: 1.5rem;
+            --bs-gutter-y: 1.5rem;
+        }
+    </style>
+</head>
+<body>
+    <!-- Dashboard (Hidden by default) -->
+    <div id="dashboard-page" class="d-none">
+        <!-- Sidebar -->
+        <div class="sidebar" id="sidebar">
+            <div class="sidebar-header">
+                <i class="fas fa-running fa-2x"></i>
+                <h2>Sportova</h2>
+                <button class="toggle-btn" id="sidebar-toggle">
+                    <i class="fas fa-chevron-left"></i>
+                </button>
+            </div>
+            <div class="sidebar-menu">
+                <ul>
+                    <li class="active" data-page="dashboard">
+                        <a href="#">
+                            <i class="fas fa-tachometer-alt"></i>
+                            <span class="menu-text">Dashboard</span>
+                        </a>
+                    </li>
+                    <li data-page="users">
+                        <a href="#">
+                            <i class="fas fa-users"></i>
+                            <span class="menu-text">User Management</span>
+                        </a>
+                    </li>
+                    <li data-page="facilities">
+                        <a href="#">
+                            <i class="fas fa-building"></i>
+                            <span class="menu-text">My Facilities</span>
+                        </a>
+                    </li>
+                    <li data-page="financial">
+                        <a href="#">
+                            <i class="fas fa-chart-line"></i>
+                            <span class="menu-text">Financial Management</span>
+                        </a>
+                    </li>
+                    <li data-page="bookings">
+                        <a href="#">
+                            <i class="fas fa-calendar-alt"></i>
+                            <span class="menu-text">Bookings</span>
+                        </a>
+                    </li>
+                    <li data-page="settings">
+                        <a href="#">
+                            <i class="fas fa-cog"></i>
+                            <span class="menu-text">Settings</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="#" id="logout-btn">
+                            <i class="fas fa-sign-out-alt"></i>
+                            <span class="menu-text">Logout</span>
+                        </a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- Main Content -->
+        <div class="main-content" id="main-content">
+            <!-- Header -->
+            <div class="header">
+                <div class="header-left">
+                    <button class="menu-toggle-btn" id="mobile-menu-toggle">
+                        <i class="fas fa-bars"></i>
+                    </button>
+                    <h1>Management Portal</h1>
+                </div>
+                <div class="header-right">
+                    <div class="notification">
+                        <i class="fas fa-bell"></i>
+                        <span class="notification-badge">3</span>
+                    </div>
+                    <div class="user-profile">
+                        <div class="user-avatar" id="user-avatar">O</div>
+                        <div class="user-info">
+                            <div class="user-name" id="user-name">Owner</div>
+                            <div class="user-role">Facility Owner</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Content -->
+            <div class="content">
+                <!-- Dashboard Page -->
+                <div id="dashboard-content" class="page-content">
+                    
+                    <h3 class="section-title">Dashboard Overview</h3>
+                    
+                    <!-- Dashboard Cards - Full width with proper spacing -->
+                    <div class="row row-cols-1 row-cols-md-2 row-cols-xl-4 g-4 mb-5">
+                        <div class="col">
+                            <div class="card dashboard-card p-4">
+                                <div class="stat-icon revenue-icon">
+                                    <i class="fas fa-dollar-sign"></i>
+                                </div>
+                                <h3 class="card-value" id="totalRevenue">RM931.70</h3>
+                                <p class="card-title">Total Revenue</p>
+                                <div class="card-change positive">
+                                    <i class="fas fa-arrow-up"></i> 12.5% from last month
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col">
+                            <div class="card dashboard-card p-4">
+                                <div class="stat-icon commission-icon">
+                                    <i class="fas fa-percentage"></i>
+                                </div>
+                                <h3 class="card-value" id="commissionEarned">RM46.59</h3>
+                                <p class="card-title">Commission Earned</p>
+                                <div class="card-change positive">
+                                    <i class="fas fa-arrow-up"></i> 5% of total revenue
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col">
+                            <div class="card dashboard-card p-4">
+                                <div class="stat-icon users-icon">
+                                    <i class="fas fa-users"></i>
+                                </div>
+                                <h3 class="card-value" id="activeUsers">12</h3>
+                                <p class="card-title">Active Users</p>
+                                <div class="card-change positive">
+                                    <i class="fas fa-arrow-up"></i> 5.2% from last week
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col">
+                            <div class="card dashboard-card p-4">
+                                <div class="stat-icon facilities-icon">
+                                    <i class="fas fa-building"></i>
+                                </div>
+                                <h3 class="card-value" id="facilityCount">3</h3>
+                                <p class="card-title">My Facilities</p>
+                                <div class="card-change positive">
+                                    <i class="fas fa-arrow-up"></i> 3 new this month
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Recent Bookings -->
+                    <h3 class="section-title">Recent Bookings</h3>
+                    <div class="table-container">
+                        <div class="table-header">
+                            <div class="table-title">Today's Bookings</div>
+                            <div class="table-actions">
+                                <button class="btn btn-outline">
+                                    <i class="fas fa-download"></i> Export
+                                </button>
+                                <button class="btn btn-primary" id="refresh-bookings">
+                                    <i class="fas fa-sync"></i> Refresh
+                                </button>
+                            </div>
+                        </div>
+                        <table id="bookings-table">
+                            <thead>
+                                <tr>
+                                    <th>Booking ID</th>
+                                    <th>User</th>
+                                    <th>Facility</th>
+                                    <th>Time</th>
+                                    <th>Amount</th>
+                                    <th>Status</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <!-- Bookings will be loaded here -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- User Management Page -->
+                <div id="users-content" class="page-content d-none">
+                    
+                    <!-- User Statistics -->
+                    <h3 class="section-title">User Statistics</h3>
+                    <div class="row row-cols-1 row-cols-md-2 row-cols-xl-4 g-4 mb-5">
+                        <div class="col">
+                            <div class="card user-stats-card">
+                                <div class="user-stat-icon total">
+                                    <i class="fas fa-users"></i>
+                                </div>
+                                <h3 class="user-stat-value" id="totalUsers">0</h3>
+                                <p class="user-stat-label">Total Users</p>
+                            </div>
+                        </div>
+                        <div class="col">
+                            <div class="card user-stats-card">
+                                <div class="user-stat-icon active">
+                                    <i class="fas fa-user-check"></i>
+                                </div>
+                                <h3 class="user-stat-value" id="activeUsersCount">0</h3>
+                                <p class="user-stat-label">Active Users</p>
+                            </div>
+                        </div>
+                        <div class="col">
+                            <div class="card user-stats-card">
+                                <div class="user-stat-icon owners">
+                                    <i class="fas fa-crown"></i>
+                                </div>
+                                <h3 class="user-stat-value" id="ownerUsers">0</h3>
+                                <p class="user-stat-label">Facility Owners</p>
+                            </div>
+                        </div>
+                        <div class="col">
+                            <div class="card user-stats-card">
+                                <div class="user-stat-icon inactive">
+                                    <i class="fas fa-user-slash"></i>
+                                </div>
+                                <h3 class="user-stat-value" id="inactiveUsers">0</h3>
+                                <p class="user-stat-label">Inactive Users</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Search and Filter Bar -->
+                    <div class="filter-bar">
+                        <div class="search-box">
+                            <i class="fas fa-search"></i>
+                            <input type="text" id="user-search" placeholder="Search users by name or email..." />
+                        </div>
+                        <select class="filter-select" id="role-filter">
+                        <option value="">All Roles</option>
+                        <option value="facility-owner">Facility Owner</option> <!-- Changed value -->
+                        <option value="owner">Owner</option> <!-- Added new option -->
+                        <option value="user">User</option>
+                        </select>
+                        <select class="filter-select" id="status-filter">
+                            <option value="">All Status</option>
+                            <option value="active">Active</option>
+                            <option value="inactive">Inactive</option>
+                            <option value="suspended">Suspended</option>
+                        </select>
+                        <button class="btn btn-outline" id="clear-filters">
+                            <i class="fas fa-times"></i> Clear Filters
+                        </button>
+                    </div>
+                    
+                    <!-- Users Table -->
+                    <div class="table-container">
+                        <div class="table-header">
+                            <div class="table-title">All Users</div>
+                            <div class="table-actions">
+                                <button class="btn btn-primary" id="add-user-btn">
+                                    <i class="fas fa-user-plus"></i> Add New User
+                                </button>
+                                <button class="btn btn-success" id="export-users">
+                                    <i class="fas fa-download"></i> Export Users
+                                </button>
+                                <button class="btn btn-outline" id="refresh-users">
+                                    <i class="fas fa-sync"></i> Refresh
+                                </button>
+                            </div>
+                        </div>
+                        <table id="users-table">
+                            <thead>
+                                <tr>
+                                    <th>User</th>
+                                    <th>Role</th>
+                                    <th>Status</th>
+                                    <th>Join Date</th>
+                                    <th>Last Active</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <!-- Users will be loaded here -->
+                            </tbody>
+                        </table>
+                        <div class="pagination-container">
+                            <nav>
+                                <ul class="pagination" id="user-pagination">
+                                    <!-- Pagination will be generated here -->
+                                </ul>
+                            </nav>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Facilities Management Page -->
+                <div id="facilities-content" class="page-content d-none">
+
+                    <!-- Facilities Statistics -->
+                    <h3 class="section-title">Facility Statistics</h3>
+                    <div class="row row-cols-1 row-cols-md-2 row-cols-xl-4 g-4 mb-5">
+                        <div class="col">
+                            <div class="card user-stats-card">
+                                <div class="user-stat-icon total">
+                                    <i class="fas fa-building"></i>
+                                </div>
+                                <h3 class="user-stat-value" id="totalFacilities">0</h3>
+                                <p class="user-stat-label">Total Facilities</p>
+                            </div>
+                        </div>
+                        <div class="col">
+                            <div class="card user-stats-card">
+                                <div class="user-stat-icon active">
+                                    <i class="fas fa-check-circle"></i>
+                                </div>
+                                <h3 class="user-stat-value" id="activeFacilities">0</h3>
+                                <p class="user-stat-label">Active Facilities</p>
+                            </div>
+                        </div>
+                        <div class="col">
+                            <div class="card user-stats-card">
+                                <div class="user-stat-icon owners">
+                                    <i class="fas fa-calendar-check"></i>
+                                </div>
+                                <h3 class="user-stat-value" id="todayBookings">0</h3>
+                                <p class="user-stat-label">Today's Bookings</p>
+                            </div>
+                        </div>
+                        <div class="col">
+                            <div class="card user-stats-card">
+                                <div class="user-stat-icon inactive">
+                                    <i class="fas fa-chart-line"></i>
+                                </div>
+                                <h3 class="user-stat-value" id="totalRevenueFacilities">RM0.00</h3>
+                                <p class="user-stat-label">Total Revenue</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Search and Filter Bar -->
+                    <div class="filter-bar">
+                        <div class="search-box">
+                            <i class="fas fa-search"></i>
+                            <input type="text" id="facility-search" placeholder="Search facilities by name or location..." />
+                        </div>
+                        <select class="filter-select" id="facility-type-filter">
+                            <option value="">All Types</option>
+                            <option value="badminton">Badminton</option>
+                            <option value="futsal">Futsal</option>
+                            <option value="football">Football</option>
+                            <option value="basketball">Basketball</option>
+                            <option value="tennis">Tennis</option>
+                            <option value="swimming">Swimming</option>
+                            <option value="gym">Gym</option>
+                            <option value="other">Other</option>
+                        </select>
+                        <select class="filter-select" id="facility-status-filter">
+                            <option value="">All Status</option>
+                            <option value="active">Active</option>
+                            <option value="inactive">Inactive</option>
+                            <option value="maintenance">Under Maintenance</option>
+                        </select>
+                        <button class="btn btn-outline" id="clear-facility-filters">
+                            <i class="fas fa-times"></i> Clear Filters
+                        </button>
+                    </div>
+
+                    <!-- Facilities Table -->
+                    <div class="table-container">
+                        <div class="table-header">
+                            <div class="table-title">All Facilities</div>
+                            <div class="table-actions">
+                                <button class="btn btn-success" id="export-facilities">
+                                    <i class="fas fa-download"></i> Export Facilities
+                                </button>
+                                <button class="btn btn-outline" id="refresh-facilities">
+                                    <i class="fas fa-sync"></i> Refresh
+                                </button>
+                            </div>
+                        </div>
+                        <table id="facilities-table">
+                            <thead>
+                                <tr>
+                                    <th>Facility</th>
+                                    <th>Type</th>
+                                    <th>Location</th>
+                                    <th>Price/Hour</th>
+                                    <th>Status</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <!-- Facilities will be loaded here -->
+                            </tbody>
+                        </table>
+                        <div class="pagination-container">
+                            <nav>
+                                <ul class="pagination" id="facility-pagination">
+                                    <!-- Pagination will be generated here -->
+                                </ul>
+                            </nav>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Financial Management Page -->
+                <div id="financial-content" class="page-content d-none">
+                    <!-- Financial Statistics -->
+                    <h3 class="section-title">Financial Overview</h3>
+                    <div class="row row-cols-1 row-cols-md-2 row-cols-xl-4 g-4 mb-5">
+                        <div class="col">
+                            <div class="card user-stats-card">
+                                <div class="user-stat-icon total">
+                                    <i class="fas fa-money-bill-wave"></i>
+                                </div>
+                                <h3 class="user-stat-value" id="totalRevenueOverview">RM0.00</h3>
+                                <p class="user-stat-label">Total Revenue</p>
+                            </div>
+                        </div>
+                        <div class="col">
+                            <div class="card user-stats-card">
+                                <div class="user-stat-icon active">
+                                    <i class="fas fa-percentage"></i>
+                                </div>
+                                <h3 class="user-stat-value" id="totalCommission">RM0.00</h3>
+                                <p class="user-stat-label">Total Commission</p>
+                            </div>
+                        </div>
+                        <div class="col">
+                            <div class="card user-stats-card">
+                                <div class="user-stat-icon owners">
+                                    <i class="fas fa-calendar-alt"></i>
+                                </div>
+                                <h3 class="user-stat-value" id="monthlyRevenue">RM0.00</h3>
+                                <p class="user-stat-label">This Month Revenue</p>
+                            </div>
+                        </div>
+                        <div class="col">
+                            <div class="card user-stats-card">
+                                <div class="user-stat-icon inactive">
+                                    <i class="fas fa-chart-line"></i>
+                                </div>
+                                <h3 class="user-stat-value" id="growthRate">0%</h3>
+                                <p class="user-stat-label">Revenue Growth</p>
+                            </div>
+                        </div>
+                    </div>
+                
+                    <!-- Time Period Selector -->
+                    <div class="filter-bar mb-4">
+                        <div class="row g-3 align-items-center">
+                            <div class="col-md-4">
+                                <label class="form-label mb-0">Report Period</label>
+                                <select class="form-select" id="report-period">
+                                    <option value="today">Today</option>
+                                    <option value="week">This Week</option>
+                                    <option value="month" selected>This Month</option>
+                                    <option value="quarter">This Quarter</option>
+                                    <option value="year">This Year</option>
+                                    <option value="custom">Custom Range</option>
+                                </select>
+                            </div>
+                            <div class="col-md-4 d-none" id="custom-date-range">
+                                <label class="form-label mb-0">From Date</label>
+                                <input type="date" class="form-control" id="date-from">
+                            </div>
+                            <div class="col-md-4 d-none" id="custom-date-range-to">
+                                <label class="form-label mb-0">To Date</label>
+                                <input type="date" class="form-control" id="date-to">
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label mb-0">Report Type</label>
+                                <select class="form-select" id="report-type">
+                                    <option value="overview">Overview</option>
+                                    <option value="detailed">Detailed Report</option>
+                                    <option value="facility">By Facility</option>
+                                    <option value="user">By User</option>
+                                </select>
+                            </div>
+                            <div class="col-md-4">
+                                <button class="btn btn-primary w-200" id="generate-report">
+                                    <i class="fas fa-chart-bar"></i> Generate Report
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                
+                    <!-- Revenue Chart -->
+                    <div class="row mb-5">
+                        <div class="col-lg-8">
+                            <div class="card user-stats-card h-100">
+                                <div class="card-header bg-transparent border-0">
+                                    <h5 class="card-title mb-0">Revenue Trend</h5>
+                                </div>
+                                <div class="card-body">
+                                    <div id="revenueChart" style="height: 300px;">
+                                        <canvas id="revenueChartCanvas"></canvas>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-lg-4">
+                            <div class="card user-stats-card h-100">
+                                <div class="card-header bg-transparent border-0">
+                                    <h5 class="card-title mb-0">Revenue by Facility Type</h5>
+                                </div>
+                                <div class="card-body">
+                                    <div id="revenuePieChart" style="height: 300px;">
+                                        <canvas id="revenuePieChartCanvas"></canvas>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                
+                    <!-- Transaction History -->
+                    <div class="table-container">
+                        <div class="table-header">
+                            <div class="table-title">Transaction History</div>
+                            <div class="table-actions">
+                                <button class="btn btn-outline" id="download-statement">
+                                    <i class="fas fa-download"></i> Download Statement
+                                </button>
+                                <button class="btn btn-primary" id="refresh-financial">
+                                    <i class="fas fa-sync"></i> Refresh
+                                </button>
+                            </div>
+                        </div>
+                        <table id="financial-table">
+                            <thead>
+                                <tr>
+                                    <th>Date</th>
+                                    <th>Transaction ID</th>
+                                    <th>User</th>
+                                    <th>Facility</th>
+                                    <th>Amount</th>
+                                    <th>Commission</th>
+                                    <th>Status</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <!-- Transactions will be loaded here -->
+                            </tbody>
+                        </table>
+                        <div class="pagination-container">
+                            <nav>
+                                <ul class="pagination" id="financial-pagination">
+                                    <!-- Pagination will be generated here -->
+                                </ul>
+                            </nav>
+                        </div>
+                    </div>
+                
+                    <!-- Summary Section -->
+                    <div class="row mt-4">
+                        <div class="col-lg-6">
+                            <div class="card user-stats-card">
+                                <div class="card-header bg-transparent border-0">
+                                    <h5 class="card-title mb-0">Summary</h5>
+                                </div>
+                                <div class="card-body">
+                                    <div class="row">
+                                        <div class="col-6">
+                                            <p class="mb-1"><strong>Total Bookings:</strong></p>
+                                            <p class="mb-1"><strong>Avg. Booking Value:</strong></p>
+                                            <p class="mb-1"><strong>Commission Rate:</strong></p>
+                                            <p class="mb-1"><strong>Net Revenue:</strong></p>
+                                        </div>
+                                        <div class="col-6 text-end">
+                                            <p class="mb-1" id="total-bookings">0</p>
+                                            <p class="mb-1" id="avg-booking-value">RM0.00</p>
+                                            <p class="mb-1" id="commission-rate">5%</p>
+                                            <p class="mb-1" id="net-revenue">RM0.00</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-lg-6">
+                            <div class="card user-stats-card">
+                                <div class="card-header bg-transparent border-0">
+                                    <h5 class="card-title mb-0">Top Performing Facilities</h5>
+                                </div>
+                                <div class="card-body">
+                                    <div id="top-facilities-list">
+                                        <!-- Top facilities will be loaded here -->
+                                        <div class="text-center py-3">
+                                            <p class="text-muted">No data available</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div id="bookings-content" class="page-content d-none">
+                
+                    <!-- Filter Bar -->
+                    <div class="filter-bar">
+                        <div class="search-box">
+                            <i class="fas fa-search"></i>
+                            <input type="text" id="booking-search" placeholder="Search by user, facility, or booking ID..." />
+                        </div>
+                    
+                        <select class="filter-select" id="booking-status-filter">
+                            <option value="">All Status</option>
+                            <option value="pending">Pending</option>
+                            <option value="completed">Completed</option>
+                            <option value="cancelled">Cancelled</option>
+                        </select>
+                    
+                        <select class="filter-select" id="booking-facility-filter">
+                            <option value="">All Facilities</option>
+                        </select>
+                    
+                        <button class="btn btn-outline" id="clear-booking-filters">
+                            <i class="fas fa-times"></i> Clear Filters
+                        </button>
+                    </div>
+                
+                    <!-- Bookings Table -->
+                    <div class="table-container">
+                        <div class="table-header">
+                            <div class="table-title">All Bookings</div>
+                            <div class="table-actions">
+                                <button class="btn btn-success" id="export-bookings">
+                                    <i class="fas fa-download"></i> Export
+                                </button>
+                                <button class="btn btn-outline" id="refresh-bookings-full">
+                                    <i class="fas fa-sync"></i> Refresh
+                                </button>
+                            </div>
+                        </div>
+                    
+                        <table id="all-bookings-table">
+                            <thead>
+                                <tr>
+                                    <th>Booking ID</th>
+                                    <th>User</th>
+                                    <th>Facility</th>
+                                    <th>Date</th>
+                                    <th>Time Slot</th>
+                                    <th>Amount</th>
+                                    <th>Status</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody></tbody>
+                        </table>
+                    
+                        <!-- Pagination -->
+                        <div class="pagination-container">
+                            <ul class="pagination" id="bookings-pagination"></ul>
+                        </div>
+                    </div>
+                
+                </div>
+
+                
+                <div id="settings-content" class="page-content d-none">
+                    <!-- Settings content -->
+                    <div class="welcome-banner">
+                        <h3>Settings</h3>
+                        <p>Configure your account and preferences</p>
+                    </div>
+                    <div class="alert alert-info">
+                        Settings features will be implemented soon.
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- User Modal -->
+    <div class="modal fade" id="userModal" tabindex="-1" aria-labelledby="userModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="userModalLabel">User Details</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="userForm">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label class="form-label">Full Name</label>
+                                    <input type="text" class="form-control" id="user-name-input" required>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label class="form-label">Email Address</label>
+                                    <input type="email" class="form-control" id="user-email-input" required>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label class="form-label">Phone Number</label>
+                                    <input type="tel" class="form-control" id="user-phone-input">
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label class="form-label">Role</label>
+                                    <select class="form-select" id="user-role-select">
+                                        <option value="owner">Owner</option>
+                                        <option value="user">User</option>
+                                        <option value="F-owner">Facility Owner</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label class="form-label">Status</label>
+                                    <select class="form-select" id="user-status-select">
+                                        <option value="active">Active</option>
+                                        <option value="inactive">Inactive</option>
+                                        <option value="suspended">Suspended</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label class="form-label">Join Date</label>
+                                    <input type="date" class="form-control" id="user-join-date">
+                                </div>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Notes</label>
+                            <textarea class="form-control" id="user-notes" rows="3"></textarea>
+                        </div>
+                        <input type="hidden" id="user-id">
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-danger" id="delete-user-btn">Delete User</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="facilityModal" tabindex="-1" aria-labelledby="facilityModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="facilityModalLabel">Facility Details</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="facilityForm">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label class="form-label">Facility Name *</label>
+                                    <input type="text" class="form-control" id="facility-name-input" required>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label class="form-label">Facility Type *</label>
+                                    <select class="form-select" id="facility-type-select" required>
+                                        <option value="">Select Type</option>
+                                        <option value="badminton">Badminton Court</option>
+                                        <option value="futsal">Futsal Court</option>
+                                        <option value="football">Football Field</option>
+                                        <option value="basketball">Basketball Court</option>
+                                        <option value="tennis">Tennis Court</option>
+                                        <option value="swimming">Swimming Pool</option>
+                                        <option value="gym">Gym</option>
+                                        <option value="other">Other</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-12">
+                                <div class="form-group">
+                                    <label class="form-label">Description</label>
+                                    <textarea class="form-control" id="facility-description" rows="2" placeholder="Brief description of the facility..."></textarea>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label class="form-label">Location *</label>
+                                    <input type="text" class="form-control" id="facility-location-input" required>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label class="form-label">Contact Number</label>
+                                    <input type="tel" class="form-control" id="facility-phone-input">
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label class="form-label">Price per Hour (RM) *</label>
+                                    <input type="number" class="form-control" id="facility-price-input" min="0" step="0.01" required>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label class="form-label">Capacity (Persons)</label>
+                                    <input type="number" class="form-control" id="facility-capacity-input" min="1">
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label class="form-label">Opening Hours</label>
+                                    <input type="time" class="form-control" id="facility-opening-time">
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label class="form-label">Closing Hours</label>
+                                    <input type="time" class="form-control" id="facility-closing-time">
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label class="form-label">Status *</label>
+                                    <select class="form-select" id="facility-status-select" required>
+                                        <option value="active">Active</option>
+                                        <option value="inactive">Inactive</option>
+                                        <option value="maintenance">Under Maintenance</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label class="form-label">Amenities</label>
+                                    <input type="text" class="form-control" id="facility-amenities-input" placeholder="e.g., WiFi, Parking, Locker">
+                                </div>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Additional Notes</label>
+                            <textarea class="form-control" id="facility-notes" rows="3"></textarea>
+                        </div>
+                        <input type="hidden" id="facility-id">
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-danger" id="delete-facility-btn">Delete Facility</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Loading Spinner -->
+    <div id="loading" class="text-center my-5">
+        <div class="spinner-border text-primary loading-spinner" role="status">
+            <span class="visually-hidden">Loading...</span>
+        </div>
+        <p class="mt-3">Loading dashboard...</p>
+    </div>
+
+    <!-- Firebase and other scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/jquery@3.6.0/dist/jquery.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/js/all.min.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <script>
+        // Firebase configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyDjMwv9Bxff1bUE7CR_S-DPx3NV5kkinTU",
+            authDomain: "nste-booking-system.firebaseapp.com",
+            projectId: "nste-booking-system",
+            storageBucket: "nste-booking-system.appspot.com",
+            messagingSenderId: "574207536433",
+            appId: "1:574207536433:web:0d2aeaacdc280cec019410"
+        };
+
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+        const auth = firebase.auth();
+
+        let currentUser = null;
+        let sidebarCollapsed = false;
+        let currentPage = 1;
+        const usersPerPage = 10;
+        let allUsers = [];
+        let filteredUsers = [];
+        let allFacilities = [];
+        let filteredFacilities = [];
+        let currentFacilityPage = 1;
+        const facilitiesPerPage = 10;
+        let revenueChart = null;
+        let pieChart = null;
+        let currentFinancialPage = 1;
+        const transactionsPerPage = 10;
+        let allTransactions = [];
+        let filteredTransactions = [];
+        let allBookings = [];
+        let filteredBookings = [];
+        let bookingsPerPage = 10;
+        let currentBookingPage = 1;
+
+        $(document).ready(function () {
+        
+            // Check if user is already logged in
+            auth.onAuthStateChanged(user => {
+                if (user) {
+                    // Check if user has owner role
+                    checkUserRole(user);
+                } else {
+                    // Redirect to login page
+                    window.location.href = "login-owner.html";
+                }
+            });
+
+            // Logout button
+            $('#logout-btn').click(function(e) {
+                e.preventDefault();
+                auth.signOut().then(() => {
+                    window.location.href = "login-owner.html";
+                });
+            });
+
+            // Refresh bookings button
+            $('#refresh-bookings').click(function() {
+                loadRecentBookings();
+            });
+
+            // Sidebar menu functionality
+            $('.sidebar-menu li').click(function() {
+                if ($(this).attr('id') !== 'logout-btn') {
+                    $('.sidebar-menu li').removeClass('active');
+                    $(this).addClass('active');
+                    
+                    const page = $(this).data('page');
+                    showPage(page);
+                    
+                    // Load page-specific data
+                    if (page === 'users') {
+                        loadUserManagementData();
+                    } else if (page === 'facilities') {
+                        loadFacilitiesData();
+                    }
+                }
+            });
+
+            // Toggle sidebar (desktop)
+            $('#sidebar-toggle').click(function() {
+                toggleSidebar();
+            });
+
+            // Toggle mobile menu
+            $('#mobile-menu-toggle').click(function() {
+                $('#sidebar').toggleClass('show');
+            });
+
+            // Close sidebar when clicking outside on mobile
+            $(document).on('click', function(event) {
+                if ($(window).width() <= 992) {
+                    const sidebar = $('#sidebar');
+                    const menuToggle = $('#mobile-menu-toggle');
+                    if (!sidebar.is(event.target) && sidebar.has(event.target).length === 0 
+                        && !menuToggle.is(event.target) && menuToggle.has(event.target).length === 0
+                        && sidebar.hasClass('show')) {
+                        sidebar.removeClass('show');
+                    }
+                }
+            });
+
+            // Handle window resize
+            $(window).resize(function() {
+                if ($(window).width() > 992) {
+                    $('#sidebar').removeClass('show');
+                }
+            });
+
+            // User Management Event Listeners
+            $('#add-user-btn').click(function() {
+                openUserModal(null);
+            });
+
+            $('#refresh-users').click(function() {
+                loadUserManagementData();
+            });
+
+            $('#clear-filters').click(function() {
+                $('#user-search').val('');
+                $('#role-filter').val('');
+                $('#status-filter').val('');
+                filterUsers();
+            });
+
+            $('#user-search').on('input', function() {
+                filterUsers();
+            });
+
+            $('#role-filter, #status-filter').change(function() {
+                filterUsers();
+            });
+
+            $('#save-user-btn').click(function() {
+                saveUser();
+            });
+
+            $('#delete-user-btn').click(function() {
+                deleteUser();
+            });
+
+            $('#export-users').click(function() {
+                exportUsers();
+            });
+
+            $('#add-facility-btn').click(function() {
+                openFacilityModal(null);
+            });
+
+            $('#refresh-facilities').click(function() {
+                loadFacilitiesData();
+            });
+
+            $('#clear-facility-filters').click(function() {
+                $('#facility-search').val('');
+                $('#facility-type-filter').val('');
+                $('#facility-status-filter').val('');
+                filterFacilities();
+            });
+
+            $('#facility-search').on('input', function() {
+                filterFacilities();
+            });
+
+            $('#facility-type-filter, #facility-status-filter').change(function() {
+                filterFacilities();
+            });
+
+            $('#save-facility-btn').click(function() {
+                saveFacility();
+            });
+
+            $('#delete-facility-btn').click(function() {
+                deleteFacility();
+            });
+
+            $('#export-facilities').click(function() {
+                exportFacilities();
+            });
+
+            $('#generate-report').click(function() {
+                loadFinancialData();
+            });
+
+            $('#refresh-financial').click(function() {
+                loadFinancialData();
+            });
+
+            $('#download-statement').click(function() {
+                downloadFinancialStatement();
+            });
+
+            $('#report-period').change(function() {
+                const period = $(this).val();
+                if (period === 'custom') {
+                    $('#custom-date-range').removeClass('d-none');
+                    $('#custom-date-range-to').removeClass('d-none');
+                } else {
+                    $('#custom-date-range').addClass('d-none');
+                    $('#custom-date-range-to').addClass('d-none');
+                }
+            });
+
+            // Initialize modals
+            const userModal = new bootstrap.Modal(document.getElementById('userModal'));
+            window.userModal = userModal;
+            // Initialize facility modal
+            const facilityModal = new bootstrap.Modal(document.getElementById('facilityModal'));
+            window.facilityModal = facilityModal;
+
+            const bookingModal = new bootstrap.Modal(document.getElementById('bookingModal'));
+            window.bookingModal = bookingModal;
+        });
+
+        function toggleSidebar() {
+            sidebarCollapsed = !sidebarCollapsed;
+            $('#sidebar').toggleClass('collapsed');
+            $('#main-content').toggleClass('expanded');
+        }
+
+        function checkUserRole(user) {
+            // Check if user has owner role in Firestore
+            db.collection("users").doc(user.uid).get()
+                .then((doc) => {
+                    if (doc.exists) {
+                        const userData = doc.data();
+                        if (userData.role === 'owner') {
+                            // User is an owner, show dashboard
+                            currentUser = user;
+                            showDashboard();
+                            loadDashboardData();
+                        } else {
+                            // User is not an owner, redirect to login
+                            window.location.href = "login-owner.html";
+                        }
+                    } else {
+                        // User document doesn't exist, redirect to login
+                        window.location.href = "login-owner.html";
+                    }
+                })
+                .catch((error) => {
+                    console.error("Error checking user role:", error);
+                    window.location.href = "login-owner.html";
+                });
+        }
+
+        function showDashboard() {
+            $('#dashboard-page').removeClass('d-none');
+            $('#loading').addClass('d-none');
+            
+            // Update user info in header
+            const userName = currentUser.displayName || currentUser.email;
+            $('#user-name').text(userName);
+            $('#welcome-name').text(userName.split('@')[0]); // Use name part of email for welcome
+            $('#user-avatar').text(userName.charAt(0).toUpperCase());
+        }
+
+        function showPage(page) {
+            $('.page-content').addClass('d-none');
+            $(`#${page}-content`).removeClass('d-none');
+            
+            // Close mobile menu when navigating
+            if ($(window).width() <= 992) {
+                $('#sidebar').removeClass('show');
+            }
+            if (page === 'financial') {
+                loadFinancialData();
+            }
+            // Load when page opens
+            if (page === "bookings") {
+                loadBookingsPageData();
+            }
+        }
+
+        async function loadDashboardData() {
+            try {
+                // Load ALL facilities (owner has access to all)
+                const facilitiesSnap = await db.collection("facilities").get();
+                document.getElementById("facilityCount").innerText = facilitiesSnap.size;
+
+                // Load ALL bookings to calculate total revenue
+                const bookingsSnap = await db.collection("bookings").get();
+                let totalRevenue = 0;
+                
+                // Sum up all booking amounts
+                bookingsSnap.forEach(doc => {
+                    const booking = doc.data();
+                    // Only count confirmed bookings for revenue
+                    if (booking.status === 'completed') {
+                        const amount = booking.amount || booking.Amount || booking.price || 0;
+                        totalRevenue += amount;
+                    }
+                });
+
+                document.getElementById("totalRevenue").innerText = `RM${totalRevenue.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
+                
+                // Calculate commission as 5% of total revenue
+                const commission = totalRevenue * 0.05;
+                document.getElementById("commissionEarned").innerText = `RM${commission.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
+
+                // Load ALL users (owner has access to all user data)
+                const usersSnap = await db.collection("users").get();
+                document.getElementById("activeUsers").innerText = usersSnap.size;
+
+                // Load recent bookings
+                loadRecentBookings();
+
+            } catch (error) {
+                console.error("Error loading dashboard data:", error);
+            }
+        }
+
+        async function loadRecentBookings() {
+            try {
+                const bookingsTableBody = document.getElementById("bookings-table").getElementsByTagName('tbody')[0];
+                bookingsTableBody.innerHTML = '';
+
+                // Get today's date in YYYY-MM-DD format
+                const today = new Date();
+                const todayString = today.toISOString().split('T')[0];
+
+                // Fetch ALL bookings for today (owner has access to all)
+                const bookingsSnap = await db.collection("bookings")
+                    .where("date", "==", todayString)
+                    .orderBy("timestamp", "desc")
+                    .limit(10)
+                    .get();
+
+                if (bookingsSnap.empty) {
+                    bookingsTableBody.innerHTML = '<tr><td colspan="7" class="text-center py-4">No bookings for today</td></tr>';
+                    return;
+                }
+
+                // Get ALL user details (owner has access to all users)
+                const usersSnap = await db.collection("users").get();
+                const usersMap = {};
+                usersSnap.forEach(doc => {
+                    usersMap[doc.id] = doc.data();
+                });
+
+                // Get ALL facility details (owner has access to all facilities)
+                const facilitiesSnap = await db.collection("facilities").get();
+                const facilitiesMap = {};
+                facilitiesSnap.forEach(doc => {
+                    facilitiesMap[doc.id] = doc.data();
+                });
+
+                bookingsSnap.forEach(doc => {
+                    const booking = doc.data();
+                    const user = usersMap[booking.userId] || { name: 'Unknown User', email: 'N/A' };
+                    const facility = facilitiesMap[booking.facilityId] || { name: 'Unknown Facility' };
+                    const amount = booking.bookingAmount || booking.totalAmount || 0;
+                    
+                    const row = bookingsTableBody.insertRow();
+                    const statusClass = booking.status === 'completed' ? 'status-active' : 
+                                       booking.status === 'pending' ? 'status-pending' : 'status-suspended';
+                    
+                    row.innerHTML = `
+                        <td>#${doc.id.substring(0, 8)}</td>
+                        <td>
+                            <div>${user.name || 'Unknown User'}</div>
+                            <small class="text-muted">${user.email || 'N/A'}</small>
+                        </td>
+                        <td>${facility.name}</td>
+                        <td>${booking.slot || 'N/A'}</td>
+                        <td>$${amount.toFixed(2)}</td>
+                        <td><span class="status ${statusClass}">${booking.status || 'pending'}</span></td>
+                        <td>
+                            <div class="action-buttons">
+                                <div class="action-btn view-btn" title="View Details">
+                                    <i class="fas fa-eye"></i>
+                                </div>
+                                <div class="action-btn edit-btn" title="Edit Booking">
+                                    <i class="fas fa-edit"></i>
+                                </div>
+                            </div>
+                        </td>
+                    `;
+                });
+
+            } catch (error) {
+                console.error("Error loading recent bookings:", error);
+                const bookingsTableBody = document.getElementById("bookings-table").getElementsByTagName('tbody')[0];
+                bookingsTableBody.innerHTML = '<tr><td colspan="7" class="text-center py-4">Error loading bookings</td></tr>';
+            }
+        }
+
+        // User Management Functions - FIXED VERSION
+        async function loadUserManagementData() {
+            try {
+                console.log("Loading user management data...");
+                
+                // Load all users from Firestore - FIXED QUERY
+                const usersSnap = await db.collection("users").get();
+                allUsers = [];
+                
+                console.log(`Found ${usersSnap.size} users in Firestore`);
+                
+                usersSnap.forEach(doc => {
+                    const userData = doc.data();
+                    console.log(`User ${doc.id}:`, userData);
+                    
+                    allUsers.push({
+                        id: doc.id,
+                        ...userData
+                    });
+                });
+
+                console.log(`Processed ${allUsers.length} users`);
+                
+                // Log role distribution for debugging
+                const roleCounts = {};
+                allUsers.forEach(user => {
+                    const role = user.role || 'unknown';
+                    roleCounts[role] = (roleCounts[role] || 0) + 1;
+                });
+                console.log("Role distribution:", roleCounts);
+                
+                // Update statistics
+                updateUserStatistics(allUsers);
+                
+                // Apply filters and display
+                filterUsers();
+                
+            } catch (error) {
+                console.error("Error loading users:", error);
+                $('#users-table tbody').html('<tr><td colspan="6" class="text-center py-4">Error loading users: ' + error.message + '</td></tr>');
+            }
+        }
+
+        function updateUserStatistics(users) {
+            const total = users.length;
+            const active = users.filter(u => u.status === 'active').length;
+            
+            // Count owners - FIXED: count users with role 'admin' as facility owners
+            const owners = users.filter(u => u.role === 'admin').length;
+            
+            const inactive = users.filter(u => u.status !== 'active').length;
+            
+            console.log(`Statistics - Total: ${total}, Active: ${active}, Owners: ${owners}, Inactive: ${inactive}`);
+            
+            $('#totalUsers').text(total);
+            $('#activeUsersCount').text(active);
+            $('#ownerUsers').text(owners);
+            $('#inactiveUsers').text(inactive);
+        }
+
+        function filterUsers() {
+            const searchTerm = $('#user-search').val().toLowerCase();
+            const roleFilter = $('#role-filter').val();
+            const statusFilter = $('#status-filter').val();
+            
+            console.log(`Filtering - Search: "${searchTerm}", Role: "${roleFilter}", Status: "${statusFilter}"`);
+            
+            filteredUsers = allUsers.filter(user => {
+                const matchesSearch = !searchTerm || 
+                    (user.name && user.name.toLowerCase().includes(searchTerm)) ||
+                    (user.email && user.email.toLowerCase().includes(searchTerm));
+                
+                // Handle role filtering
+                let matchesRole = true;
+                if (roleFilter) {
+                    if (roleFilter === 'facility-owner') {
+                        // Filter for 'admin' role (facility owner)
+                        matchesRole = user.role === 'admin';
+                    } else if (roleFilter === 'owner') {
+                        // Filter for 'owner' role
+                        matchesRole = user.role === 'owner';
+                    } else {
+                        matchesRole = user.role === roleFilter;
+                    }
+                }
+                
+                const matchesStatus = !statusFilter || 
+                (facility.status || "").toLowerCase() === statusFilter.toLowerCase();
+                
+                return matchesSearch && matchesRole && matchesStatus;
+            });
+            
+            console.log(`Filtered to ${filteredUsers.length} users`);
+            
+            currentPage = 1;
+            displayUsers();
+        }
+
+        function displayUsers() {
+            const tableBody = $('#users-table tbody');
+            tableBody.empty();
+            
+            if (filteredUsers.length === 0) {
+                tableBody.html('<tr><td colspan="6" class="text-center py-4">No users found</td></tr>');
+                return;
+            }
+            
+            // Calculate pagination
+            const startIndex = (currentPage - 1) * usersPerPage;
+            const endIndex = startIndex + usersPerPage;
+            const pageUsers = filteredUsers.slice(startIndex, endIndex);
+            
+            console.log(`Displaying ${pageUsers.length} users on page ${currentPage}`);
+            
+            pageUsers.forEach(user => {
+                const avatarLetter = user.name ? user.name.charAt(0).toUpperCase() : user.email.charAt(0).toUpperCase();
+                const joinDate = user.createdAt ? new Date(user.createdAt.seconds * 1000).toLocaleDateString() : 'N/A';
+                const lastActive = user.lastActive ? new Date(user.lastActive.seconds * 1000).toLocaleDateString() : 'N/A';
+                
+                // Determine role for display
+                let roleClass, roleText;
+                if (user.role === 'admin') {
+                    roleClass = 'role-facility-owner';
+                    roleText = 'Facility Owner';
+                } else if (user.role === 'owner') {
+                    roleClass = 'role-facility-owner'; // Use same class, or create a new one
+                    roleText = 'Owner'; // Display as "Owner"
+                } else if (user.role === 'user') {
+                    roleClass = 'role-user';
+                    roleText = 'User';
+                } else {
+                    roleClass = 'role-user';
+                    roleText = user.role || 'User';
+                }
+                
+                // Determine status
+                let statusClass = 'status-active';
+                if (user.status === 'inactive') statusClass = 'status-inactive';
+                if (user.status === 'suspended') statusClass = 'status-suspended';
+                
+                console.log(`User ${user.email}: role=${user.role}, displayRole=${roleText}`);
+                
+                const row = `
+                    <tr>
+                        <td>
+                            <div class="user-info-cell">
+                                <div class="user-avatar-small">${avatarLetter}</div>
+                                <div>
+                                    <div class="user-name">${user.name || 'Unnamed User'}</div>
+                                    <div class="user-email">${user.email}</div>
+                                </div>
+                            </div>
+                        </td>
+                        <td><span class="role-badge ${roleClass}">${roleText}</span></td>
+                        <td><span class="status ${statusClass}">${user.status || 'active'}</span></td>
+                        <td>${joinDate}</td>
+                        <td>${lastActive}</td>
+                        <td>
+                            <div class="action-buttons">
+                                <div class="action-btn view-btn" title="View Details" onclick="viewUser('${user.id}')">
+                                    <i class="fas fa-eye"></i>
+                                </div>
+                                <div class="action-btn edit-btn" title="Edit User" onclick="openUserModal('${user.id}')">
+                                    <i class="fas fa-edit"></i>
+                                </div>
+                                <div class="action-btn ${user.status === 'suspended' ? 'edit-btn' : 'suspend-btn'}" 
+                                     title="${user.status === 'suspended' ? 'Activate User' : 'Suspend User'}" 
+                                     onclick="toggleUserStatus('${user.id}')">
+                                    <i class="fas ${user.status === 'suspended' ? 'fa-user-check' : 'fa-user-slash'}"></i>
+                                </div>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+                tableBody.append(row);
+            });
+            
+            generatePagination();
+        }
+
+        function generatePagination() {
+            const totalPages = Math.ceil(filteredUsers.length / usersPerPage);
+            const pagination = $('#user-pagination');
+            pagination.empty();
+            
+            if (totalPages <= 1) return;
+            
+            // Previous button
+            pagination.append(`
+                <li class="page-item ${currentPage === 1 ? 'disabled' : ''}">
+                    <a class="page-link" href="#" onclick="changePage(${currentPage - 1})">
+                        <i class="fas fa-chevron-left"></i>
+                    </a>
+                </li>
+            `);
+            
+            // Page numbers
+            for (let i = 1; i <= totalPages; i++) {
+                if (i === 1 || i === totalPages || (i >= currentPage - 2 && i <= currentPage + 2)) {
+                    pagination.append(`
+                        <li class="page-item ${i === currentPage ? 'active' : ''}">
+                            <a class="page-link" href="#" onclick="changePage(${i})">${i}</a>
+                        </li>
+                    `);
+                } else if (i === currentPage - 3 || i === currentPage + 3) {
+                    pagination.append('<li class="page-item disabled"><span class="page-link">...</span></li>');
+                }
+            }
+            
+            // Next button
+            pagination.append(`
+                <li class="page-item ${currentPage === totalPages ? 'disabled' : ''}">
+                    <a class="page-link" href="#" onclick="changePage(${currentPage + 1})">
+                        <i class="fas fa-chevron-right"></i>
+                    </a>
+                </li>
+            `);
+        }
+
+        function changePage(page) {
+            currentPage = page;
+            displayUsers();
+        }
+
+        function openUserModal(userId) {
+            const modal = window.userModal;
+            const modalTitle = $('#userModalLabel');
+            const saveBtn = $('#save-user-btn');
+            const deleteBtn = $('#delete-user-btn');
+            
+            // Reset form
+            $('#userForm')[0].reset();
+            $('#user-id').val('');
+            
+            if (userId) {
+                // Editing existing user
+                modalTitle.text('Edit User');
+                saveBtn.text('Save Changes');
+                deleteBtn.show();
+                
+                // Load user data
+                const user = allUsers.find(u => u.id === userId);
+                if (user) {
+                    $('#user-id').val(userId);
+                    $('#user-name-input').val(user.name || '');
+                    $('#user-email-input').val(user.email || '');
+                    $('#user-phone-input').val(user.phone || '');
+                    
+                    let userRole = user.role || 'user';
+                    if (user.role === 'admin') {
+                        userRole = 'facility-owner'; // 'admin' in Firebase = 'facility-owner' in UI
+                    } else if (user.role === 'owner') {
+                        userRole = 'owner'; // 'owner' in Firebase = 'owner' in UI
+                    }
+                    $('#user-role-select').val(userRole);
+                    
+                    $('#user-status-select').val(user.status || 'active');
+                    
+                    if (user.createdAt) {
+                        const joinDate = new Date(user.createdAt.seconds * 1000);
+                        $('#user-join-date').val(joinDate.toISOString().split('T')[0]);
+                    }
+                    
+                    $('#user-notes').val(user.notes || '');
+                }
+            } else {
+                // Adding new user
+                modalTitle.text('Add New User');
+                saveBtn.text('Create User');
+                deleteBtn.hide();
+                $('#user-join-date').val(new Date().toISOString().split('T')[0]);
+            }
+            
+            modal.show();
+        }
+
+        async function saveUser() {
+            const userId = $('#user-id').val();
+            const userRole = $('#user-role-select').val();
+            
+            // Convert UI role to Firestore role
+            let firestoreRole = userRole;
+            if (userRole === 'facility-owner') {
+                firestoreRole = 'admin'; // 'facility-owner' in UI = 'admin' in Firebase
+            } else if (userRole === 'owner') {
+                firestoreRole = 'owner'; // 'owner' in UI = 'owner' in Firebase
+            }
+            
+            const userData = {
+                name: $('#user-name-input').val(),
+                email: $('#user-email-input').val(),
+                phone: $('#user-phone-input').val(),
+                role: firestoreRole, // Store as 'admin' for facility owners
+                status: $('#user-status-select').val(),
+                notes: $('#user-notes').val(),
+                updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+            };
+            
+            console.log('Saving user:', userData);
+            
+            try {
+                if (userId) {
+                    // Update existing user
+                    await db.collection("users").doc(userId).update(userData);
+                    alert('User updated successfully!');
+                } else {
+                    // Add new user - Note: In production, you'd use Firebase Auth to create the user
+                    userData.createdAt = firebase.firestore.FieldValue.serverTimestamp();
+                    await db.collection("users").add(userData);
+                    alert('User added successfully!');
+                }
+                
+                window.userModal.hide();
+                loadUserManagementData();
+                
+            } catch (error) {
+                console.error("Error saving user:", error);
+                alert('Error saving user: ' + error.message);
+            }
+        }
+
+        async function deleteUser() {
+            const userId = $('#user-id').val();
+            if (!userId) return;
+            
+            if (confirm('Are you sure you want to delete this user? This action cannot be undone.')) {
+                try {
+                    // Note: In production, you should also delete the user from Firebase Auth
+                    await db.collection("users").doc(userId).delete();
+                    alert('User deleted successfully!');
+                    window.userModal.hide();
+                    loadUserManagementData();
+                } catch (error) {
+                    console.error("Error deleting user:", error);
+                    alert('Error deleting user: ' + error.message);
+                }
+            }
+        }
+
+        async function toggleUserStatus(userId) {
+            const user = allUsers.find(u => u.id === userId);
+            if (!user) return;
+            
+            const newStatus = user.status === 'suspended' ? 'active' : 'suspended';
+            const action = newStatus === 'suspended' ? 'suspend' : 'activate';
+            
+            if (confirm(`Are you sure you want to ${action} this user?`)) {
+                try {
+                    await db.collection("users").doc(userId).update({
+                        status: newStatus,
+                        updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+                    });
+                    
+                    loadUserManagementData();
+                } catch (error) {
+                    console.error("Error updating user status:", error);
+                    alert('Error updating user status: ' + error.message);
+                }
+            }
+        }
+
+        function viewUser(userId) {
+            // For now, just open the edit modal in view mode
+            openUserModal(userId);
+        }
+
+        function exportUsers() {
+            // Create CSV content
+            let csvContent = "data:text/csv;charset=utf-8,";
+            
+            // Add headers
+            csvContent += "Name,Email,Role,Status,Join Date,Last Active,Phone\n";
+            
+            // Add user data
+            filteredUsers.forEach(user => {
+                const joinDate = user.createdAt ? new Date(user.createdAt.seconds * 1000).toLocaleDateString() : '';
+                const lastActive = user.lastActive ? new Date(user.lastActive.seconds * 1000).toLocaleDateString() : '';
+                
+                // Determine role text for export
+                let roleText = user.role === 'admin' ? 'Facility Owner' : (user.role || 'User');
+                
+                csvContent += `"${user.name || ''}","${user.email || ''}","${roleText}","${user.status || ''}","${joinDate}","${lastActive}","${user.phone || ''}"\n`;
+            });
+            
+            // Create download link
+            const encodedUri = encodeURI(csvContent);
+            const link = document.createElement("a");
+            link.setAttribute("href", encodedUri);
+            link.setAttribute("download", `users_export_${new Date().toISOString().split('T')[0]}.csv`);
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+        // Facilities Management Functions
+        async function loadFacilitiesData() {
+            try {
+                console.log("Loading facilities data...");
+
+                // Load facilities owned by the current user
+                const facilitiesSnap = await db.collection("facilities").get();
+
+                allFacilities = [];
+
+                console.log(`Found ${facilitiesSnap.size} facilities in Firestore`);
+
+                // Get today's date for booking counts
+                const today = new Date();
+                const todayString = today.toISOString().split('T')[0];
+
+                for (const doc of facilitiesSnap.docs) {
+                    const facilityData = doc.data();
+                    console.log(`Facility ${doc.id}:`, facilityData);
+
+                    // Get today's bookings for this facility
+                    const todayBookingsSnap = await db.collection("bookings")
+                        .where("facilityId", "==", doc.id)
+                        .where("date", "==", todayString)
+                        .get();
+
+                    // Get total revenue for this facility (only confirmed bookings)
+                    const allBookingsSnap = await db.collection("bookings")
+                        .where("facilityId", "==", doc.id)
+                        .where("status", "==", "completed")  // Only count confirmed bookings
+                        .get();
+
+                    let totalRevenue = 0;
+                    allBookingsSnap.forEach(bookingDoc => {
+                        const booking = bookingDoc.data();
+                        const amount = booking.amount || booking.price || 0;
+                        totalRevenue += amount;
+                    });
+
+                    // Map your data structure to our expected format
+                    allFacilities.push({
+                        id: doc.id,
+                        name: facilityData.name,
+                        type: facilityData.sportType || facilityData.type,  // Changed from type to sportType
+                        description: facilityData.description,
+                        location: facilityData.location,
+                        phone: "",  // Not in your data
+                        pricePerHour: facilityData.price,
+                        capacity: facilityData.capacity,
+                        openingTime: "",  // Not in your data
+                        closingTime: "",  // Not in your data
+                        status: facilityData.status ? facilityData.status.toLowerCase() : 'active',  // Convert "Active" to "active"
+                        amenities: facilityData.amenities || [],
+                        notes: "",  // Not in your data
+                        createdAt: facilityData.createdAt,
+                        updatedAt: facilityData.updatedAt,
+                        ownerId: facilityData.userId,  // Changed to userId
+                        todayBookings: todayBookingsSnap.size,
+                        totalRevenue: totalRevenue,
+                        // Additional fields from your data
+                        imageUrl: facilityData.imageUrl,
+                        maxBookings: facilityData.maxBookings,
+                        maxPlayers: facilityData.maxPlayers,
+                        minPlayers: facilityData.minPlayers,
+                        promo: facilityData.promo,
+                        slots: facilityData.slots || []
+                    });
+                }
+            
+                console.log(`Processed ${allFacilities.length} facilities`);
+
+                // Update statistics
+                updateFacilityStatistics(allFacilities);
+
+                // Apply filters and display
+                filterFacilities();
+
+            } catch (error) {
+                console.error("Error loading facilities:", error);
+                $('#facilities-table tbody').html('<tr><td colspan="7" class="text-center py-4">Error loading facilities: ' + error.message + '</td></tr>');
+            }
+        }
+        function updateFacilityStatistics(facilities) {
+            const total = facilities.length;
+            const active = facilities.filter(f => f.status === 'active').length;
+
+            // Calculate today's total bookings
+            const todayBookings = facilities.reduce((sum, facility) => sum + (facility.todayBookings || 0), 0);
+
+            // Calculate total revenue
+            const totalRevenue = facilities.reduce((sum, facility) => sum + (facility.totalRevenue || 0), 0);
+
+            console.log(`Facility Statistics - Total: ${total}, Active: ${active}, Today's Bookings: ${todayBookings}, Revenue: ${totalRevenue}`);
+
+            $('#totalFacilities').text(total);
+            $('#activeFacilities').text(active);
+            $('#todayBookings').text(todayBookings);
+            $('#totalRevenueFacilities').text(`RM${totalRevenue.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}`);
+        }
+
+        function filterFacilities() {
+            const searchTerm = $('#facility-search').val().toLowerCase();
+            const typeFilter = $('#facility-type-filter').val();
+            const statusFilter = $('#facility-status-filter').val();
+
+            console.log(`Filtering facilities - Search: "${searchTerm}", Type: "${typeFilter}", Status: "${statusFilter}"`);
+
+            filteredFacilities = allFacilities.filter(facility => {
+                const matchesSearch = !searchTerm || 
+                    (facility.name && facility.name.toLowerCase().includes(searchTerm)) ||
+                    (facility.location && facility.location.toLowerCase().includes(searchTerm));
+
+                const matchesType = !typeFilter || facility.type === typeFilter;
+                const matchesStatus = !statusFilter || facility.status === statusFilter;
+
+                return matchesSearch && matchesType && matchesStatus;
+            });
+
+            console.log(`Filtered to ${filteredFacilities.length} facilities`);
+
+            currentFacilityPage = 1;
+            displayFacilities();
+        }
+
+        function displayFacilities() {
+            const tableBody = $('#facilities-table tbody');
+            tableBody.empty();
+
+            if (filteredFacilities.length === 0) {
+                tableBody.html('<tr><td colspan="7" class="text-center py-4">No facilities found</td></tr>');
+                return;
+            }
+
+            // Calculate pagination
+            const startIndex = (currentFacilityPage - 1) * facilitiesPerPage;
+            const endIndex = startIndex + facilitiesPerPage;
+            const pageFacilities = filteredFacilities.slice(startIndex, endIndex);
+
+            console.log(`Displaying ${pageFacilities.length} facilities on page ${currentFacilityPage}`);
+
+            pageFacilities.forEach(facility => {
+                // Get facility type display name (use sportType if available)
+                const typeName = facility.sportType || facility.type || 'Unknown';
+
+                // Get status display (capitalize for display)
+                let statusClass, statusText;
+                const status = facility.status?.toLowerCase() || 'active';
+
+                switch(status) {
+                    case 'active':
+                        statusClass = 'status-active';
+                        statusText = 'Active';
+                        break;
+                    case 'inactive':
+                        statusClass = 'status-inactive';
+                        statusText = 'Inactive';
+                        break;
+                    case 'maintenance':
+                        statusClass = 'status-suspended';
+                        statusText = 'Maintenance';
+                        break;
+                    default:
+                        statusClass = 'status-active';
+                        statusText = facility.status || 'Active';
+                }
+
+                // Format amenities for display
+                const amenitiesDisplay = facility.amenities && facility.amenities.length > 0 
+                    ? facility.amenities.slice(0, 2).join(', ') + (facility.amenities.length > 2 ? '...' : '')
+                    : 'No amenities';
+
+                const row = `
+                    <tr>
+                        <td>
+                            <div class="user-info-cell">
+                                <div class="user-avatar-small" style="background: #3498db;">${facility.name?.charAt(0).toUpperCase() || 'F'}</div>
+                                <div>
+                                    <div class="user-name">${facility.name || 'Unnamed Facility'}</div>
+                                    <div class="user-email" style="font-size: 0.8rem; color: #666;">${amenitiesDisplay}</div>
+                                </div>
+                            </div>
+                        </td>
+                        <td><span class="role-badge role-facility-owner">${typeName}</span></td>
+                        <td>${facility.location || 'N/A'}</td>
+                        <td><strong>RM${facility.price || facility.pricePerHour || '0.00'}</strong></td>
+                        <td><span class="status ${statusClass}">${statusText}</span></td>
+                        <td>
+                            <div class="action-buttons">
+                                <div class="action-btn view-btn" title="View Details" onclick="viewFacility('${facility.id}')">
+                                    <i class="fas fa-eye"></i>
+                                </div>
+                                <div class="action-btn ${status === 'active' ? 'suspend-btn' : 'edit-btn'}" 
+                                     title="${status === 'active' ? 'Deactivate Facility' : 'Activate Facility'}" 
+                                     onclick="toggleFacilityStatus('${facility.id}')">
+                                    <i class="fas ${status === 'active' ? 'fa-ban' : 'fa-check'}"></i>
+                                </div>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+                tableBody.append(row);
+            });
+
+            generateFacilityPagination();
+        }
+
+        function generateFacilityPagination() {
+            const totalPages = Math.ceil(filteredFacilities.length / facilitiesPerPage);
+            const pagination = $('#facility-pagination');
+            pagination.empty();
+
+            if (totalPages <= 1) return;
+
+            // Previous button
+            pagination.append(`
+                <li class="page-item ${currentFacilityPage === 1 ? 'disabled' : ''}">
+                    <a class="page-link" href="#" onclick="changeFacilityPage(${currentFacilityPage - 1})">
+                        <i class="fas fa-chevron-left"></i>
+                    </a>
+                </li>
+            `);
+            
+            // Page numbers
+            for (let i = 1; i <= totalPages; i++) {
+                if (i === 1 || i === totalPages || (i >= currentFacilityPage - 2 && i <= currentFacilityPage + 2)) {
+                    pagination.append(`
+                        <li class="page-item ${i === currentFacilityPage ? 'active' : ''}">
+                            <a class="page-link" href="#" onclick="changeFacilityPage(${i})">${i}</a>
+                        </li>
+                    `);
+                } else if (i === currentFacilityPage - 3 || i === currentFacilityPage + 3) {
+                    pagination.append('<li class="page-item disabled"><span class="page-link">...</span></li>');
+                }
+            }
+
+            // Next button
+            pagination.append(`
+                <li class="page-item ${currentFacilityPage === totalPages ? 'disabled' : ''}">
+                    <a class="page-link" href="#" onclick="changeFacilityPage(${currentFacilityPage + 1})">
+                        <i class="fas fa-chevron-right"></i>
+                    </a>
+                </li>
+            `);
+        }
+
+        function changeFacilityPage(page) {
+            currentFacilityPage = page;
+            displayFacilities();
+        }
+
+        function openFacilityModal(facilityId) {
+            const modal = window.facilityModal;
+            const modalTitle = $('#facilityModalLabel');
+            const saveBtn = $('#save-facility-btn');
+            const deleteBtn = $('#delete-facility-btn');
+
+            // Reset form
+            $('#facilityForm')[0].reset();
+            $('#facility-id').val('');
+
+            if (facilityId) {
+                // Editing existing facility
+                modalTitle.text('Edit Facility');
+                saveBtn.text('Save Changes');
+                deleteBtn.show();
+
+                // Load facility data
+                const facility = allFacilities.find(f => f.id === facilityId);
+                if (facility) {
+                    $('#facility-id').val(facilityId);
+                    $('#facility-name-input').val(facility.name || '');
+                    $('#facility-type-select').val(facility.type || '');
+                    $('#facility-description').val(facility.description || '');
+                    $('#facility-location-input').val(facility.location || '');
+                    $('#facility-phone-input').val(facility.phone || '');
+                    $('#facility-price-input').val(facility.pricePerHour || '');
+                    $('#facility-capacity-input').val(facility.capacity || '');
+                    $('#facility-opening-time').val(facility.openingTime || '');
+                    $('#facility-closing-time').val(facility.closingTime || '');
+                    $('#facility-status-select').val(facility.status || 'active');
+                    // Convert amenities array to comma-separated string
+                    const amenitiesString = facility.amenities ? facility.amenities.join(', ') : '';
+                    $('#facility-amenities-input').val(amenitiesString);
+                    $('#facility-notes').val(facility.notes || '');
+                }
+            } else {
+                // Adding new facility
+                modalTitle.text('Add New Facility');
+                saveBtn.text('Create Facility');
+                deleteBtn.hide();
+
+                // Set default values
+                $('#facility-status-select').val('active');
+                $('#facility-opening-time').val('08:00');
+                $('#facility-closing-time').val('22:00');
+            }
+
+            modal.show();
+        }
+
+        async function deleteFacility() {
+            const facilityId = $('#facility-id').val();
+            if (!facilityId) return;
+
+            if (confirm('Are you sure you want to delete this facility? This will also delete all related bookings. This action cannot be undone.')) {
+                try {
+                    // Delete all bookings for this facility first
+                    const bookingsSnap = await db.collection("bookings")
+                        .where("facilityId", "==", facilityId)
+                        .get();
+
+                    const deletePromises = bookingsSnap.docs.map(doc => doc.ref.delete());
+                    await Promise.all(deletePromises);
+
+                    // Delete the facility
+                    await db.collection("facilities").doc(facilityId).delete();
+
+                    alert('Facility deleted successfully!');
+                    window.facilityModal.hide();
+                    loadFacilitiesData();
+                    loadDashboardData();
+
+                } catch (error) {
+                    console.error("Error deleting facility:", error);
+                    alert('Error deleting facility: ' + error.message);
+                }
+            }
+        }
+
+        async function toggleFacilityStatus(facilityId) {
+            const facility = allFacilities.find(f => f.id === facilityId);
+            if (!facility) return;
+                
+            const currentStatus = facility.status?.toLowerCase() || 'active';
+            const newStatus = currentStatus === 'active' ? 'Inactive' : 'Active';  // Capitalize for your data structure
+            const action = newStatus.toLowerCase() === 'active' ? 'activate' : 'deactivate';
+                
+            if (confirm(`Are you sure you want to ${action} this facility?`)) {
+                try {
+                    await db.collection("facilities").doc(facilityId).update({
+                        status: newStatus,  // Capitalized
+                        updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+                    });
+                    
+                    loadFacilitiesData();
+                    
+                } catch (error) {
+                    console.error("Error updating facility status:", error);
+                    alert('Error updating facility status: ' + error.message);
+                }
+            }
+        }
+
+        async function viewFacility(facilityId) {
+            try {
+                const facility = allFacilities.find(f => f.id === facilityId);
+                if (!facility) {
+                    alert('Facility not found');
+                    return;
+                }
+            
+                // Get type display name
+                const typeNames = {
+                    'football': 'Football Field',
+                    'badminton': 'Badminton Court',
+                    'futsal': 'Futsal Court',
+                    'basketball': 'Basketball Court',
+                    'tennis': 'Tennis Court',
+                    'swimming': 'Swimming Pool',
+                    'gym': 'Gym',
+                    'other': 'Other'
+                };
+            
+                // Use sportType if available, otherwise use type
+                const facilityType = facility.sportType || facility.type || 'other';
+                const typeName = typeNames[facilityType] || facilityType;
+            
+                // Get current month boundaries
+                const today = new Date();
+                const firstDayOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+                const lastDayOfMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+                
+                const firstDayStr = firstDayOfMonth.toISOString().split('T')[0];
+                const lastDayStr = lastDayOfMonth.toISOString().split('T')[0];
+            
+                // Get bookings for this month
+                const monthBookingsSnap = await db.collection("bookings")
+                    .where("facilityId", "==", facilityId)
+                    .where("date", ">=", firstDayStr)
+                    .where("date", "<=", lastDayStr)
+                    .get();
+            
+                // Calculate monthly revenue (only confirmed bookings)
+                let monthlyRevenue = 0;
+                let confirmedBookings = 0;
+                
+                monthBookingsSnap.forEach(doc => {
+                    const booking = doc.data();
+                    if (booking.status === 'completed') {
+                        const amount = booking.amount || booking.price || 0;
+                        monthlyRevenue += amount;
+                        confirmedBookings++;
+                    }
+                });
+            
+                // Format amenities for display
+                const amenitiesDisplay = Array.isArray(facility.amenities) 
+                    ? facility.amenities.join(', ')
+                    : facility.amenities || 'None listed';
+            
+                // Prepare details HTML
+                const detailsHTML = `
+                    <div class="row mb-3">
+                        <div class="col-md-8">
+                            <h4>${facility.name || 'Unnamed Facility'}</h4>
+                            <p class="text-muted">${typeName} • ${facility.location || 'No location specified'}</p>
+                        </div>
+                        <div class="col-md-4 text-end">
+                            <span class="status ${facility.status?.toLowerCase() === 'active' ? 'status-active' : 'status-inactive'}">
+                                ${facility.status || 'Active'}
+                            </span>
+                        </div>
+                    </div>
+                
+                    <div class="row mb-4">
+                        <div class="col-md-12">
+                            <p><strong>Description:</strong> ${facility.description || 'No description available'}</p>
+                        </div>
+                    </div>
+                
+                    <div class="row mb-4">
+                        <div class="col-md-6">
+                            <h6>Facility Information</h6>
+                            <p><strong>Capacity:</strong> ${facility.capacity || 'Not specified'} persons</p>
+                            <p><strong>Price per Hour:</strong> RM${facility.price?.toFixed(2) || facility.pricePerHour?.toFixed(2) || '0.00'}</p>
+                            <p><strong>Min Players:</strong> ${facility.minPlayers || 'Not specified'}</p>
+                            <p><strong>Max Players:</strong> ${facility.maxPlayers || 'Not specified'}</p>
+                        </div>
+                        <div class="col-md-6">
+                            <h6>Amenities</h6>
+                            <p>${amenitiesDisplay}</p>
+                            ${facility.promo ? `<p><strong>Promo Code:</strong> ${facility.promo}</p>` : ''}
+                        </div>
+                    </div>
+                
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <div class="card bg-light">
+                                <div class="card-body text-center">
+                                    <h6>Monthly Bookings</h6>
+                                    <h3 class="text-primary">${confirmedBookings}</h3>
+                                    <small class="text-muted">Confirmed bookings this month</small>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="card bg-light">
+                                <div class="card-body text-center">
+                                    <h6>Monthly Revenue</h6>
+                                    <h3 class="text-success">RM${monthlyRevenue.toFixed(2)}</h3>
+                                    <small class="text-muted">From confirmed bookings</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                
+                    <div class="row">
+                        <div class="col-md-12">
+                            <h6>Available Time Slots</h6>
+                            <div class="d-flex flex-wrap gap-2">
+                                ${Array.isArray(facility.slots) && facility.slots.length > 0 
+                                    ? facility.slots.map(slot => `<span class="badge bg-secondary">${slot}</span>`).join('')
+                                    : '<p class="text-muted">No time slots defined</p>'
+                                }
+                            </div>
+                        </div>
+                    </div>
+                
+                    ${facility.imageUrl ? `
+                        <div class="row mt-4">
+                            <div class="col-md-12">
+                                <h6>Facility Image</h6>
+                                <img src="${facility.imageUrl}" alt="${facility.name}" class="img-fluid rounded" style="max-height: 200px; width: auto;">
+                            </div>
+                        </div>
+                    ` : ''}
+                `;
+                    
+                // Check if bookingModal exists and is properly initialized
+                if (window.bookingModal) {
+                    $('#bookingModalLabel').text('Facility Details');
+                    $('#booking-details').html(detailsHTML);
+                    window.bookingModal.show();
+                } else {
+                    // Fallback: alert with basic info
+                    alert(`Facility: ${facility.name}\nType: ${typeName}\nLocation: ${facility.location}\nStatus: ${facility.status}\nMonthly Revenue: RM${monthlyRevenue.toFixed(2)}`);
+                }
+                
+            } catch (error) {
+                console.error("Error viewing facility:", error);
+                alert('Error loading facility details: ' + error.message);
+            }
+        }
+
+        async function viewFacilityBookings(facilityId) {
+            try {
+                const today = new Date();
+                const todayString = today.toISOString().split('T')[0];
+
+                // Get today's bookings for this facility
+                const bookingsSnap = await db.collection("bookings")
+                    .where("facilityId", "==", facilityId)
+                    .get();
+
+                if (bookingsSnap.empty) {
+                    $('#bookingModalLabel').text('Today\'s Bookings');
+                    $('#booking-details').html('<p class="text-center">No bookings for today.</p>');
+                    window.bookingModal.show();
+                    return;
+                }
+
+                // Get user details for each booking
+                const bookingData = [];
+                for (const doc of bookingsSnap.docs) {
+                    const booking = doc.data();
+
+                    // Get user details
+                    let userName = 'Unknown User';
+                    let userEmail = 'N/A';
+
+                    try {
+                        const userDoc = await db.collection("users").doc(booking.userId).get();
+                        if (userDoc.exists) {
+                            const userData = userDoc.data();
+                            userName = userData.name || userData.email || 'Unknown User';
+                            userEmail = userData.email || 'N/A';
+                        }
+                    } catch (error) {
+                        console.error("Error fetching user:", error);
+                    }
+
+                    bookingData.push({
+                        id: doc.id,
+                        ...booking,
+                        userName,
+                        userEmail
+                    });
+                }
+
+                // Prepare bookings HTML
+                const facility = allFacilities.find(f => f.id === facilityId);
+                let bookingsHTML = `
+                    <h4>Today's Bookings for ${facility?.name || 'Facility'}</h4>
+                    <p class="text-muted">${todayString}</p>
+
+                    <div class="table-responsive">
+                        <table class="table table-sm">
+                            <thead>
+                                <tr>
+                                    <th>Time Slot</th>
+                                    <th>User</th>
+                                    <th>Duration</th>
+                                    <th>Amount</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                `;
+                            
+                bookingData.forEach(booking => {
+                    // Handle various status values
+                    let statusClass = 'status-suspended'; // default for pending/unknown
+                    let statusText = booking.status || 'pending';
+
+                    if (booking.status === 'confirmed') {
+                        statusClass = 'status-active';
+                    } else if (booking.status === 'cancelled') {
+                        statusClass = 'status-inactive';
+                    }
+
+                    bookingsHTML += `
+                        <tr>
+                            <td>${booking.time || booking.timeSlot || 'N/A'}</td>
+                            <td>
+                                <div>${booking.userName || 'Unknown User'}</div>
+                                <small class="text-muted">${booking.userEmail || 'N/A'}</small>
+                            </td>
+                            <td>${booking.duration || '1'} hour(s)</td>
+                            <td>RM${(booking.amount || booking.price || 0).toFixed(2)}</td>
+                            <td><span class="status ${statusClass}">${statusText}</span></td>
+                        </tr>
+                    `;
+                });
+
+                bookingsHTML += `
+                            </tbody>
+                        </table>
+                    </div>
+                `;
+                
+                $('#bookingModalLabel').text('Today\'s Bookings');
+                $('#booking-details').html(bookingsHTML);
+                window.bookingModal.show();
+                
+            } catch (error) {
+                console.error("Error loading facility bookings:", error);
+                alert('Error loading bookings: ' + error.message);
+            }
+        }
+
+        function exportFacilities() {
+            // Create CSV content
+            let csvContent = "data:text/csv;charset=utf-8,";
+
+            // Add headers
+            csvContent += "Name,Type,Description,Location,Price/Hour,Capacity,Opening Hours,Closing Hours,Status,Today's Bookings,Total Revenue,Phone,Amenities\n";
+
+            // Add facility data
+            filteredFacilities.forEach(facility => {
+                const typeNames = {
+                    'badminton': 'Badminton Court',
+                    'futsal': 'Futsal Court',
+                    'basketball': 'Basketball Court',
+                    'tennis': 'Tennis Court',
+                    'swimming': 'Swimming Pool',
+                    'gym': 'Gym',
+                    'other': 'Other'
+                };
+
+                const typeName = typeNames[facility.type] || facility.type || 'Unknown';
+
+                csvContent += `"${facility.name || ''}","${typeName}","${facility.description || ''}","${facility.location || ''}",${facility.pricePerHour || 0},${facility.capacity || 0},"${facility.openingTime || ''}","${facility.closingTime || ''}","${facility.status || ''}",${facility.todayBookings || 0},${facility.totalRevenue || 0},"${facility.phone || ''}","${facility.amenities || ''}"\n`;
+            });
+
+            // Create download link
+            const encodedUri = encodeURI(csvContent);
+            const link = document.createElement("a");
+            link.setAttribute("href", encodedUri);
+            link.setAttribute("download", `facilities_export_${new Date().toISOString().split('T')[0]}.csv`);
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+
+        // Financial Management Functions
+        async function loadFinancialData() {
+            try {
+                console.log("Loading financial data...");
+
+                // Show loading state
+                $('#financial-table tbody').html('<tr><td colspan="8" class="text-center py-4"><div class="spinner-border spinner-border-sm"></div> Loading transactions...</td></tr>');
+
+                // Get selected period
+                const period = $('#report-period').val();
+                let startDate, endDate;
+
+                const today = new Date();
+                today.setHours(0, 0, 0, 0);
+
+                switch(period) {
+                    case 'today':
+                        startDate = new Date(today);
+                        endDate = new Date(today);
+                        endDate.setHours(23, 59, 59, 999);
+                        break;
+                    case 'week':
+                        startDate = new Date(today);
+                        startDate.setDate(today.getDate() - today.getDay());
+                        endDate = new Date(today);
+                        endDate.setDate(today.getDate() + (6 - today.getDay()));
+                        endDate.setHours(23, 59, 59, 999);
+                        break;
+                    case 'month':
+                        startDate = new Date(today.getFullYear(), today.getMonth(), 1);
+                        endDate = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+                        endDate.setHours(23, 59, 59, 999);
+                        break;
+                    case 'quarter':
+                        const quarter = Math.floor(today.getMonth() / 3);
+                        startDate = new Date(today.getFullYear(), quarter * 3, 1);
+                        endDate = new Date(today.getFullYear(), (quarter + 1) * 3, 0);
+                        endDate.setHours(23, 59, 59, 999);
+                        break;
+                    case 'year':
+                        startDate = new Date(today.getFullYear(), 0, 1);
+                        endDate = new Date(today.getFullYear(), 11, 31);
+                        endDate.setHours(23, 59, 59, 999);
+                        break;
+                    case 'custom':
+                        const fromDate = $('#date-from').val();
+                        const toDate = $('#date-to').val();
+                        if (!fromDate || !toDate) {
+                            alert('Please select both start and end dates');
+                            return;
+                        }
+                        startDate = new Date(fromDate);
+                        endDate = new Date(toDate);
+                        endDate.setHours(23, 59, 59, 999);
+                        break;
+                }
+
+                console.log(`Loading transactions from ${startDate.toLocaleDateString()} to ${endDate.toLocaleDateString()}`);
+
+                // Load all bookings for the period
+                const bookingsSnap = await db.collection("bookings")
+                    .where("timestamp", ">=", startDate)
+                    .where("timestamp", "<=", endDate)
+                    .orderBy("timestamp", "desc")
+                    .get();
+
+                allTransactions = [];
+                let totalRevenue = 0;
+                let totalCommission = 0;
+                let monthlyRevenue = 0;
+
+                // Get current month for monthly calculation
+                const currentMonthStart = new Date(today.getFullYear(), today.getMonth(), 1);
+                const currentMonthEnd = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+                currentMonthEnd.setHours(23, 59, 59, 999);
+
+                // Group data for charts
+                const dailyRevenue = {};
+                const facilityTypeRevenue = {};
+
+                for (const doc of bookingsSnap.docs) {
+                    const booking = doc.data();
+                    const bookingDate = booking.timestamp ? new Date(booking.timestamp.seconds * 1000) : new Date();
+
+                    // Get user details
+                    let userName = 'Unknown User';
+                    let userEmail = 'N/A';
+
+                    try {
+                        if (booking.userId) {
+                            const userDoc = await db.collection("users").doc(booking.userId).get();
+                            if (userDoc.exists) {
+                                const userData = userDoc.data();
+                                userName = userData.name || userData.email || 'Unknown User';
+                                userEmail = userData.email || 'N/A';
+                            }
+                        }
+                    } catch (error) {
+                        console.error("Error fetching user:", error);
+                    }
+
+                    // Get facility details
+                    let facilityName = 'Unknown Facility';
+                    let facilityType = 'Unknown';
+
+                    try {
+                        if (booking.facilityId) {
+                            const facilityDoc = await db.collection("facilities").doc(booking.facilityId).get();
+                            if (facilityDoc.exists) {
+                                const facilityData = facilityDoc.data();
+                                facilityName = facilityData.name || 'Unknown Facility';
+                                facilityType = facilityData.sportType || facilityData.type || 'Unknown';
+                            }
+                        }
+                    } catch (error) {
+                        console.error("Error fetching facility:", error);
+                    }
+
+                    const amount = booking.amount || booking.price || 0;
+                    const commission = amount * 0.05; // 5% commission
+
+                    // Add to totals
+                    totalRevenue += amount;
+                    totalCommission += commission;
+
+                    // Check if booking is in current month
+                    if (bookingDate >= currentMonthStart && bookingDate <= currentMonthEnd) {
+                        monthlyRevenue += amount;
+                    }
+
+                    // Add to daily revenue for chart
+                    const dateKey = bookingDate.toISOString().split('T')[0];
+                    dailyRevenue[dateKey] = (dailyRevenue[dateKey] || 0) + amount;
+
+                    // Add to facility type revenue
+                    facilityTypeRevenue[facilityType] = (facilityTypeRevenue[facilityType] || 0) + amount;
+
+                    allTransactions.push({
+                        id: doc.id,
+                        date: bookingDate,
+                        userName,
+                        userEmail,
+                        facilityName,
+                        facilityType,
+                        amount,
+                        commission,
+                        status: booking.status || 'pending',
+                        bookingData: booking
+                    });
+                }
+
+                // Update statistics
+                updateFinancialStatistics(totalRevenue, totalCommission, monthlyRevenue);
+
+                // Update charts
+                updateRevenueChart(dailyRevenue);
+                updatePieChart(facilityTypeRevenue);
+
+                // Update summary
+                updateSummary(allTransactions, totalRevenue);
+
+                // Update top facilities
+                updateTopFacilities(allTransactions);
+
+                // Display transactions
+                filterTransactions();
+
+            } catch (error) {
+                console.error("Error loading financial data:", error);
+                $('#financial-table tbody').html('<tr><td colspan="8" class="text-center py-4">Error loading transactions: ' + error.message + '</td></tr>');
+            }
+        }
+
+        function updateFinancialStatistics(totalRevenue, totalCommission, monthlyRevenue) {
+            // Format numbers
+            const formattedTotalRevenue = totalRevenue.toLocaleString(undefined, {
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2
+            });
+
+            const formattedTotalCommission = totalCommission.toLocaleString(undefined, {
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2
+            });
+
+            const formattedMonthlyRevenue = monthlyRevenue.toLocaleString(undefined, {
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2
+            });
+
+            // Calculate growth rate (placeholder - you might want to compare with previous period)
+            const growthRate = totalRevenue > 0 ? '12.5%' : '0%';
+
+            $('#totalRevenueOverview').text(`RM${formattedTotalRevenue}`);
+            $('#totalCommission').text(`RM${formattedTotalCommission}`);
+            $('#monthlyRevenue').text(`RM${formattedMonthlyRevenue}`);
+            $('#growthRate').text(growthRate);
+        }
+
+        function updateRevenueChart(dailyRevenue) {
+            const ctx = document.getElementById('revenueChartCanvas').getContext('2d');
+
+            // Destroy existing chart if it exists
+            if (revenueChart) {
+                revenueChart.destroy();
+            }
+
+            // Prepare data
+            const dates = Object.keys(dailyRevenue).sort();
+            const revenues = dates.map(date => dailyRevenue[date]);
+
+            // Format dates for display
+            const formattedDates = dates.map(date => {
+                const d = new Date(date);
+                return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+            });
+
+            revenueChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: formattedDates,
+                    datasets: [{
+                        label: 'Daily Revenue (RM)',
+                        data: revenues,
+                        borderColor: '#3498db',
+                        backgroundColor: 'rgba(52, 152, 219, 0.1)',
+                        borderWidth: 2,
+                        fill: true,
+                        tension: 0.3
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                callback: function(value) {
+                                    return 'RM' + value.toLocaleString();
+                                }
+                            }
+                        }
+                    },
+                    plugins: {
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    return `RM${context.parsed.y.toLocaleString(undefined, {minimumFractionDigits: 2})}`;
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        function updatePieChart(facilityTypeRevenue) {
+            const ctx = document.getElementById('revenuePieChartCanvas').getContext('2d');
+
+            // Destroy existing chart if it exists
+            if (pieChart) {
+                pieChart.destroy();
+            }
+
+            // Prepare data
+            const labels = Object.keys(facilityTypeRevenue);
+            const data = Object.values(facilityTypeRevenue);
+
+            // Define colors for each facility type
+            const colorMap = {
+                'badminton': '#3498db',
+                'futsal': '#2ecc71',
+                'football': '#9b59b6',
+                'basketball': '#e74c3c',
+                'tennis': '#f39c12',
+                'swimming': '#1abc9c',
+                'gym': '#34495e',
+                'other': '#95a5a6'
+            };
+
+            const backgroundColors = labels.map(type => colorMap[type] || '#95a5a6');
+
+            pieChart = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        data: data,
+                        backgroundColor: backgroundColors,
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'bottom'
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    const value = context.raw;
+                                    const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                    const percentage = ((value / total) * 100).toFixed(1);
+                                    return `${context.label}: RM${value.toLocaleString()} (${percentage}%)`;
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        function updateSummary(transactions, totalRevenue) {
+            const totalBookings = transactions.length;
+            const avgBookingValue = totalBookings > 0 ? totalRevenue / totalBookings : 0;
+            const netRevenue = totalRevenue - (totalRevenue * 0.05); // Subtract 5% commission
+
+            $('#total-bookings').text(totalBookings);
+            $('#avg-booking-value').text(`RM${avgBookingValue.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}`);
+            $('#net-revenue').text(`RM${netRevenue.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}`);
+        }
+
+        function updateTopFacilities(transactions) {
+            // Group by facility
+            const facilityRevenue = {};
+
+            transactions.forEach(transaction => {
+                const facilityName = transaction.facilityName;
+                facilityRevenue[facilityName] = (facilityRevenue[facilityName] || 0) + transaction.amount;
+            });
+
+            // Sort facilities by revenue
+            const topFacilities = Object.entries(facilityRevenue)
+                .sort((a, b) => b[1] - a[1])
+                .slice(0, 5);
+
+            const container = $('#top-facilities-list');
+            container.empty();
+
+            if (topFacilities.length === 0) {
+                container.html('<div class="text-center py-3"><p class="text-muted">No data available</p></div>');
+                return;
+            }
+
+            topFacilities.forEach(([facilityName, revenue], index) => {
+                const percentage = (revenue / Object.values(facilityRevenue).reduce((a, b) => a + b, 0)) * 100;
+
+                const facilityItem = `
+                    <div class="mb-3">
+                        <div class="d-flex justify-content-between align-items-center mb-1">
+                            <span class="fw-bold">${index + 1}. ${facilityName}</span>
+                            <span class="text-success">RM${revenue.toLocaleString(undefined, {minimumFractionDigits: 2})}</span>
+                        </div>
+                        <div class="progress" style="height: 8px;">
+                            <div class="progress-bar bg-success" role="progressbar" 
+                                 style="width: ${percentage}%" 
+                                 aria-valuenow="${percentage}" 
+                                 aria-valuemin="0" 
+                                 aria-valuemax="100"></div>
+                        </div>
+                        <small class="text-muted">${percentage.toFixed(1)}% of total revenue</small>
+                    </div>
+                `;
+                
+                container.append(facilityItem);
+            });
+        }
+
+        function filterTransactions() {
+            const searchTerm = $('#user-search').val()?.toLowerCase() || '';
+            const reportType = $('#report-type').val();
+
+            filteredTransactions = allTransactions.filter(transaction => {
+                const matchesSearch = !searchTerm || 
+                    transaction.userName.toLowerCase().includes(searchTerm) ||
+                    transaction.userEmail.toLowerCase().includes(searchTerm) ||
+                    transaction.facilityName.toLowerCase().includes(searchTerm);
+
+                let matchesType = true;
+                if (reportType === 'facility') {
+                    // Filter by facility type if needed
+                } else if (reportType === 'user') {
+                    // Filter by user type if needed
+                }
+
+                return matchesSearch && matchesType;
+            });
+
+            currentFinancialPage = 1;
+            displayTransactions();
+        }
+
+        function displayTransactions() {
+            const tableBody = $('#financial-table tbody');
+            tableBody.empty();
+
+            if (filteredTransactions.length === 0) {
+                tableBody.html('<tr><td colspan="8" class="text-center py-4">No transactions found</td></tr>');
+                return;
+            }
+
+            // Calculate pagination
+            const startIndex = (currentFinancialPage - 1) * transactionsPerPage;
+            const endIndex = startIndex + transactionsPerPage;
+            const pageTransactions = filteredTransactions.slice(startIndex, endIndex);
+
+            pageTransactions.forEach(transaction => {
+                const dateStr = transaction.date.toLocaleDateString('en-US', {
+                    year: 'numeric',
+                    month: 'short',
+                    day: 'numeric'
+                });
+
+                const timeStr = transaction.date.toLocaleTimeString('en-US', {
+                    hour: '2-digit',
+                    minute: '2-digit'
+                });
+
+                const statusClass = transaction.status === 'completed' ? 'status-active' : 
+                                  transaction.status === 'pending' ? 'status-suspended' : 'status-inactive';
+
+                const row = `
+                    <tr>
+                        <td>
+                            <div>${dateStr}</div>
+                            <small class="text-muted">${timeStr}</small>
+                        </td>
+                        <td><small>#${transaction.id.substring(0, 8)}</small></td>
+                        <td>
+                            <div class="user-name">${transaction.userName}</div>
+                            <div class="user-email">${transaction.userEmail}</div>
+                        </td>
+                        <td>
+                            <div class="user-name">${transaction.facilityName}</div>
+                            <small class="text-muted">${transaction.facilityType}</small>
+                        </td>
+                        <td class="fw-bold">RM${transaction.amount.toFixed(2)}</td>
+                        <td class="text-success">RM${transaction.commission.toFixed(2)}</td>
+                        <td><span class="status ${statusClass}">${transaction.status}</span></td>
+                        <td>
+                            <div class="action-buttons">
+                                <div class="action-btn view-btn" title="View Details" onclick="viewTransaction('${transaction.id}')">
+                                    <i class="fas fa-eye"></i>
+                                </div>
+                                <div class="action-btn edit-btn" title="Download Receipt">
+                                    <i class="fas fa-receipt"></i>
+                                </div>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+                tableBody.append(row);
+            });
+
+            generateFinancialPagination();
+        }
+
+        function generateFinancialPagination() {
+            const totalPages = Math.ceil(filteredTransactions.length / transactionsPerPage);
+            const pagination = $('#financial-pagination');
+            pagination.empty();
+
+            if (totalPages <= 1) return;
+
+            // Previous button
+            pagination.append(`
+                <li class="page-item ${currentFinancialPage === 1 ? 'disabled' : ''}">
+                    <a class="page-link" href="#" onclick="changeFinancialPage(${currentFinancialPage - 1})">
+                        <i class="fas fa-chevron-left"></i>
+                    </a>
+                </li>
+            `);
+            
+            // Page numbers
+            for (let i = 1; i <= totalPages; i++) {
+                if (i === 1 || i === totalPages || (i >= currentFinancialPage - 2 && i <= currentFinancialPage + 2)) {
+                    pagination.append(`
+                        <li class="page-item ${i === currentFinancialPage ? 'active' : ''}">
+                            <a class="page-link" href="#" onclick="changeFinancialPage(${i})">${i}</a>
+                        </li>
+                    `);
+                } else if (i === currentFinancialPage - 3 || i === currentFinancialPage + 3) {
+                    pagination.append('<li class="page-item disabled"><span class="page-link">...</span></li>');
+                }
+            }
+
+            // Next button
+            pagination.append(`
+                <li class="page-item ${currentFinancialPage === totalPages ? 'disabled' : ''}">
+                    <a class="page-link" href="#" onclick="changeFinancialPage(${currentFinancialPage + 1})">
+                        <i class="fas fa-chevron-right"></i>
+                    </a>
+                </li>
+            `);
+        }
+
+        function changeFinancialPage(page) {
+            currentFinancialPage = page;
+            displayTransactions();
+        }
+
+        function viewTransaction(transactionId) {
+            const transaction = allTransactions.find(t => t.id === transactionId);
+            if (!transaction) {
+                alert('Transaction not found');
+                return;
+            }
+
+            const detailsHTML = `
+                <div class="row">
+                    <div class="col-md-6">
+                        <h5>Transaction Details</h5>
+                        <table class="table table-sm">
+                            <tr>
+                                <td><strong>Transaction ID:</strong></td>
+                                <td>${transaction.id}</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Date & Time:</strong></td>
+                                <td>${transaction.date.toLocaleString()}</td>
+                            </tr>
+                            <tr>
+                                <td><strong>User:</strong></td>
+                                <td>${transaction.userName} (${transaction.userEmail})</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Facility:</strong></td>
+                                <td>${transaction.facilityName} (${transaction.facilityType})</td>
+                            </tr>
+                        </table>
+                    </div>
+                    <div class="col-md-6">
+                        <h5>Financial Details</h5>
+                        <table class="table table-sm">
+                            <tr>
+                                <td><strong>Booking Amount:</strong></td>
+                                <td class="text-end">RM${transaction.amount.toFixed(2)}</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Commission (5%):</strong></td>
+                                <td class="text-end text-success">RM${transaction.commission.toFixed(2)}</td>
+                            </tr>
+                            <tr class="table-active">
+                                <td><strong>Net Amount:</strong></td>
+                                <td class="text-end fw-bold">RM${(transaction.amount - transaction.commission).toFixed(2)}</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Status:</strong></td>
+                                <td class="text-end"><span class="status ${transaction.status === 'completed' ? 'status-active' : 'status-suspended'}">${transaction.status}</span></td>
+                            </tr>
+                        </table>
+                    </div>
+                </div>
+
+                <div class="row mt-3">
+                    <div class="col-md-12">
+                        <h5>Booking Information</h5>
+                        <pre class="bg-light p-3 rounded" style="font-size: 0.85rem;">${JSON.stringify(transaction.bookingData, null, 2)}</pre>
+                    </div>
+                </div>
+            `;
+            
+            // Use existing booking modal or create a new one
+            if (window.bookingModal) {
+                $('#bookingModalLabel').text('Transaction Details');
+                $('#booking-details').html(detailsHTML);
+                window.bookingModal.show();
+            } else {
+                alert(`Transaction Details:\n\nAmount: RM${transaction.amount.toFixed(2)}\nCommission: RM${transaction.commission.toFixed(2)}\nStatus: ${transaction.status}`);
+            }
+        }
+
+        function downloadFinancialStatement() {
+            // Create CSV content
+            let csvContent = "data:text/csv;charset=utf-8,";
+
+            // Add headers
+            csvContent += "Date,Time,Transaction ID,User,User Email,Facility,Facility Type,Amount (RM),Commission (RM),Status\n";
+
+            // Add transaction data
+            filteredTransactions.forEach(transaction => {
+                const dateStr = transaction.date.toISOString().split('T')[0];
+                const timeStr = transaction.date.toLocaleTimeString('en-US', {
+                    hour12: false,
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    second: '2-digit'
+                });
+
+                csvContent += `"${dateStr}","${timeStr}","${transaction.id}","${transaction.userName}","${transaction.userEmail}","${transaction.facilityName}","${transaction.facilityType}",${transaction.amount.toFixed(2)},${transaction.commission.toFixed(2)},"${transaction.status}"\n`;
+            });
+
+            // Add summary
+            csvContent += "\n\nSummary\n";
+            csvContent += `Total Transactions,${filteredTransactions.length}\n`;
+            csvContent += `Total Amount,RM${filteredTransactions.reduce((sum, t) => sum + t.amount, 0).toFixed(2)}\n`;
+            csvContent += `Total Commission,RM${filteredTransactions.reduce((sum, t) => sum + t.commission, 0).toFixed(2)}\n`;
+            csvContent += `Net Revenue,RM${filteredTransactions.reduce((sum, t) => sum + (t.amount - t.commission), 0).toFixed(2)}\n`;
+
+            // Create download link
+            const encodedUri = encodeURI(csvContent);
+            const link = document.createElement("a");
+            link.setAttribute("href", encodedUri);
+            link.setAttribute("download", `financial_statement_${new Date().toISOString().split('T')[0]}.csv`);
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+
+        async function loadBookingsPageData() {
+            try {
+                // Load facilities for filter dropdown
+                const facilitySnap = await db.collection("facilities").get();
+                const facilityFilter = document.getElementById("booking-facility-filter");
+                facilityFilter.innerHTML = `<option value="">All Facilities</option>`;
+
+                const facilities = {};
+                facilitySnap.forEach(doc => {
+                    facilities[doc.id] = doc.data();
+                    facilityFilter.innerHTML += `<option value="${doc.id}">${doc.data().name}</option>`;
+                });
+
+                // Load bookings with your data structure
+                const bookingsSnap = await db.collection("bookings").orderBy("createdAt", "desc").get();
+                allBookings = [];
+
+                bookingsSnap.forEach(doc => {
+                    const data = doc.data();
+                    // Convert timestamp to Date object if it exists
+                    const createdAt = data.createdAt ? 
+                        (data.createdAt.toDate ? data.createdAt.toDate() : new Date(data.createdAt)) : 
+                        new Date();
+
+                    allBookings.push({
+                        id: doc.id,
+                        ...data,
+                        createdAt: createdAt,
+                        // Use the actual fields from your data
+                        userName: data.userName || "Unknown User",
+                        userEmail: data.userEmail || "N/A",
+                        facilityName: data.facilityName || "Unknown Facility",
+                        amount: data.amount || data.price || 0,
+                        sportType: data.sportType || data.type || "Unknown",
+                        location: data.location || "N/A",
+                        duration: data.duration || "1 hour"
+                    });
+                });
+
+                filteredBookings = [...allBookings];
+                renderBookingsTable();
+                renderBookingsPagination();
+
+            } catch (err) {
+                console.error("Error loading bookings:", err);
+            }
+        }
+
+        function renderBookingsTable() {
+            const tbody = document.querySelector("#all-bookings-table tbody");
+            tbody.innerHTML = "";
+
+            const start = (currentBookingPage - 1) * bookingsPerPage;
+            const pageData = filteredBookings.slice(start, start + bookingsPerPage);
+
+            if (pageData.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="8" class="text-center py-4">No bookings found</td></tr>`;
+                return;
+            }
+
+            pageData.forEach(b => {
+                const statusClass =
+                    b.status === "completed" ? "status-active" :
+                    b.status === "pending" ? "status-suspended" :
+                    "status-inactive";
+
+                // Format date for display
+                const bookingDate = b.createdAt ? 
+                    b.createdAt.toLocaleDateString('en-US', { 
+                        year: 'numeric', 
+                        month: 'short', 
+                        day: 'numeric' 
+                    }) : 
+                    (b.date || "N/A");
+                
+                // Format time for display
+                const bookingTime = b.createdAt ? 
+                    b.createdAt.toLocaleTimeString('en-US', { 
+                        hour: '2-digit', 
+                        minute: '2-digit' 
+                    }) : 
+                    (b.time || "N/A");
+                
+                tbody.innerHTML += `
+                    <tr>
+                        <td>#${b.id.substring(0, 8)}</td>
+                        <td>
+                            <div>${b.userName}</div>
+                            <small class="text-muted">${b.userEmail}</small>
+                        </td>
+                        <td>
+                            <div><strong>${b.facilityName}</strong></div>
+                            <small class="text-muted">${b.sportType} • ${b.location}</small>
+                        </td>
+                        <td>
+                            <div>${b.date || bookingDate}</div>
+                            <small class="text-muted">${bookingTime}</small>
+                        </td>
+                        <td>${b.time || "N/A"}</td>
+                        <td><strong>RM${(b.amount || 0).toFixed(2)}</strong></td>
+                        <td><span class="status ${statusClass}">${b.status || "pending"}</span></td>
+                        <td>
+                            <div class="action-buttons">
+                                <div class="action-btn view-btn" title="View Details" onclick="viewBookingDetails('${b.id}')">
+                                    <i class="fas fa-eye"></i>
+                                </div>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+            });
+        }
+
+        async function viewBookingDetails(bookingId) {
+            try {
+                const booking = allBookings.find(b => b.id === bookingId);
+                if (!booking) {
+                    alert('Booking not found');
+                    return;
+                }
+
+                // Format amenities for display
+                const amenitiesDisplay = Array.isArray(booking.amenities) && booking.amenities.length > 0 ?
+                    booking.amenities.map(amenity => `<span class="badge bg-secondary me-1">${amenity}</span>`).join('') :
+                    'No amenities';
+
+                // Format slots for display
+                const slotsDisplay = Array.isArray(booking.slots) && booking.slots.length > 0 ?
+                    booking.slots.map(slot => `<div class="mb-1">${slot}</div>`).join('') :
+                    'No slots defined';
+
+                // Create details HTML
+                const detailsHTML = `
+                    <div class="row">
+                        <div class="col-md-8">
+                            <h4>Booking Details</h4>
+                            <p class="text-muted">ID: #${booking.id.substring(0, 12)}</p>
+                        </div>
+                        <div class="col-md-4 text-end">
+                            <span class="status ${booking.status === 'completed' ? 'status-active' : 'status-suspended'}">
+                                ${booking.status || 'pending'}
+                            </span>
+                        </div>
+                    </div>
+
+                    <div class="row mb-4">
+                        <div class="col-md-6">
+                            <h5>User Information</h5>
+                            <p><strong>Name:</strong> ${booking.userName}</p>
+                            <p><strong>Email:</strong> ${booking.userEmail}</p>
+                            <p><strong>User ID:</strong> ${booking.userId || 'N/A'}</p>
+                        </div>
+                        <div class="col-md-6">
+                            <h5>Facility Information</h5>
+                            <p><strong>Facility:</strong> ${booking.facilityName}</p>
+                            <p><strong>Type:</strong> ${booking.sportType}</p>
+                            <p><strong>Location:</strong> ${booking.location}</p>
+                        </div>
+                    </div>
+
+                    <div class="row mb-4">
+                        <div class="col-md-6">
+                            <h5>Booking Details</h5>
+                            <p><strong>Booking Date:</strong> ${booking.date || 'N/A'}</p>
+                            <p><strong>Time Slot:</strong> ${booking.time || 'N/A'}</p>
+                            <p><strong>Duration:</strong> ${booking.duration || 'N/A'}</p>
+                            <p><strong>Amount:</strong> RM${(booking.amount || 0).toFixed(2)}</p>
+                        </div>
+                        <div class="col-md-6">
+                            <h5>Additional Information</h5>
+                            <p><strong>Capacity:</strong> ${booking.capacity || 'Not specified'}</p>
+                            ${booking.promo ? `<p><strong>Promo Code:</strong> ${booking.promo}</p>` : ''}
+                            <p><strong>Loyalty Points Used:</strong> ${booking.loyaltyPointsUsed || 0}</p>
+                        </div>
+                    </div>
+
+                    <div class="row mb-4">
+                        <div class="col-md-12">
+                            <h5>Amenities</h5>
+                            <div>${amenitiesDisplay}</div>
+                        </div>
+                    </div>
+
+                    <div class="row mb-4">
+                        <div class="col-md-12">
+                            <h5>Facility Description</h5>
+                            <p>${booking.description || 'No description available'}</p>
+                        </div>
+                    </div>
+
+                    ${booking.imageUrl ? `
+                        <div class="row mb-4">
+                            <div class="col-md-12">
+                                <h5>Facility Image</h5>
+                                <img src="${booking.imageUrl}" alt="${booking.facilityName}" class="img-fluid rounded" style="max-height: 200px; width: auto;">
+                            </div>
+                        </div>
+                    ` : ''}
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h5>Available Time Slots</h5>
+                            <div class="border p-3 rounded" style="max-height: 150px; overflow-y: auto;">
+                                ${slotsDisplay}
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <h5>Timestamps</h5>
+                            <p><strong>Created:</strong> ${booking.createdAt ? booking.createdAt.toLocaleString() : 'N/A'}</p>
+                            ${booking.updatedAt ? `<p><strong>Last Updated:</strong> ${booking.updatedAt.toLocaleString ? booking.updatedAt.toLocaleString() : booking.updatedAt}</p>` : ''}
+                        </div>
+                    </div>
+                `;
+                
+                // Use existing booking modal or create a new one
+                if (window.bookingModal) {
+                    $('#bookingModalLabel').text('Booking Details');
+                    $('#booking-details').html(detailsHTML);
+                    window.bookingModal.show();
+                } else {
+                    // Fallback: alert with basic info
+                    alert(`Booking Details:\n\nFacility: ${booking.facilityName}\nUser: ${booking.userName}\nDate: ${booking.date}\nTime: ${booking.time}\nAmount: RM${(booking.amount || 0).toFixed(2)}\nStatus: ${booking.status}`);
+                }
+
+            } catch (error) {
+                console.error("Error viewing booking details:", error);
+                alert('Error loading booking details: ' + error.message);
+            }
+        }
+
+        function renderBookingsPagination() {
+            const pages = Math.ceil(filteredBookings.length / bookingsPerPage);
+            const pagination = document.getElementById("bookings-pagination");
+        
+            pagination.innerHTML = "";
+        
+            for (let i = 1; i <= pages; i++) {
+                pagination.innerHTML += `
+                    <li class="page-item ${currentBookingPage === i ? "active" : ""}">
+                        <a class="page-link" href="#" onclick="gotoBookingPage(${i})">${i}</a>
+                    </li>
+                `;
+            }
+        }
+
+        function gotoBookingPage(page) {
+            currentBookingPage = page;
+            renderBookingsTable();
+            renderBookingsPagination();
+        }
+
+        function filterBookings() {
+            const searchText = document.getElementById("booking-search").value.toLowerCase();
+            const status = document.getElementById("booking-status-filter").value;
+            const facility = document.getElementById("booking-facility-filter").value;
+
+            filteredBookings = allBookings.filter(b => {
+                return (
+                    (b.userName.toLowerCase().includes(searchText) ||
+                     b.userEmail.toLowerCase().includes(searchText) ||
+                     b.id.toLowerCase().includes(searchText) ||
+                     b.facilityName.toLowerCase().includes(searchText) ||
+                     (b.location && b.location.toLowerCase().includes(searchText))) &&
+                    (status === "" || b.status === status) &&
+                    (facility === "" || b.facilityId === facility)
+                );
+            });
+
+            currentBookingPage = 1;
+            renderBookingsTable();
+            renderBookingsPagination();
+        }
+
+        // Event listeners
+        document.getElementById("booking-search").addEventListener("input", filterBookings);
+        document.getElementById("booking-status-filter").addEventListener("change", filterBookings);
+        document.getElementById("booking-facility-filter").addEventListener("change", filterBookings);
+        document.getElementById("clear-booking-filters").addEventListener("click", () => {
+        document.getElementById("booking-search").value = "";
+        document.getElementById("booking-status-filter").value = "";
+        document.getElementById("booking-facility-filter").value = "";
+        filterBookings();
+        });
+
+        function exportBookings() {
+            // Create CSV content
+            let csvContent = "data:text/csv;charset=utf-8,";
+
+            // Add headers
+            csvContent += "Booking ID,User Name,User Email,Facility,Facility Type,Location,Date,Time Slot,Duration,Amount (RM),Status,Capacity,Amenities,Promo Code,Created At\n";
+
+            // Add booking data
+            filteredBookings.forEach(b => {
+                const amenities = Array.isArray(b.amenities) ? b.amenities.join('; ') : '';
+                const createdAt = b.createdAt ? b.createdAt.toLocaleString() : '';
+
+                csvContent += `"${b.id}","${b.userName}","${b.userEmail}","${b.facilityName}","${b.sportType}","${b.location}","${b.date}","${b.time}","${b.duration}",${b.amount || 0},"${b.status}",${b.capacity || 0},"${amenities}","${b.promo || ''}","${createdAt}"\n`;
+            });
+
+            // Create download link
+            const encodedUri = encodeURI(csvContent);
+            const link = document.createElement("a");
+            link.setAttribute("href", encodedUri);
+            link.setAttribute("download", `bookings_export_${new Date().toISOString().split('T')[0]}.csv`);
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+
+        // Add event listener for export button
+        document.getElementById("export-bookings").addEventListener("click", exportBookings);
+    </script>
+</body>
+</html>
