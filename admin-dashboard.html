@@ -1304,6 +1304,12 @@
     let allPromos = [];
     let allEvents = [];
     let allProducts = [];
+    let amenities = [];
+    let foods = [];
+    let editAmenities = [];
+    let editFoods = [];
+    let editPDFUrl = "";
+    let editingFacilityId = "";
     let currentPage = 'dashboard'; // Track current page
     // Add these with other global variables
     window.statusFilter = 'all';
@@ -1952,12 +1958,12 @@
                       </div>
                     </div>
                     <div class="mb-3">
-  <label for="locationLink" class="form-label">Location Link</label>
-  <input type="url" class="form-control" id="locationLink" name="locationLink" 
-         placeholder="https://maps.google.com/..." 
-         pattern="https://.*">
-  <div class="form-text">Enter Google Maps link or directions URL</div>
-</div>
+                      <label for="locationLink" class="form-label">Location Link</label>
+                      <input type="url" class="form-control" id="locationLink" name="locationLink" 
+                             placeholder="https://maps.google.com/..." 
+                             pattern="https://.*">
+                      <div class="form-text">Enter Google Maps link or directions URL</div>
+                    </div>
                     <div class="col-md-6">
                       <div class="form-group">
                         <label class="form-label">Price (RM)</label>
@@ -1989,34 +1995,40 @@
                     <label class="form-label">Description</label>
                     <textarea class="form-control" name="description" rows="3"></textarea>
                   </div>
-                  
+
                   <div class="form-group">
-  <label class="form-label">Upload Image</label>
-  <input type="file" id="facilityImage" class="form-control" accept="image/*">
-</div>
+                    <label class="form-label">Terms & Conditions (Text)</label>
+                    <textarea class="form-control" name="termsText" rows="3" placeholder="Enter terms here"></textarea>
+                  </div>
 
-<div class="mt-3">
-  <img id="imagePreview" style="max-width:150px; display:none; border-radius:10px;">
-</div>
+                  <div class="form-group mt-3">
+                    <label class="form-label">Upload Terms & Conditions PDF</label>
+                    <input type="file" class="form-control" id="termsPDF" accept="application/pdf">
+                  </div>            
+                  <div class="form-group">
+                    <label class="form-label">Upload Image</label>
+                    <input type="file" id="facilityImage" class="form-control" accept="image/*">
+                  </div>
 
-                  
+                  <div class="mt-3">
+                    <img id="imagePreview" style="max-width:150px; display:none; border-radius:10px;">
+                  </div>
                   <div class="form-group">
                     <label class="form-label">Amenities</label>
-                    <div class="form-check">
-                      <input class="form-check-input" type="checkbox" name="amenities" value="Parking" id="parking">
-                      <label class="form-check-label" for="parking">Parking</label>
+                    <div id="amenitiesList"></div>
+                    <div class="input-group mt-2">
+                      <input type="text" id="newAmenity" class="form-control" placeholder="Enter amenity name">
+                      <button type="button" class="btn btn-success" onclick="addAmenity()">+ Add</button>
                     </div>
-                    <div class="form-check">
-                      <input class="form-check-input" type="checkbox" name="amenities" value="Showers" id="showers">
-                      <label class="form-check-label" for="showers">Showers</label>
-                    </div>
-                    <div class="form-check">
-                      <input class="form-check-input" type="checkbox" name="amenities" value="Changing Rooms" id="changingRooms">
-                      <label class="form-check-label" for="changingRooms">Changing Rooms</label>
-                    </div>
-                    <div class="form-check">
-                      <input class="form-check-input" type="checkbox" name="amenities" value="Equipment Rental" id="equipmentRental">
-                      <label class="form-check-label" for="equipmentRental">Equipment Rental</label>
+                  </div>
+                  <div class="form-group mt-4">
+                    <label class="form-label">Food Menu</label>               
+                    <div id="foodList"></div>
+                    <div class="input-group mb-2">
+                      <input type="text" id="foodName" class="form-control" placeholder="Food name">
+                      <input type="number" id="foodPrice" class="form-control" placeholder="Price">
+                      <input type="file" id="foodImage" class="form-control" accept="image/*">
+                      <button type="button" class="btn btn-success" onclick="addFood()">+ Add Food</button>
                     </div>
                   </div>
                 </form>
@@ -2052,6 +2064,81 @@
 
       const data = await response.json();
       return data.secure_url;  // final image url
+    }
+
+    function addAmenity() {
+        const amenity = document.getElementById("newAmenity").value.trim();
+        if (!amenity) return;
+    
+        amenities.push(amenity);
+        renderAmenities();
+        document.getElementById("newAmenity").value = "";
+    }
+
+    function renderAmenities() {
+        const container = document.getElementById("amenitiesList");
+        container.innerHTML = "";
+    
+        amenities.forEach((a, index) => {
+            container.innerHTML += `
+                <div class="d-flex justify-content-between align-items-center border p-2 rounded mb-2">
+                    <span>${a}</span>
+                    <button class="btn btn-sm btn-danger" onclick="removeAmenity(${index})">Remove</button>
+                </div>
+            `;
+        });
+    }
+
+    function removeAmenity(i) {
+        amenities.splice(i, 1);
+        renderAmenities();
+    }
+
+    async function addFood() {
+        const name = document.getElementById("foodName").value.trim();
+        const price = document.getElementById("foodPrice").value.trim();
+        const file = document.getElementById("foodImage").files[0];
+    
+        if (!name || !price || !file) {
+            alert("Fill all food details!");
+            return;
+        }
+      
+        const imageUrl = await uploadToCloudinary(file);
+      
+        foods.push({
+            name,
+            price,
+            image: imageUrl
+        });
+      
+        renderFoods();
+      
+        document.getElementById("foodName").value = "";
+        document.getElementById("foodPrice").value = "";
+        document.getElementById("foodImage").value = "";
+    }
+
+    function renderFoods() {
+        const container = document.getElementById("foodList");
+        container.innerHTML = "";
+    
+        foods.forEach((f, index) => {
+            container.innerHTML += `
+                <div class="d-flex justify-content-between align-items-center border p-2 mb-2 rounded">
+                    <div>
+                        <strong>${f.name}</strong> - RM${f.price}
+                    </div>
+                    <img src="${f.image}" width="60" style="border-radius:6px;">
+                    <button class="btn btn-sm btn-danger" onclick="removeFood(${index})">Delete</button>
+                </div>
+            `;
+        });
+    }
+
+    function removeFood(i) {
+        foods.splice(i, 1);
+        renderFoods();
     }
 
     async function loadBookingManagementPage() {
@@ -3494,18 +3581,20 @@
       if (facilityIds.length > 0) {
         const bookingsSnapshot = await db.collection("bookings")
           .where("facilityId", "in", facilityIds)
-          .where("status", "==", "approved")
+          .where("status", "==", "completed")
           .get();
 
         bookingsSnapshot.forEach(doc => {
           const booking = doc.data();
           const commission = booking.price * 0.05;
+          const netamount = booking.price - commission;
           if (booking.price) {
-            totalRevenue += parseFloat(booking.price);
+            totalRevenue += parseFloat(netamount);
             payments.push({
               id: doc.id,
               ...booking,
               commission: commission,
+              netamount: netamount,
               paymentDate: booking.timestamp ? booking.timestamp.toDate() : new Date()
             });
           }
@@ -3527,6 +3616,7 @@
               <td>${date}</td>
               <td>RM${payment.price || '0'}</td>
               <td>RM${payment.commission || '0'}</td>
+              <td>RM${payment.netamount || '0'}</td>
               <td>${payment.paymentMethod || 'Online'}</td>
               <td><span class="badge badge-status badge-approved">Paid</span></td>
             </tr>
@@ -3589,6 +3679,7 @@
                   <th>Date</th>
                   <th>Amount</th>
                   <th>Commission</th>
+                  <th>Net Amount</th>
                   <th>Method</th>
                   <th>Status</th>
                 </tr>
@@ -9192,6 +9283,13 @@ async function saveProduct() {
     // ========================
     async function saveFacility() {
       try {
+        let termsPDFUrl = "";
+
+        const termsPDF = document.getElementById("termsPDF").files[0];
+        if (termsPDF) {
+            termsPDFUrl = await uploadToCloudinary(termsPDF);
+        }
+
         const form = document.getElementById("addFacilityForm");
         const formData = new FormData(form);
 
@@ -9229,8 +9327,11 @@ async function saveProduct() {
           capacity: parseInt(formData.get("capacity")),
           status: formData.get("status"),
           description: formData.get("description"),
+          termsText: formData.termsText || "",
+          termsPDF: termsPDFUrl || "",
           imageUrl: imageUrl, // store cloudinary url
-          amenities: formData.getAll("amenities"),
+          amenities: amenities,
+          foods: foods,
           userId: currentUser.uid,
           createdAt: firebase.firestore.FieldValue.serverTimestamp()
         };
@@ -10090,41 +10191,47 @@ async function saveProduct() {
                                     <label class="form-label">Description</label>
                                     <textarea class="form-control" name="description" rows="3">${facility.description || ''}</textarea>
                                 </div>
-                                
                                 <div class="form-group">
-    <label class="form-label">Facility Image</label>
-    <input type="file" class="form-control" id="editFacilityImage" accept="image/*">
+                                  <label class="form-label">Terms & Conditions (Text)</label>
+                                  <textarea class="form-control" id="edit_termsText" rows="3"></textarea>
+                                </div>
 
-    <div class="mt-2">
-        <img id="editImagePreview" src="${facility.imageUrl || ''}"
-             style="max-width:150px; border-radius:8px; display:${facility.imageUrl ? 'block' : 'none'};">
-    </div>
-
-    <!-- store old image url -->
-    <input type="hidden" id="existingEditImageUrl" value="${facility.imageUrl || ''}">
-</div>
-
-                                
-                                <div class="form-group">
-                                    <label class="form-label">Amenities</label>
-                                    <div class="form-check">
-                                        <input class="form-check-input" type="checkbox" name="amenities" value="Parking" id="editParking" ${facility.amenities && facility.amenities.includes('Parking') ? 'checked' : ''}>
-                                        <label class="form-check-label" for="editParking">Parking</label>
-                                    </div>
-                                    <div class="form-check">
-                                        <input class="form-check-input" type="checkbox" name="amenities" value="Showers" id="editShowers" ${facility.amenities && facility.amenities.includes('Showers') ? 'checked' : ''}>
-                                        <label class="form-check-label" for="editShowers">Showers</label>
-                                    </div>
-                                    <div class="form-check">
-                                        <input class="form-check-input" type="checkbox" name="amenities" value="Changing Rooms" id="editChangingRooms" ${facility.amenities && facility.amenities.includes('Changing Rooms') ? 'checked' : ''}>
-                                        <label class="form-check-label" for="editChangingRooms">Changing Rooms</label>
-                                    </div>
-                                    <div class="form-check">
-                                        <input class="form-check-input" type="checkbox" name="amenities" value="Equipment Rental" id="editEquipmentRental" ${facility.amenities && facility.amenities.includes('Equipment Rental') ? 'checked' : ''}>
-                                        <label class="form-check-label" for="editEquipmentRental">Equipment Rental</label>
-                                    </div>
+                                <div class="form-group mt-3">
+                                  <label class="form-label">Upload New Terms PDF (optional)</label>
+                                  <input type="file" class="form-control" id="edit_termsPDF" accept="application/pdf">
+                                  <p class="mt-1">
+                                    Current PDF: <a id="existingTermsPDF" href="#" target="_blank">View</a>
+                                  </p>
                                 </div>
                                 
+                                <div class="form-group">
+                                    <label class="form-label">Facility Image</label>
+                                    <input type="file" class="form-control" id="editFacilityImage" accept="image/*">                        
+                                    <div class="mt-2">
+                                        <img id="editImagePreview" src="${facility.imageUrl || ''}"
+                                             style="max-width:150px; border-radius:8px; display:${facility.imageUrl ? 'block' : 'none'};">
+                                    </div>
+                                    <!-- store old image url -->
+                                    <input type="hidden" id="existingEditImageUrl" value="${facility.imageUrl || ''}">
+                                </div>
+                                <div class="form-group">
+                                  <label class="form-label">Amenities</label>
+                                  <div id="edit_amenitiesList"></div>
+                                  <div class="input-group mt-2">
+                                    <input type="text" id="edit_newAmenity" class="form-control" placeholder="Add new amenity">
+                                    <button type="button" class="btn btn-success" onclick="addAmenityEdit()">+ Add</button>
+                                  </div>
+                                </div>
+                                <div class="form-group mt-4">
+                                  <label class="form-label">Food Menu</label>                 
+                                  <div id="edit_foodList"></div>
+                                  <div class="input-group mb-2">
+                                    <input type="text" id="edit_foodName" class="form-control" placeholder="Food name">
+                                    <input type="number" id="edit_foodPrice" class="form-control" placeholder="Price">
+                                    <input type="file" id="edit_foodImage" class="form-control" accept="image/*">
+                                    <button type="button" class="btn btn-success" onclick="addFoodEdit()">+ Add Food</button>
+                                  </div>
+                                </div>
                                 <input type="hidden" name="facilityId" value="${id}">
                             </form>
                         </div>
@@ -10156,6 +10263,27 @@ async function saveProduct() {
 
         // Add modal to page
         document.body.insertAdjacentHTML('beforeend', editModalHTML);
+        editingFacilityId = id;
+
+        const doc = await db.collection("facilities").doc(id).get();
+        const facilityy = doc.data();
+
+        // Fill text fields
+        document.getElementById("edit_termsText").value = facilityy.termsText || "";
+
+        // Load PDF
+        if (facilityy.termsPDF) {
+            document.getElementById("existingTermsPDF").href = facilityy.termsPDF;
+            editPDFUrl = facilityy.termsPDF;
+        }
+      
+        // Load Amenities
+        editAmenities = facilityy.amenities || [];
+        renderEditAmenities();
+      
+        // Load Food Menu
+        editFoods = facilityy.foods || [];
+        renderEditFoods();
 
         // Show modal
         const editModal = new bootstrap.Modal(document.getElementById('editFacilityModal'));
@@ -10172,6 +10300,81 @@ async function saveProduct() {
       }
     }
 
+    function renderEditAmenities() {
+    const container = document.getElementById("edit_amenitiesList");
+    container.innerHTML = "";
+
+    editAmenities.forEach((a, index) => {
+        container.innerHTML += `
+          <div class="d-flex justify-content-between border p-2 mb-2 rounded">
+             <span>${a}</span>
+             <button class="btn btn-sm btn-danger" onclick="removeAmenityEdit(${index})">Delete</button>
+          </div>
+        `;
+    });
+}
+
+function addAmenityEdit() {
+    const val = document.getElementById("edit_newAmenity").value.trim();
+    if (!val) return;
+
+    editAmenities.push(val);
+    renderEditAmenities();
+    document.getElementById("edit_newAmenity").value = "";
+}
+
+function removeAmenityEdit(i) {
+    editAmenities.splice(i, 1);
+    renderEditAmenities();
+}
+function renderEditFoods() {
+    const container = document.getElementById("edit_foodList");
+    container.innerHTML = "";
+
+    editFoods.forEach((f, index) => {
+        container.innerHTML += `
+        <div class="d-flex justify-content-between align-items-center border p-2 mb-2 rounded">
+            <div>
+                <strong>${f.name}</strong> - RM${f.price}
+            </div>
+            <img src="${f.image}" width="60" class="rounded">
+            <button class="btn btn-danger btn-sm" onclick="removeFoodEdit(${index})">Delete</button>
+        </div>
+        `;
+    });
+}
+
+async function addFoodEdit() {
+    const name = document.getElementById("edit_foodName").value.trim();
+    const price = document.getElementById("edit_foodPrice").value.trim();
+    const file = document.getElementById("edit_foodImage").files[0];
+
+    if (!name || !price || !file) {
+        alert("Fill all food fields");
+        return;
+    }
+
+    const imgUrl = await uploadToCloudinary(file);
+
+    editFoods.push({ name, price, image: imgUrl });
+    renderEditFoods();
+
+    document.getElementById("edit_foodName").value = "";
+    document.getElementById("edit_foodPrice").value = "";
+    document.getElementById("edit_foodImage").value = "";
+}
+
+function removeFoodEdit(i) {
+    editFoods.splice(i, 1);
+    renderEditFoods();
+}
+async function handlePDFEdit() {
+    const file = document.getElementById("edit_termsPDF").files[0];
+    if (file) {
+        editPDFUrl = await uploadToCloudinary(file); // Cloudinary works for PDFs too
+    }
+}
+
     async function updateFacility(id) {
       try {
         const form = document.getElementById('editFacilityForm');
@@ -10182,7 +10385,7 @@ async function saveProduct() {
 
         // Upload new image only if user selected a new one
         if (newImageFile) {
-          imageUrl = await uploadImageToCloudinary(newImageFile);
+          imageUrl = await uploadToCloudinary(newImageFile);
         }
 
         const facilityData = {
@@ -10200,6 +10403,14 @@ async function saveProduct() {
         };
 
         await db.collection('facilities').doc(id).update(facilityData);
+        await handlePDFEdit();
+
+        await db.collection("facilities").doc(editingFacilityId).update({
+        termsText: document.getElementById("edit_termsText").value,
+        termsPDF: editPDFUrl,
+        amenities: editAmenities,
+        foods: editFoods
+      });
 
         showToast('Facility updated successfully', 'success');
 
