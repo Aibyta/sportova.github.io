@@ -2535,7 +2535,15 @@ async function registerForEvent(eventId) {
           <div class="booking-step" id="step5-content">
             <div class="form-card">
               <h4>Booking Summary & Payment</h4>
-              
+
+              <!-- Amenities Section -->
+              <div class="summary-card mb-4">
+                <h5>Amenities Included</h5>
+                <div id="summaryAmenities" class="mb-3">
+                  <!-- Amenities will be loaded dynamically -->
+                </div>
+              </div>
+
               <div class="summary-card mb-4">
                 <h5>Booking Details</h5>
                 <div class="summary-item">
@@ -2574,20 +2582,44 @@ async function registerForEvent(eventId) {
                   <span>Subtotal:</span>
                   <span id="summarySubtotal">RM 0</span>
                 </div>
-                
+
                 <div class="form-check mt-3">
                   <input class="form-check-input" type="checkbox" id="useLoyaltyPoints">
                   <label class="form-check-label" for="useLoyaltyPoints">
                     Use Loyalty Points (You have <span id="availablePoints">0</span> points)
                   </label>
                 </div>
-                
+
                 <div class="summary-item summary-total">
                   <span>Total Amount:</span>
                   <span id="summaryTotal">RM 0</span>
                 </div>
               </div>
-              
+
+              <!-- Terms and Conditions -->
+              <div class="form-card mb-4">
+                <h5>Terms & Conditions</h5>
+                <div class="terms-content mb-3" id="termsContent" style="max-height: 200px; overflow-y: auto; padding: 15px; background-color: #f8f9fa; border-radius: 5px;">
+                  <!-- Terms text will be loaded here -->
+                  <p id="termsText">Loading terms and conditions...</p>
+                </div>
+                <div class="text-center">
+                  <a href="#" target="_blank" class="btn btn-outline-secondary btn-sm" id="viewTermsPDF">
+                    <i class="fas fa-file-pdf me-1"></i> View Full Terms (PDF)
+                  </a>
+                </div>
+
+                <div class="form-check mt-3">
+                  <input class="form-check-input" type="checkbox" id="agreeTerms" required>
+                  <label class="form-check-label" for="agreeTerms">
+                    I have read and agree to the Terms and Conditions
+                  </label>
+                  <div class="invalid-feedback">
+                    You must agree to the terms and conditions to proceed.
+                  </div>
+                </div>
+              </div>
+
               <div class="mt-3 d-flex justify-content-between">
                 <button class="btn btn-secondary" id="backToStep4">Back</button>
                 <button class="btn btn-success" id="submitBooking">Submit Booking</button>
@@ -2671,6 +2703,7 @@ async function registerForEvent(eventId) {
                       <th>Date</th>
                       <th>Time</th>
                       <th>Status</th>
+                      <th>Locate</th>
                       <th>Actions</th>
                     </tr>
                   </thead>
@@ -2716,11 +2749,18 @@ async function registerForEvent(eventId) {
               </div>
             </div>
             <div class="col-md-6">
-              <div class="form-group">
-                <label class="form-label">Image URL</label>
-                <input type="url" class="form-control" id="itemImageUrl" placeholder="https://example.com/image.jpg">
-                <small class="form-text text-muted">Paste the URL of your item's image</small>
-              </div>
+              <div class="form-group mb-3">
+  <label class="form-label">Upload Image</label>
+  
+  <input type="file" id="itemImageFile"
+         accept="image/*"
+         class="form-control">
+
+  <img id="itemImagePreview"
+       style="max-height: 150px; display:none; margin-top:10px;"
+       class="img-fluid rounded" />
+</div>
+
             </div>
             <div class="col-md-6">
               <div class="form-group">
@@ -2821,6 +2861,15 @@ async function registerForEvent(eventId) {
       <!-- Marketplace items will be loaded dynamically -->
     </div>
   `;
+  document.getElementById("itemImageFile").addEventListener("change", function(e) {
+  const file = e.target.files[0];
+  if (file) {
+    const preview = document.getElementById("itemImagePreview");
+    preview.src = URL.createObjectURL(file);
+    preview.style.display = "block";
+  }
+});
+
     }
 
     // Updated Community Page Loader
@@ -2834,18 +2883,11 @@ async function registerForEvent(eventId) {
             <textarea class="form-control" id="postContent" rows="3" placeholder="What's on your mind?"></textarea>
           </div>
           <div class="row">
-            <div class="col-md-6">
-              <div class="form-group">
-                <label class="form-label">Photo URL (Optional)</label>
-                <input type="url" class="form-control" id="photoUrl" placeholder="https://example.com/photo.jpg">
-              </div>
-            </div>
-            <div class="col-md-6">
-              <div class="form-group">
-                <label class="form-label">Video URL (Optional)</label>
-                <input type="url" class="form-control" id="videoUrl" placeholder="https://example.com/video.mp4">
-              </div>
-            </div>
+            <div class="mb-3">
+  <label class="form-label">Upload Photo</label>
+  <input type="file" id="postPhotoFile" accept="image/*" class="form-control">
+  <img id="postPhotoPreview" class="img-fluid mt-2 rounded" style="max-height: 180px; display:none;" />
+</div>
           </div>
           <div class="d-flex justify-content-end mt-3">
             <button class="btn btn-primary" id="createPostBtn">Post</button>
@@ -2886,6 +2928,16 @@ async function registerForEvent(eventId) {
       </div>
     </div>
   `;
+  // Image preview
+document.getElementById("postPhotoFile").addEventListener("change", (e) => {
+  const file = e.target.files[0];
+  if (file) {
+    const preview = document.getElementById("postPhotoPreview");
+    preview.src = URL.createObjectURL(file);
+    preview.style.display = "block";
+  }
+});
+
     }
 
 
@@ -2897,8 +2949,12 @@ async function registerForEvent(eventId) {
               <img src="https://via.placeholder.com/150" class="rounded-circle mb-3" alt="Profile" style="width: 150px; height: 150px; object-fit: cover;" id="profileImage">
               <h4 id="profileName">${currentUser ? currentUser.displayName || 'User' : 'User'}</h4>
               <p class="text-muted" id="profileSport">Tennis Enthusiast</p>
+              <div class="form-group mt-3 text-center">
+  <label class="form-label">Change Profile Picture</label>
+  <input type="file" id="profileImageFile" accept="image/*" class="form-control">
+</div>
+
               <div class="d-grid gap-2">
-                <button class="btn btn-outline-primary" id="editProfileBtn">Edit Profile</button>
                 <button class="btn btn-outline-secondary" id="changePasswordBtn">Change Password</button>
               </div>
             </div>
@@ -3116,6 +3172,9 @@ async function loadAllBookings() {
         <td>${formattedDate}</td>
         <td>${time}</td>
         <td><span class="badge badge-status ${statusClass}">${statusText}</span></td>
+        <td><a href="${booking.locationLink}" target="_blank" class="text-decoration-none">
+            <i class="bi bi-geo-alt"></i>
+            </a></td
         <td>
           <button class="btn btn-sm btn-outline-primary view-booking-btn" data-id="${booking.id}">
             <i class="fas fa-eye"></i> View
@@ -3960,36 +4019,53 @@ function getStatusBadgeClass(status) {
       });
     }
 
-    // Update user profile
     async function updateProfile() {
-      try {
-        const profileData = {
-          name: document.getElementById('profileFullName').value,
-          phone: document.getElementById('profilePhone').value,
-          location: document.getElementById('profileLocation').value,
-          primarySport: document.getElementById('profilePrimarySport').value,
-          skillLevel: document.getElementById('profileSkillLevel').value,
-          bio: document.getElementById('profileBio').value,
-          updatedAt: firebase.firestore.FieldValue.serverTimestamp()
-        };
+  try {
+    // Collect text values
+    const profileData = {
+      name: document.getElementById('profileFullName').value,
+      phone: document.getElementById('profilePhone').value,
+      location: document.getElementById('profileLocation').value,
+      primarySport: document.getElementById('profilePrimarySport').value,
+      skillLevel: document.getElementById('profileSkillLevel').value,
+      bio: document.getElementById('profileBio').value,
+      updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+    };
 
-        await db.collection('users').doc(currentUser.uid).update(profileData);
+    // Image upload logic
+    const imageFile = document.getElementById("profileImageFile").files[0];
 
-        // Update user display name in Firebase Auth
-        await currentUser.updateProfile({
-          displayName: profileData.name
-        });
-
-        // Update local user data
-        window.userProfileData = { ...window.userProfileData, ...profileData };
-
-        showToast('Profile updated successfully', 'success');
-
-      } catch (error) {
-        console.error('Error updating profile:', error);
-        showToast('Error updating profile', 'danger');
-      }
+    if (imageFile) {
+      // Upload to Cloudinary
+      const uploadedUrl = await uploadToCloudinary(imageFile);
+      profileData.photoURL = uploadedUrl;  // Save new photo
     }
+
+    // Update Firestore
+    await db.collection('users').doc(currentUser.uid).update(profileData);
+
+    // Update Firebase Auth display name
+    await currentUser.updateProfile({
+      displayName: profileData.name,
+      photoURL: profileData.photoURL || currentUser.photoURL
+    });
+
+    // Update UI instantly
+    if (profileData.photoURL) {
+      document.getElementById('profileImage').src = profileData.photoURL;
+    }
+
+    // Update global data
+    window.userProfileData = { ...window.userProfileData, ...profileData };
+
+    showToast('Profile updated successfully', 'success');
+
+  } catch (error) {
+    console.error('Error updating profile:', error);
+    showToast('Error updating profile', 'danger');
+  }
+}
+
 
     // Initialize Book Facility Page
     async function initializeBookFacilityPage() {
@@ -4089,8 +4165,14 @@ function getStatusBadgeClass(status) {
         // Load available coaches for this facility
         await loadAvailableCoachesForFacility(facilityId);
 
-        // Load available snacks
-        await loadAvailableSnacks();
+        // Load available snacks from facility data
+        loadAvailableSnacksFromFacility();
+
+        // Load amenities from facility data
+        loadAmenitiesFromFacility();
+
+        // Load terms from facility data
+        loadTermsFromFacility();
 
         // Update loyalty points display
         document.getElementById('availablePoints').textContent = userLoyaltyPoints;
@@ -4098,6 +4180,109 @@ function getStatusBadgeClass(status) {
       } catch (error) {
         console.error('Error starting booking process:', error);
         showToast('Error starting booking process', 'danger');
+      }
+    }
+
+    // Load available snacks from facility's foods array
+    function loadAvailableSnacksFromFacility() {
+      try {
+        const snacksListEl = document.getElementById('snacksList');
+        snacksListEl.innerHTML = '';
+      
+        // Check if facility has foods array
+        if (!selectedFacility.foods || !Array.isArray(selectedFacility.foods) || selectedFacility.foods.length === 0) {
+          snacksListEl.innerHTML = `
+            <div class="alert alert-info">
+              <i class="fas fa-info-circle me-2"></i>
+              No snacks available at this facility.
+            </div>
+          `;
+          return;
+        }
+      
+        // Use the foods array from facility data
+        availableSnacks = selectedFacility.foods.map((food, index) => ({
+          id: `snack-${index}`,
+          name: food.name || 'Snack',
+          price: parseFloat(food.price) || 0,
+          description: '',
+          image: food.image || ''
+        }));
+      
+        // Populate snacks list
+        availableSnacks.forEach(snack => {
+          const snackCard = document.createElement('div');
+          snackCard.className = 'snack-card';
+
+          // Add image if available
+          const imageHtml = snack.image ? 
+            `<img src="${snack.image}" class="rounded mb-2" style="width: 60px; height: 60px; object-fit: cover;" alt="${snack.name}">` : 
+            '';
+
+          snackCard.innerHTML = `
+            <div class="form-check">
+              <input class="form-check-input" type="checkbox" id="snack-${snack.id}" value="${snack.id}">
+              <label class="form-check-label w-100" for="snack-${snack.id}">
+                <div class="d-flex align-items-start">
+                  ${imageHtml}
+                  <div class="flex-grow-1 ms-2">
+                    <div class="d-flex justify-content-between align-items-start">
+                      <div>
+                        <span class="fw-bold">${snack.name}</span>
+                        <p class="mb-0 small text-muted">${snack.description || ''}</p>
+                      </div>
+                      <span class="badge bg-primary">RM${snack.price.toFixed(2)}</span>
+                    </div>
+                  </div>
+                </div>
+              </label>
+            </div>
+          `;
+          snacksListEl.appendChild(snackCard);
+        });
+      
+        // Add event listeners to snack selection
+        document.querySelectorAll('input[type="checkbox"][id^="snack-"]').forEach(checkbox => {
+          checkbox.addEventListener('change', function () {
+            const snackId = this.value;
+            const snack = availableSnacks.find(s => s.id === snackId);
+          
+            if (this.checked) {
+              selectedSnacks.push(snack);
+            } else {
+              selectedSnacks = selectedSnacks.filter(s => s.id !== snackId);
+            }
+            updateBookingSummary();
+          });
+        });
+      
+      } catch (error) {
+        console.error('Error loading snacks from facility:', error);
+        showToast('Error loading snacks', 'danger');
+        availableSnacks = [];
+      }
+    }
+    // Load amenities from facility data
+    function loadAmenitiesFromFacility() {
+      try {
+        // Store amenities for later use in summary
+        window.facilityAmenities = selectedFacility.amenities || [];
+      } catch (error) {
+        console.error('Error loading amenities:', error);
+        window.facilityAmenities = [];
+      }
+    }
+    // Load terms and conditions from facility data
+    function loadTermsFromFacility() {
+      try {
+        // Store terms for later use
+        window.facilityTerms = {
+          termsPDF: selectedFacility.termsPDF || '',
+          termsText: selectedFacility.termsText || ''
+        };
+      } catch (error) {
+        console.error('Error loading terms:', error);
+        window.facilityTerms = {};
       }
     }
 
@@ -4536,45 +4721,92 @@ function getStatusBadgeClass(status) {
       // Add selected class to clicked slot
       element.classList.add('selected');
     }
+    // Update amenities display in summary
+    function updateAmenitiesDisplay() {
+      const amenitiesContainer = document.getElementById('summaryAmenities');
+      amenitiesContainer.innerHTML = '';
 
+      if (window.facilityAmenities && window.facilityAmenities.length > 0) {
+        window.facilityAmenities.forEach(amenity => {
+          const badge = document.createElement('span');
+          badge.className = 'badge bg-secondary me-2 mb-2';
+          badge.textContent = amenity;
+          amenitiesContainer.appendChild(badge);
+        });
+      } else {
+        amenitiesContainer.innerHTML = '<p class="text-muted">No amenities listed</p>';
+      }
+    }
+
+    // Update terms display in summary
+    function updateTermsDisplay() {
+      const termsTextEl = document.getElementById('termsText');
+      const viewTermsPDFBtn = document.getElementById('viewTermsPDF');
+
+      if (window.facilityTerms.termsText) {
+        termsTextEl.textContent = window.facilityTerms.termsText;
+      } else {
+        termsTextEl.textContent = 'Please review the full terms and conditions document.';
+      }
+
+      if (window.facilityTerms.termsPDF) {
+        viewTermsPDFBtn.href = window.facilityTerms.termsPDF;
+        viewTermsPDFBtn.style.display = 'inline-block';
+      } else {
+        viewTermsPDFBtn.style.display = 'none';
+      }
+    }
     // Update booking summary
     function updateBookingSummary() {
       // Calculate costs
       const courtFee = selectedFacility.price || 0;
       const coachFee = selectedCoach ? selectedCoach.rate : 0;
-      const snacksFee = selectedSnacks.reduce((total, snack) => total + snack.price, 0);
-
+      const snacksFee = selectedSnacks.reduce((total, snack) => total + (snack.price || 0), 0);
+    
       // Calculate promo discount (10% for NEWUSER10)
       let discount = 0;
       if (selectedFacility.promo === 'NEWUSER10') {
         discount = courtFee * 0.1;
       }
-
+    
       // Calculate subtotal before loyalty points
       const subtotalBeforeLoyalty = courtFee + coachFee + snacksFee - discount;
-
+    
       // Calculate loyalty points discount (1 point = RM0.10)
       let loyaltyDiscount = 0;
       const useLoyaltyPoints = document.getElementById('useLoyaltyPoints').checked;
       if (useLoyaltyPoints) {
         loyaltyDiscount = Math.min(userLoyaltyPoints * 0.1, subtotalBeforeLoyalty);
       }
-
+    
       // Calculate final total
       const total = subtotalBeforeLoyalty - loyaltyDiscount;
-
+    
       // Update summary display
       document.getElementById('summaryFacility').textContent = selectedFacility.name;
       document.getElementById('summaryDate').textContent = selectedDate.toLocaleDateString();
       document.getElementById('summaryTime').textContent = selectedTimeSlot;
       document.getElementById('summaryCourtFee').textContent = `RM ${courtFee}`;
       document.getElementById('summaryCoach').textContent = selectedCoach ? `${selectedCoach.name} (RM${coachFee})` : 'No coach';
-      document.getElementById('summarySnacks').textContent = selectedSnacks.length > 0 ?
-        `${selectedSnacks.length} items (RM${snacksFee})` : 'No snacks';
+      
+      // Update snacks summary
+      if (selectedSnacks.length > 0) {
+        const snacksList = selectedSnacks.map(s => `${s.name} (RM${s.price})`).join(', ');
+        document.getElementById('summarySnacks').textContent = snacksList;
+      } else {
+        document.getElementById('summarySnacks').textContent = 'No snacks';
+      }
+      
       document.getElementById('summaryDiscount').textContent = `- RM ${discount.toFixed(2)}`;
       document.getElementById('summaryLoyaltyDiscount').textContent = `- RM ${loyaltyDiscount.toFixed(2)}`;
       document.getElementById('summarySubtotal').textContent = `RM ${subtotalBeforeLoyalty.toFixed(2)}`;
       document.getElementById('summaryTotal').textContent = `RM ${total.toFixed(2)}`;
+    
+      // Update amenities display
+      updateAmenitiesDisplay();
+      
+      // Update terms display
+      updateTermsDisplay();
     }
 
     // Reset booking process
@@ -5315,6 +5547,24 @@ function getStatusBadgeClass(status) {
         updateTypingIndicator(false);
       }, TYPING_TIMEOUT);
     });
+    async function uploadToCloudinary(file) {
+  const CLOUD_NAME = "dagqzn57w";  
+  const UPLOAD_PRESET = "ml_default";  
+
+  const url = `https://api.cloudinary.com/v1_1/${CLOUD_NAME}/image/upload`;
+
+  const formData = new FormData();
+  formData.append("file", file);
+  formData.append("upload_preset", UPLOAD_PRESET);
+
+  const res = await fetch(url, {
+    method: "POST",
+    body: formData
+  });
+
+  const data = await res.json();
+  return data.secure_url;
+}
 
     // Initialize Marketplace Page
     async function initializeMarketplacePage() {
@@ -5608,7 +5858,16 @@ function getStatusBadgeClass(status) {
         const itemPrice = parseFloat(document.getElementById('itemPrice').value);
         const itemCondition = document.getElementById('itemCondition').value;
         const itemCategory = document.getElementById('itemCategory').value;
-        const itemImageUrl = document.getElementById('itemImageUrl').value.trim();
+        // Handle image upload
+let itemImageUrl = null;
+const imageFile = document.getElementById("itemImageFile").files[0];
+
+if (imageFile) {
+  itemImageUrl = await uploadToCloudinary(imageFile);
+} else {
+  itemImageUrl = "https://via.placeholder.com/300x200?text=No+Image";
+}
+
         const itemDescription = document.getElementById('itemDescription').value.trim();
         const contactNumber = document.getElementById('contactNumber').value.trim();
 
@@ -6347,8 +6606,15 @@ function getStatusBadgeClass(status) {
     async function createPost() {
       try {
         const content = document.getElementById('postContent').value.trim();
-        const photoUrl = document.getElementById('photoUrl').value.trim();
-        const videoUrl = document.getElementById('videoUrl').value.trim();
+        let uploadedPhotoUrl = null;
+
+const photoFile = document.getElementById("postPhotoFile").files[0];
+
+if (photoFile) {
+  uploadedPhotoUrl = await uploadToCloudinary(photoFile, "image");
+}
+
+
 
         if (!content) {
           showToast('Please enter post content', 'warning');
@@ -6361,8 +6627,7 @@ function getStatusBadgeClass(status) {
 
         const postData = {
           content: content,
-          photoUrl: photoUrl || null,
-          videoUrl: videoUrl || null,
+          photoUrl: uploadedPhotoUrl,
           userId: currentUser.uid,
           userName: currentUser.displayName || 'User',
           userPhotoUrl: userPhotoUrl,
@@ -6643,62 +6908,179 @@ function getStatusBadgeClass(status) {
         console.error('Error marking all notifications as read:', error);
       }
     }
-    // Submit booking - UPDATED VERSION with notification
-    async function submitBooking() {
-      try {
-        // ... existing booking calculation code ...
+    // Submit booking - UPDATED VERSION with notification and correct Firestore structure
+async function submitBooking() {
+    try {
+        if (!selectedFacility || !selectedDate || !selectedTimeSlot) {
+            showToast('Please complete all booking steps', 'warning');
+            return;
+        }
 
-        // Create booking object
+        // Calculate costs
+        const courtFee = selectedFacility.price || 0;
+        const coachFee = selectedCoach ? selectedCoach.rate : 0;
+        const snacksFee = selectedSnacks.reduce((total, snack) => total + snack.price, 0);
+        // Check if terms are agreed
+        const agreeTerms = document.getElementById('agreeTerms').checked;
+        if (!agreeTerms) {
+          showToast('You must agree to the terms and conditions', 'warning');
+          document.getElementById('agreeTerms').focus();
+          return;e
+        }
+
+        // Calculate promo discount (10% for NEWUSER10)
+        let discount = 0;
+        if (selectedFacility.promo === 'NEWUSER10') {
+            discount = courtFee * 0.1;
+        }
+
+        // Calculate loyalty points discount (1 point = RM0.10)
+        let loyaltyDiscount = 0;
+        let loyaltyPointsUsed = 0;
+        const useLoyaltyPoints = document.getElementById('useLoyaltyPoints').checked;
+        
+        if (useLoyaltyPoints && userLoyaltyPoints > 0) {
+            // Maximum discount that can be applied is the subtotal before loyalty
+            const subtotalBeforeLoyalty = courtFee + coachFee + snacksFee - discount;
+            const maxLoyaltyPoints = Math.floor(subtotalBeforeLoyalty / 0.1);
+            loyaltyPointsUsed = Math.min(userLoyaltyPoints, maxLoyaltyPoints);
+            loyaltyDiscount = loyaltyPointsUsed * 0.1;
+        }
+
+        // Calculate final total
+        const totalAmount = courtFee + coachFee + snacksFee - discount - loyaltyDiscount;
+
+        // Prepare coach data if selected
+        const coachData = selectedCoach ? {
+            id: selectedCoach.id,
+            name: selectedCoach.name,
+            rate: selectedCoach.rate
+        } : null;
+
+        // Prepare booking data according to your Firestore structure
         const bookingData = {
-          // ... existing booking data ...
+            amenities: selectedFacility.amenities || ["Parking", "Changing Rooms", "Equipment Rental"],
+            amount: parseFloat(totalAmount.toFixed(2)),
+            capacity: selectedFacility.capacity || 50,
+            coach: coachData,
+            createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+            date: selectedDate.toISOString().split('T')[0], // Format as "YYYY-MM-DD"
+            description: selectedFacility.description || "Your dream tennis court where you can achieve success.",
+            duration: "1 hour",
+            facilityId: selectedFacility.id,
+            facilityName: selectedFacility.name,
+            imageUrl: selectedFacility.imageUrl || "https://bestshoeswomen.com/wp-content/uploads/2022/07/New-Balance-Court-Shoes.jpg",
+            location: selectedFacility.location || "Maple,Malaysia",
+            loocationLink: selectedFacility.locationLink || "",
+            loyaltyPointsUsed: loyaltyPointsUsed,
+            maxBookings: selectedFacility.maxBookings || 1,
+            name: selectedFacility.name,
+            price: selectedFacility.price || 180,
+            promo: selectedFacility.promo || "NEWUSER10",
+            slots: selectedFacility.slots || ["5-6 PM"],
+            snacks: selectedSnacks.length > 0 ? selectedSnacks : null,
+            sportType: selectedFacility.type || "Tennis Court",
+            status: "pending", // Start as pending, can be changed to "completed" later
+            time: selectedTimeSlot,
+            type: selectedFacility.type || "Tennis Court",
+            updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
+            userEmail: currentUser.email,
+            userId: currentUser.uid,
+            userName: currentUser.displayName || "User"
         };
 
         // Add booking to Firestore
         const bookingRef = await db.collection('bookings').add(bookingData);
 
+        // Update user's loyalty points if used
+        if (loyaltyPointsUsed > 0) {
+            const newLoyaltyPoints = userLoyaltyPoints - loyaltyPointsUsed;
+            await db.collection('users').doc(currentUser.uid).update({
+                loyaltyPoints: newLoyaltyPoints,
+                updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+            });
+            
+            // Update local variable
+            userLoyaltyPoints = newLoyaltyPoints;
+        }
+
         // Create notification for user
         await createNotification(
-          currentUser.uid,
-          'booking_created',
-          'Booking Submitted',
-          `Your booking for ${selectedFacility.name} on ${selectedDate.toLocaleDateString()} at ${selectedTimeSlot} has been submitted and is pending approval.`,
-          {
-            bookingId: bookingRef.id,
-            facilityName: selectedFacility.name,
-            date: selectedDate,
-            time: selectedTimeSlot
-          }
+            currentUser.uid,
+            'booking_created',
+            'Booking Submitted',
+            `Your booking for ${selectedFacility.name} on ${selectedDate.toLocaleDateString()} at ${selectedTimeSlot} has been submitted and is pending approval.`,
+            {
+                bookingId: bookingRef.id,
+                facilityName: selectedFacility.name,
+                date: selectedDate,
+                time: selectedTimeSlot
+            }
         );
 
         // Create notification for admins (all users with admin role)
         const adminsSnapshot = await db.collection('users')
-          .where('role', '==', 'admin')
-          .get();
+            .where('role', '==', 'admin')
+            .get();
 
-        adminsSnapshot.forEach(async (adminDoc) => {
-          await createNotification(
-            adminDoc.id,
-            'new_booking_request',
-            'New Booking Request',
-            `New booking request from ${currentUser.displayName} for ${selectedFacility.name}`,
-            {
-              bookingId: bookingRef.id,
-              userId: currentUser.uid,
-              userName: currentUser.displayName,
-              facilityName: selectedFacility.name,
-              date: selectedDate,
-              time: selectedTimeSlot
-            }
-          );
+        const adminPromises = [];
+        adminsSnapshot.forEach((adminDoc) => {
+            adminPromises.push(
+                createNotification(
+                    adminDoc.id,
+                    'new_booking_request',
+                    'New Booking Request',
+                    `New booking request from ${currentUser.displayName} for ${selectedFacility.name}`,
+                    {
+                        bookingId: bookingRef.id,
+                        userId: currentUser.uid,
+                        userName: currentUser.displayName,
+                        facilityName: selectedFacility.name,
+                        date: selectedDate,
+                        time: selectedTimeSlot
+                    }
+                )
+            );
         });
 
-        // ... rest of existing code (loyalty points, success message, etc.) ...
+        await Promise.all(adminPromises);
 
-      } catch (error) {
+        showToast('Booking submitted successfully!', 'success');
+
+        // Reset booking process
+        resetBookingProcess();
+
+        // Show facilities list again
+        document.getElementById('facilitiesList').style.display = 'block';
+        document.getElementById('bookingSteps').style.display = 'none';
+
+        // Reload dashboard stats to reflect new booking
+        if (currentUser) {
+            await updateDashboardStats(currentUser.uid);
+        }
+
+    } catch (error) {
         console.error('Error submitting booking:', error);
-        showToast('Error submitting booking', 'danger');
-      }
+        showToast('Error submitting booking: ' + error.message, 'danger');
     }
+}
+
+// Helper function to create notifications
+async function createNotification(userId, type, title, message, data = {}) {
+    try {
+        await db.collection('notifications').add({
+            userId: userId,
+            type: type,
+            title: title,
+            message: message,
+            data: data,
+            read: false,
+            timestamp: firebase.firestore.FieldValue.serverTimestamp()
+        });
+    } catch (error) {
+        console.error('Error creating notification:', error);
+    }
+}
     // Function to be called when admin approves a booking
     async function onBookingApproved(bookingId, bookingData) {
       try {

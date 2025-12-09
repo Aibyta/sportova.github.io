@@ -2052,18 +2052,29 @@
       const uploadPreset = "ml_default";
     }
 
-    async function uploadImageToCloudinary(file) {
-      const formData = new FormData();
-      formData.append("file", file);
-      formData.append("upload_preset", uploadPreset);
+    async function uploadPDFToCloudinary(pdfFile) {
+      const CLOUD_NAME = "dagqzn57w";  
+      const UPLOAD_PRESET = "ml_default";  
 
-      const response = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/image/upload`, {
+      // Use raw upload for PDFs
+      const url = `https://api.cloudinary.com/v1_1/${CLOUD_NAME}/raw/upload`;
+
+      const formData = new FormData();
+      formData.append("file", pdfFile);
+      formData.append("upload_preset", UPLOAD_PRESET);
+
+      // Add type parameter for public access
+      formData.append("type", "upload");  // This makes it publicly accessible
+      formData.append("resource_type", "raw");
+      formData.append("access_mode", "public");
+
+      const res = await fetch(url, {
         method: "POST",
         body: formData
       });
-
-      const data = await response.json();
-      return data.secure_url;  // final image url
+    
+      const data = await res.json();
+      return data.secure_url;
     }
 
     function addAmenity() {
@@ -8344,23 +8355,23 @@
       }
     }
     async function uploadToCloudinary(file) {
-  const CLOUD_NAME = "dagqzn57w";  
-  const UPLOAD_PRESET = "ml_default";  
-
-  const url = `https://api.cloudinary.com/v1_1/${CLOUD_NAME}/image/upload`;
-
-  const formData = new FormData();
-  formData.append("file", file);
-  formData.append("upload_preset", UPLOAD_PRESET);
-
-  const res = await fetch(url, {
-    method: "POST",
-    body: formData
-  });
-
-  const data = await res.json();
-  return data.secure_url;
-}
+      const CLOUD_NAME = "dagqzn57w";  
+      const UPLOAD_PRESET = "ml_default";  
+        
+      const url = `https://api.cloudinary.com/v1_1/${CLOUD_NAME}/image/upload`;
+        
+      const formData = new FormData();
+      formData.append("file", file);
+      formData.append("upload_preset", UPLOAD_PRESET);
+        
+      const res = await fetch(url, {
+        method: "POST",
+        body: formData
+      });
+    
+      const data = await res.json();
+      return data.secure_url;
+    }
 
 
     async function loadMarketplacePage() {
@@ -9287,7 +9298,7 @@ async function saveProduct() {
 
         const termsPDF = document.getElementById("termsPDF").files[0];
         if (termsPDF) {
-            termsPDFUrl = await uploadToCloudinary(termsPDF);
+            termsPDFUrl = await uploadPDFToCloudinary(termsPDF);
         }
 
         const form = document.getElementById("addFacilityForm");
