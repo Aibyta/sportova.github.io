@@ -196,10 +196,33 @@
         <div class="login-link">
             Don't have an account? <a href="sign-up.html" class="text-primary">Sign up</a>
         </div>
+        <div class="text-center mt-1">
+            <a href="#" id="forgotPasswordLink" class="text-danger" style="font-size: 0.9rem;">
+                Forgot Password?
+            </a>
+        </div>
     </div>
     <a href="login-owner.html" class="admin-floating-btn">
         <i class="bi bi-shield-lock-fill"></i>
     </a>
+    <!-- Forgot Password Modal -->
+    <div class="modal fade" id="forgotPasswordModal" tabindex="-1">
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title">Reset Password</h5>
+            <button class="btn-close" data-bs-dismiss="modal"></button>
+          </div>
+          <div class="modal-body">
+            <input type="email" class="form-control" id="resetEmail" placeholder="Enter your email">
+          </div>
+          <div class="modal-footer">
+            <button class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+            <button class="btn btn-primary" id="sendResetEmail">Send Reset Link</button>
+          </div>
+        </div>
+      </div>
+    </div>
 
     <!-- Firebase SDKs -->
     <script src="https://www.gstatic.com/firebasejs/10.11.0/firebase-app-compat.js"></script>
@@ -285,6 +308,31 @@
                 })
                 .catch((error) => {
                     alert('Login failed: ' + error.message);
+                });
+        });
+        // Open modal when clicking the link
+        document.getElementById('forgotPasswordLink').addEventListener('click', () => {
+            const modal = new bootstrap.Modal(document.getElementById('forgotPasswordModal'));
+            modal.show();
+        });
+
+        // Handle reset email
+        document.getElementById('sendResetEmail').addEventListener('click', () => {
+            const email = document.getElementById('resetEmail').value;
+        
+            if (!email) {
+                alert("Please enter your email.");
+                return;
+            }
+        
+            auth.sendPasswordResetEmail(email)
+                .then(() => {
+                    alert("Password reset link has been sent to your email.Check Spam folder too");
+                    const modal = bootstrap.Modal.getInstance(document.getElementById('forgotPasswordModal'));
+                    modal.hide();
+                })
+                .catch((error) => {
+                    alert("Error: " + error.message);
                 });
         });
     </script>

@@ -524,10 +524,19 @@
 
     .media {
       width: 100%;
-      max-height: 400px;
-      object-fit: cover;
+      height: auto;       
+      max-height: none;        
+      object-fit: contain;
       border-radius: .75rem;
+      background: #00000010;
     }
+    .post-card img.media {
+      width: 100% !important;
+      height: auto !important;
+      max-height: 350px !important;
+      object-fit: contain !important;
+    }
+
 
     @keyframes fadeSlide {
       from {
@@ -1336,13 +1345,8 @@
               <h6 class="dropdown-header">Notifications</h6>
             </li>
             <li><a class="dropdown-item" href="#" id="markAllReadBtn">Mark all as read</a></li>
-            <li>
-              <hr class="dropdown-divider">
-            </li>
+            <li><hr class="dropdown-divider"></li>
             <!-- Notifications will be loaded here dynamically -->
-            <li>
-              <hr class="dropdown-divider">
-            </li>
             <li><a class="dropdown-item" href="#" id="viewAllNotifications">View all notifications</a></li>
           </ul>
         </div>
@@ -1453,6 +1457,7 @@
         <div class="chat-footer">
           <div class="chat-input-container">
             <button class="btn btn-sm btn-outline-secondary chat-action-btn" id="attachBtn">
+              <input type="file" id="chatAttachmentInput" class="d-none" accept="image/*,video/*">
               <i class="fas fa-paperclip"></i>
             </button>
             <div class="message-input-wrapper">
@@ -1485,7 +1490,7 @@
       </div>
     </div>
   </div>
-
+  <div id="notificationContainer" style="position: fixed; bottom: 20px; right: 20px; z-index: 9999;"></div>
   <!-- Bootstrap JS -->
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 
@@ -1520,6 +1525,10 @@
     let userDataLoaded = false;
     let currentPage = localStorage.getItem('currentPage') || 'dashboard';
     let currentUser = null;
+    let activeChatListener = null;
+    let activeChatId = null;
+    let activeReceiverId = null;
+    let unsubscribeRealtimeNotifications = null;
 
     // Booking process variables
     let selectedFacility = null;
@@ -1532,6 +1541,8 @@
     let userLoyaltyPoints = 0;
     let currentMonth = new Date().getMonth();
     let currentYear = new Date().getFullYear();
+    let selectedFacilityData = null;   // global
+    let selectedFileUrl = null;
 
     // Authentication state observer
     auth.onAuthStateChanged((user) => {
@@ -1553,6 +1564,7 @@
         initializeHeaderNotifications();
         loadNotifications();
         setupNotificationListener();
+        setupRealtimeNotificationListener();
 
         // Add event listener for mark all as read
         document.getElementById('markAllReadBtn')?.addEventListener('click', async (e) => {
@@ -1629,7 +1641,59 @@
         console.error('Error initializing user document:', error);
       }
     }
+    function setupRealtimeNotificationListener() {
+    if (!currentUser) return;
 
+    if (unsubscribeRealtimeNotifications) {
+        unsubscribeRealtimeNotifications();
+    }
+
+    unsubscribeRealtimeNotifications = db.collection("notifications")
+        .where("userId", "==", currentUser.uid)
+        .where("read", "==", false)
+        .orderBy("createdAt", "desc")
+        .onSnapshot(snapshot => {
+            snapshot.docChanges().forEach(change => {
+                if (change.type === "added") {
+                    const data = change.doc.data();
+
+                    // Show toast
+                    showIncomingMessageToast(data.title, data.message);
+
+                    // Update dropdown without refresh
+                    loadNotifications();
+                }
+            });
+        });
+}
+async function showIncomingMessageToast(senderId, message) {
+    try {
+        const userSnap = await db.collection("users").doc(senderId).get();
+        const sender = userSnap.data();
+
+        const toastHtml = `
+            <div class="toast align-items-center text-white bg-primary border-0 show" role="alert">
+              <div class="d-flex">
+                <div class="toast-body">
+                  <strong>${sender.name || "New Message"}</strong><br>${message}
+                </div>
+                <button type="button" class="btn-close btn-close-white me-2 m-auto"
+                  data-bs-dismiss="toast"></button>
+              </div>
+            </div>
+        `;
+
+        const container = document.getElementById("notificationContainer");
+        container.innerHTML = toastHtml;
+
+        setTimeout(() => {
+            container.innerHTML = "";
+        }, 4000);
+
+    } catch (err) {
+        console.error("Error showing toast:", err);
+    }
+}
     // Generate default avatar based on name (make sure this function exists)
     function generateDefaultAvatar(name) {
       const colors = ['#4361ee', '#3f37c9', '#4cc9f0', '#f9c74f', '#f94144'];
@@ -1828,7 +1892,7 @@ async function loadRecentBookings(userId) {
       const facilityName = booking.facilityName || booking.facility?.name || booking.name || 'Facility';
 
       // Get time from different possible fields
-      const time = booking.time || booking.slot || (booking.slots && booking.slots.length > 0 ? booking.slots[0] : 'Time not set');
+      const time = booking.time || booking.slot || (booking.slot && booking.slots.length > 0 ? booking.slots[0] : 'Time not set');
 
       // Create status badge with better error handling
       let statusClass = 'badge-pending';
@@ -2379,46 +2443,82 @@ async function registerForEvent(eventId) {
     function loadBookFacilityPage() {
       return `
         <div class="row mb-4">
-          <div class="col-md-12">
-            <div class="form-card">
-              <h4>Search Facilities</h4>
-              <div class="row">
-                <div class="col-md-3">
-                  <div class="form-group">
-                    <label class="form-label">Sport Type</label>
-                    <select class="form-select" id="sportType">
-                      <option value="tennis" selected>Tennis</option>
-                      <option value="badminton">Badminton</option>
-                      <option value="basketball">Basketball</option>
-                      <option value="volleyball">Volleyball</option>
-                      <option value="football">Football</option>
-                    </select>
-                  </div>
+            <div class="col-md-12">
+                <div class="form-card">
+                    <h4>Search Facilities</h4>
+                    <div class="row">
+                        <div class="col-md-3">
+                            <div class="form-group">
+                                <label class="form-label">Sport Type</label>
+                                <select class="form-select" id="sportType">
+                                    <option value="all">All Sports</option>
+                                    <option value="tennis" selected>Tennis</option>
+                                    <option value="badminton">Badminton</option>
+                                    <option value="basketball">Basketball</option>
+                                    <option value="volleyball">Volleyball</option>
+                                    <option value="football">Football</option>
+                                    <option value="swimming">Swimming</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="form-group">
+                                <label class="form-label">Location</label>
+                                <div class="input-group">
+                                    <select class="form-select" id="bookinglocation">
+                                        <option value="" selected>Select or type location</option>
+                                        <option value="custom">Type Custom Location...</option>
+                                        <!-- Locations will be loaded dynamically from Firestore -->
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="form-group">
+                                <label class="form-label">Date</label>
+                                <input type="date" 
+                                       class="form-control" 
+                                       id="bookingDate"
+                                       min="${new Date().toISOString().split('T')[0]}">
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="form-group">
+                                <label class="form-label">Time Slot</label>
+                                <select class="form-select" id="bookingTime">
+                                    <option value="all">Any Time</option>
+                                    <option value="morning">Morning (8AM-12PM)</option>
+                                    <option value="afternoon">Afternoon (12PM-5PM)</option>
+                                    <option value="evening">Evening (5PM-10PM)</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-6 d-flex align-items-end">
+                            <button class="btn btn-primary w-100 me-2" id="searchFacilitiesBtn">
+                                <i class="fas fa-search"></i> Search Facilities
+                            </button>
+                        </div>
+                        <div class="col-md-6 d-flex align-items-end">
+                            <button class="btn btn-outline-secondary w-100" id="clearFiltersBtn">
+                                <i class="fas fa-times"></i> Clear Filters
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <!-- Custom Location Input (Hidden by default) -->
+                    <div class="row mt-2" id="customLocationSection" style="display: none;">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label class="form-label">Custom Location</label>
+                                <input type="text" 
+                                       class="form-control" 
+                                       id="customLocationInput"
+                                       placeholder="Enter your location...">
+                            </div>
+                        </div>
+                    </div>
                 </div>
-                <div class="col-md-3">
-                  <div class="form-group">
-                    <label class="form-label">Date</label>
-                    <input type="date" class="form-control" id="bookingDate">
-                  </div>
-                </div>
-                <div class="col-md-3">
-                  <div class="form-group">
-                    <label class="form-label">Time</label>
-                    <select class="form-select" id="bookingTime">
-                      <option value="morning">Morning (8AM-12PM)</option>
-                      <option value="afternoon">Afternoon (12PM-5PM)</option>
-                      <option value="evening">Evening (5PM-10PM)</option>
-                    </select>
-                  </div>
-                </div>
-                <div class="col-md-3 d-flex align-items-end">
-                  <button class="btn btn-primary w-100" id="searchFacilitiesBtn">
-                    <i class="fas fa-search"></i> Search
-                  </button>
-                </div>
-              </div>
             </div>
-          </div>
         </div>
 
         <div class="row" id="facilitiesList">
@@ -3165,7 +3265,7 @@ async function loadAllBookings() {
       }
 
       // Only show cancel button for pending or confirmed bookings
-      const canCancel = statusText === 'pending' || statusText === 'confirmed';
+      const canCancel = statusText === 'approved' || statusText === 'confirmed';
 
       row.innerHTML = `
         <td>${facilityName}</td>
@@ -3418,7 +3518,7 @@ async function viewBookingDetails(bookingId) {
               <button type="button" class="btn btn-primary" onclick="printBookingDetails('${bookingId}')">
                 <i class="fas fa-print me-1"></i> Print Receipt
               </button>
-              ${status === 'pending' || status === 'confirmed' ? `
+              ${status === 'approved' || status === 'confirmed' ? `
                 <button type="button" class="btn btn-danger" onclick="cancelBookingFromModal('${bookingId}')">
                   <i class="fas fa-times me-1"></i> Cancel Booking
                 </button>
@@ -4067,79 +4167,478 @@ function getStatusBadgeClass(status) {
 }
 
 
-    // Initialize Book Facility Page
-    async function initializeBookFacilityPage() {
-      // Load facilities from Firestore
-      try {
-        const facilitiesSnapshot = await db.collection('facilities').get();
-        const facilitiesList = document.getElementById('facilitiesList');
-        facilitiesList.innerHTML = '';
+   // Initialize Book Facility Page with Search
+async function initializeBookFacilityPage() {
+    // Load locations from Firestore
+    await loadLocationsFromFirestore();
+    
+    // Load facilities from Firestore initially
+    await loadFacilities();
 
-        if (facilitiesSnapshot.empty) {
-          facilitiesList.innerHTML = '<div class="col-12 text-center">No facilities found</div>';
-          return;
+    // Search facilities functionality
+    document.getElementById('searchFacilitiesBtn').addEventListener('click', () => {
+        searchFacilities();
+    });
+
+    // Clear filters button
+    document.getElementById('clearFiltersBtn').addEventListener('click', clearFacilityFilters);
+
+    // Add enter key support for search
+    const searchInputs = ['sportType', 'bookingDate', 'bookingTime', 'customLocationInput'];
+    searchInputs.forEach(inputId => {
+        const input = document.getElementById(inputId);
+        if (input) {
+            input.addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    searchFacilities();
+                }
+            });
         }
+    });
 
+    // Handle custom location selection
+    document.getElementById('bookinglocation').addEventListener('change', function() {
+        handleLocationSelection(this.value);
+    });
+}
+
+// Load unique locations from Firestore
+async function loadLocationsFromFirestore() {
+    try {
+        const facilitiesSnapshot = await db.collection('facilities').get();
+        const locationsSet = new Set();
+        
         facilitiesSnapshot.forEach(doc => {
-          const facility = doc.data();
-          const col = document.createElement('div');
-          col.className = 'col-md-4 mb-4';
-
-          // Format amenities
-          const amenitiesHtml = facility.amenities ?
-            facility.amenities.map(amenity => `<span class="badge bg-secondary me-1">${amenity}</span>`).join('') :
-            '';
-
-          // Add promo badge if promo exists
-          const promoBadge = facility.promo ? `<div class="promo-badge">${facility.promo}</div>` : '';
-
-          col.innerHTML = `
-            <div class="facility-card card h-100">
-              ${promoBadge}
-              <img src="${facility.imageUrl || 'https://via.placeholder.com/300x200'}" 
-                   class="card-img-top facility-image" alt="${facility.name}"
-                   style="height: 200px; object-fit: cover;">
-              <div class="card-body d-flex flex-column">
-                <h5 class="card-title">${facility.name}</h5>
-                <p class="card-text flex-grow-1">${facility.description}</p>
-                <div class="mb-2">
-                  <small class="text-muted"><i class="fas fa-map-marker-alt"></i> ${facility.location}</small>
-                </div>
-                <div class="mb-2">
-                  ${amenitiesHtml}
-                </div>
-                <div class="mt-auto">
-                  <div class="d-flex justify-content-between align-items-center">
-                    <span class="badge bg-primary">RM${facility.price}/hour</span>
-                    <button class="btn btn-sm btn-outline-primary book-facility-btn" data-id="${doc.id}">
-                      Book Now
-                    </button>
-                  </div>
-                </div>
-              </div>
-            </div>
-          `;
-
-          facilitiesList.appendChild(col);
+            const facility = doc.data();
+            if (facility.location && facility.location.trim() !== '') {
+                locationsSet.add(facility.location.trim());
+            }
         });
+        
+        // Convert set to array and sort alphabetically
+        const locations = Array.from(locationsSet).sort();
+        
+        // Get the location dropdown
+        const locationDropdown = document.getElementById('bookinglocation');
+        
+        // Clear existing options except first two
+        while (locationDropdown.options.length > 2) {
+            locationDropdown.remove(2);
+        }
+        
+        // Add locations from Firestore
+        locations.forEach(location => {
+            const option = document.createElement('option');
+            option.value = location;
+            option.textContent = location;
+            locationDropdown.appendChild(option);
+        });
+        
+        console.log(`Loaded ${locations.length} locations from Firestore`);
+        
+    } catch (error) {
+        console.error('Error loading locations from Firestore:', error);
+        showToast('Error loading locations', 'danger');
+    }
+}
 
+// Handle location selection
+function handleLocationSelection(selectedValue) {
+    const customLocationSection = document.getElementById('customLocationSection');
+    const customLocationInput = document.getElementById('customLocationInput');
+    
+    if (selectedValue === 'custom') {
+        // Show custom location input
+        customLocationSection.style.display = 'block';
+        customLocationInput.focus();
+        
+        // Clear any previous custom location value
+        customLocationInput.value = '';
+    } else {
+        // Hide custom location input
+        customLocationSection.style.display = 'none';
+        customLocationInput.value = '';
+    }
+}
+
+// Updated searchFacilities function to handle both dropdown and custom location
+async function searchFacilities() {
+    const sportType = document.getElementById('sportType').value;
+    const locationSelect = document.getElementById('bookinglocation');
+    const selectedLocation = locationSelect.value;
+    const customLocation = document.getElementById('customLocationInput').value.trim();
+    const date = document.getElementById('bookingDate').value;
+    const time = document.getElementById('bookingTime').value;
+    
+    // Determine which location to use
+    let location = '';
+    if (selectedLocation === 'custom' && customLocation) {
+        location = customLocation;
+    } else if (selectedLocation && selectedLocation !== 'custom' && selectedLocation !== '') {
+        location = selectedLocation;
+    }
+    
+    // Show loading state
+    const facilitiesList = document.getElementById('facilitiesList');
+    facilitiesList.innerHTML = '<div class="col-12 text-center"><div class="spinner-border text-primary" role="status"><span class="visually-hidden">Loading...</span></div></div>';
+    
+    try {
+        // Build filters object
+        const filters = {};
+        
+        if (sportType && sportType !== 'all') {
+            filters.sportType = sportType;
+        }
+        
+        if (location) {
+            filters.location = location;
+        }
+        
+        if (date) {
+            filters.date = date;
+        }
+        
+        if (time && time !== 'all') {
+            filters.time = time;
+        }
+        
+        // Load facilities with filters
+        await loadFacilities(filters);
+        
+        // Show results count
+        const facilityCards = document.querySelectorAll('.facility-card');
+        if (facilityCards.length > 0) {
+            let locationText = location ? ` in ${location}` : '';
+            showToast(`Found ${facilityCards.length} facilities${locationText}`, 'success');
+        }
+        
+    } catch (error) {
+        console.error('Error searching facilities:', error);
+        showToast('Error searching facilities', 'danger');
+    }
+}
+
+// Updated clearFilters function
+function clearFacilityFilters() {
+    document.getElementById('sportType').value = 'all';
+    document.getElementById('bookinglocation').value = '';
+    document.getElementById('bookingDate').value = '';
+    document.getElementById('bookingTime').value = 'all';
+    document.getElementById('customLocationInput').value = '';
+    document.getElementById('customLocationSection').style.display = 'none';
+    
+    loadFacilities(); // Load all facilities
+}
+
+    // Load all facilities with filters
+async function loadFacilities(filters = {}) {
+    try {
+        let facilitiesQuery = db.collection('facilities');
+        
+        // Apply filters if provided
+        if (filters.sportType && filters.sportType !== 'all') {
+            facilitiesQuery = facilitiesQuery.where('sportType', '==', filters.sportType);
+        }
+        
+        if (filters.location) {
+            // Use case-insensitive search for location
+            // First get all facilities and filter client-side for better flexibility
+            const facilitiesSnapshot = await facilitiesQuery.get();
+            const facilitiesList = document.getElementById('facilitiesList');
+            facilitiesList.innerHTML = '';
+
+            if (facilitiesSnapshot.empty) {
+                facilitiesList.innerHTML = '<div class="col-12 text-center"><div class="alert alert-info">No facilities found matching your criteria.</div></div>';
+                return;
+            }
+
+            const facilities = [];
+            
+            facilitiesSnapshot.forEach(doc => {
+                const facility = {
+                    id: doc.id,
+                    ...doc.data()
+                };
+                
+                // Apply location filter (case-insensitive)
+                if (filters.location) {
+                    const facilityLocation = facility.location ? facility.location.toLowerCase() : '';
+                    const filterLocation = filters.location.toLowerCase();
+                    
+                    if (!facilityLocation.includes(filterLocation)) {
+                        return; // Skip if location doesn't match
+                    }
+                }
+                
+                // Apply date filter if specified
+                if (filters.date) {
+                    const bookingDate = new Date(filters.date);
+                    if (!isFacilityAvailableOnDate(facility, bookingDate)) {
+                        return; // Skip this facility if not available on the date
+                    }
+                }
+                
+                // Apply time filter if specified
+                if (filters.time) {
+                    if (!isFacilityAvailableAtTime(facility, filters.time)) {
+                        return; // Skip this facility if not available at the time
+                    }
+                }
+                
+                facilities.push(facility);
+            });
+
+            if (facilities.length === 0) {
+                facilitiesList.innerHTML = `
+                    <div class="col-12 text-center">
+                        <div class="alert alert-warning">
+                            <i class="fas fa-search me-2"></i>
+                            No available facilities match your search criteria.
+                            ${filters.location ? `<br><small>Trying searching for a different location.</small>` : ''}
+                        </div>
+                    </div>
+                `;
+                return;
+            }
+
+            renderFacilities(facilities);
+            
+        } else {
+            // No location filter, proceed normally
+            const facilitiesSnapshot = await facilitiesQuery.get();
+            const facilitiesList = document.getElementById('facilitiesList');
+            facilitiesList.innerHTML = '';
+
+            if (facilitiesSnapshot.empty) {
+                facilitiesList.innerHTML = '<div class="col-12 text-center"><div class="alert alert-info">No facilities found.</div></div>';
+                return;
+            }
+
+            const facilities = [];
+            
+            facilitiesSnapshot.forEach(doc => {
+                const facility = {
+                    id: doc.id,
+                    ...doc.data()
+                };
+                
+                // Apply date filter if specified
+                if (filters.date) {
+                    const bookingDate = new Date(filters.date);
+                    if (!isFacilityAvailableOnDate(facility, bookingDate)) {
+                        return; // Skip this facility if not available on the date
+                    }
+                }
+                
+                // Apply time filter if specified
+                if (filters.time) {
+                    if (!isFacilityAvailableAtTime(facility, filters.time)) {
+                        return; // Skip this facility if not available at the time
+                    }
+                }
+                
+                facilities.push(facility);
+            });
+
+            if (facilities.length === 0) {
+                facilitiesList.innerHTML = '<div class="col-12 text-center"><div class="alert alert-warning">No available facilities match your search criteria.</div></div>';
+                return;
+            }
+
+            renderFacilities(facilities);
+        }
+        
         // Add event listeners to book buttons
         document.querySelectorAll('.book-facility-btn').forEach(btn => {
-          btn.addEventListener('click', function () {
-            const facilityId = this.getAttribute('data-id');
-            startBookingProcess(facilityId);
-          });
+            btn.addEventListener('click', function() {
+                const facilityId = this.getAttribute('data-id');
+                startBookingProcess(facilityId);
+            });
         });
-      } catch (error) {
+
+    } catch (error) {
         console.error('Error loading facilities:', error);
         showToast('Error loading facilities', 'danger');
-      }
-
-      // Search facilities functionality
-      document.getElementById('searchFacilitiesBtn').addEventListener('click', () => {
-        showToast('Searching for available facilities...', 'info');
-      });
     }
+}
+
+    // Render facilities list
+    function renderFacilities(facilities) {
+        const facilitiesList = document.getElementById('facilitiesList');
+
+        facilities.forEach(facility => {
+            const col = document.createElement('div');
+            col.className = 'col-md-4 mb-4';
+
+            // Format amenities
+            const amenitiesHtml = facility.amenities ? 
+                facility.amenities.map(amenity => `<span class="badge bg-secondary me-1 mb-1">${amenity}</span>`).join('') : 
+                '';
+
+            // Add promo badge if promo exists
+            const promoBadge = facility.promo ? `<div class="promo-badge">${facility.promo}</div>` : '';
+
+            // Get availability status
+            const availabilityStatus = getAvailabilityStatus(facility);
+            const statusBadge = `<span class="badge ${availabilityStatus.class} float-end">${availabilityStatus.text}</span>`;
+
+            col.innerHTML = `
+                <div class="facility-card card h-100">
+                    ${promoBadge}
+                    <img src="${facility.imageUrl || 'https://via.placeholder.com/300x200'}" 
+                         class="card-img-top facility-image" alt="${facility.name}"
+                         style="height: 200px; object-fit: cover;"
+                         onerror="this.src='https://via.placeholder.com/300x200'">
+                    <div class="card-body d-flex flex-column">
+                        <h5 class="card-title">
+                            ${facility.name}
+                            ${statusBadge}
+                        </h5>
+                        <p class="card-text flex-grow-1">${facility.description || 'No description available'}</p>
+                        <div class="mb-2">
+                            <small class="text-muted">
+                                <i class="fas fa-map-marker-alt"></i> ${facility.location || 'Location not specified'}
+                            </small>
+                            <br>
+                            <small class="text-muted">
+                                <i class="fas fa-basketball-ball"></i> ${facility.sportType || 'Various sports'}
+                            </small>
+                        </div>
+                        <div class="mb-2">
+                            ${amenitiesHtml}
+                        </div>
+                        <div class="mt-auto">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <span class="badge bg-primary">RM${facility.price || '0'}/hour</span>
+                                <button class="btn btn-sm btn-outline-primary book-facility-btn" data-id="${facility.id}">
+                                    Book Now
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+              
+            facilitiesList.appendChild(col);
+        });
+    }
+
+    // Search facilities based on filters
+    async function searchFacilities() {
+        const sportType = document.getElementById('sportType').value;
+        const location = document.getElementById('bookinglocation').value.trim();
+        const date = document.getElementById('bookingDate').value;
+        const time = document.getElementById('bookingTime').value;
+
+        // Show loading state
+        const facilitiesList = document.getElementById('facilitiesList');
+        facilitiesList.innerHTML = '<div class="col-12 text-center"><div class="spinner-border text-primary" role="status"><span class="visually-hidden">Loading...</span></div></div>';
+
+        try {
+            // Build filters object
+            const filters = {};
+
+            if (sportType && sportType !== 'all') {
+                filters.sportType = sportType;
+            }
+
+            if (location) {
+                filters.location = location;
+            }
+
+            if (date) {
+                filters.date = date;
+            }
+
+            if (time && time !== 'all') {
+                filters.time = time;
+            }
+
+            // Load facilities with filters
+            await loadFacilities(filters);
+
+            // Show results count
+            const facilityCards = document.querySelectorAll('.facility-card');
+            if (facilityCards.length > 0) {
+                showToast(`Found ${facilityCards.length} facilities matching your criteria`, 'success');
+            }
+
+        } catch (error) {
+            console.error('Error searching facilities:', error);
+            showToast('Error searching facilities', 'danger');
+        }
+    }
+
+    // Helper function to check facility availability on a specific date
+    function isFacilityAvailableOnDate(facility, date) {
+        // If facility has openingHours, check if it's open on that day
+        if (facility.openingHours) {
+            const dayOfWeek = date.getDay(); // 0 = Sunday, 1 = Monday, etc.
+            const dayNames = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
+            const dayName = dayNames[dayOfWeek];
+
+            if (facility.openingHours[dayName] && facility.openingHours[dayName].isOpen) {
+                return true;
+            }
+            return false;
+        }
+
+        // If no opening hours specified, assume always available
+        return true;
+    }
+
+    // Helper function to check facility availability at a specific time
+    function isFacilityAvailableAtTime(facility, timeSlot) {
+        if (!facility.availableSlots || facility.availableSlots.length === 0) {
+            return true; // If no slots specified, assume always available
+        }
+
+        // Check if time slot is in available slots
+        const timeSlots = {
+            'morning': ['08:00', '09:00', '10:00', '11:00'],
+            'afternoon': ['12:00', '13:00', '14:00', '15:00', '16:00'],
+            'evening': ['17:00', '18:00', '19:00', '20:00', '21:00']
+        };
+
+        const slotsToCheck = timeSlots[timeSlot] || [timeSlot];
+
+        // Check if any of the slots are available
+        return slotsToCheck.some(slot => 
+            facility.availableSlots.includes(slot) || 
+            facility.slots && facility.slots.includes(slot)
+        );
+    }
+
+    // Get availability status text and class
+    function getAvailabilityStatus(facility) {
+        const today = new Date();
+        const isTodayAvailable = isFacilityAvailableOnDate(facility, today);
+
+        if (!isTodayAvailable) {
+            return { text: 'Closed Today', class: 'bg-danger' };
+        }
+
+        // Check if facility is fully booked today
+        const currentHour = today.getHours();
+        if (currentHour >= 22 || currentHour < 6) {
+            return { text: 'Opens Tomorrow', class: 'bg-warning' };
+        }
+
+        return { text: 'Available', class: 'bg-success' };
+    }
+
+    // Add this function to clear filters
+    function clearFacilityFilters() {
+        document.getElementById('sportType').value = 'tennis';
+        document.getElementById('bookinglocation').value = '';
+        document.getElementById('bookingDate').value = '';
+        document.getElementById('bookingTime').value = 'morning';
+        loadFacilities(); // Load all facilities
+    }
+
+    // Add a clear filters button to your HTML in the search form
+    // Add this line after the search button in your HTML:
+    // <button class="btn btn-outline-secondary w-100 mt-2" id="clearFiltersBtn">Clear Filters</button>
 
     // Start the booking process
     async function startBookingProcess(facilityId) {
@@ -4154,6 +4653,7 @@ function getStatusBadgeClass(status) {
           id: facilityId,
           ...facilityDoc.data()
         };
+        selectedFacilityData = facilityDoc.data(); // store globally
 
         // Show booking steps and hide facilities list
         document.getElementById('facilitiesList').style.display = 'none';
@@ -4286,127 +4786,118 @@ function getStatusBadgeClass(status) {
       }
     }
 
-    // Initialize monthly calendar for date selection
     function initializeMonthlyCalendar() {
-      const calendarEl = document.getElementById('bookingCalendar');
-      calendarEl.innerHTML = '';
+  const calendarEl = document.getElementById('bookingCalendar');
+  calendarEl.innerHTML = '';
 
-      // Create monthly calendar container
-      const monthCalendar = document.createElement('div');
-      monthCalendar.className = 'month-calendar';
+  const monthCalendar = document.createElement('div');
+  monthCalendar.className = 'month-calendar';
 
-      // Create calendar header with month navigation
-      const calendarHeader = document.createElement('div');
-      calendarHeader.className = 'calendar-header-month';
+  const calendarHeader = document.createElement('div');
+  calendarHeader.className = 'calendar-header-month';
 
-      const monthNames = ["January", "February", "March", "April", "May", "June",
-        "July", "August", "September", "October", "November", "December"];
+  const monthNames = ["January", "February", "March", "April", "May", "June",
+    "July", "August", "September", "October", "November", "December"];
 
-      const prevButton = document.createElement('button');
-      prevButton.className = 'btn btn-outline-primary';
-      prevButton.innerHTML = '<i class="fas fa-chevron-left"></i>';
-      prevButton.addEventListener('click', () => {
-        currentMonth--;
-        if (currentMonth < 0) {
-          currentMonth = 11;
-          currentYear--;
-        }
-        initializeMonthlyCalendar();
-      });
-
-      const nextButton = document.createElement('button');
-      nextButton.className = 'btn btn-outline-primary';
-      nextButton.innerHTML = '<i class="fas fa-chevron-right"></i>';
-      nextButton.addEventListener('click', () => {
-        currentMonth++;
-        if (currentMonth > 11) {
-          currentMonth = 0;
-          currentYear++;
-        }
-        initializeMonthlyCalendar();
-      });
-
-      const monthTitle = document.createElement('h5');
-      monthTitle.textContent = `${monthNames[currentMonth]} ${currentYear}`;
-      monthTitle.className = 'mb-0';
-
-      calendarHeader.appendChild(prevButton);
-      calendarHeader.appendChild(monthTitle);
-      calendarHeader.appendChild(nextButton);
-
-      monthCalendar.appendChild(calendarHeader);
-
-      // Create calendar grid
-      const calendarGrid = document.createElement('div');
-      calendarGrid.className = 'calendar-grid';
-
-      // Add day headers
-      const dayHeaders = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-      dayHeaders.forEach(day => {
-        const dayHeader = document.createElement('div');
-        dayHeader.className = 'calendar-header';
-        dayHeader.textContent = day;
-        calendarGrid.appendChild(dayHeader);
-      });
-
-      // Get first day of month and number of days
-      const firstDay = new Date(currentYear, currentMonth, 1);
-      const lastDay = new Date(currentYear, currentMonth + 1, 0);
-      const daysInMonth = lastDay.getDate();
-      const startingDay = firstDay.getDay();
-
-      // Add empty cells for days before the first day of the month
-      for (let i = 0; i < startingDay; i++) {
-        const emptyCell = document.createElement('div');
-        emptyCell.className = 'calendar-day-month disabled';
-        calendarGrid.appendChild(emptyCell);
-      }
-
-      // Add days of the month
-      const today = new Date();
-      for (let day = 1; day <= daysInMonth; day++) {
-        const dayCell = document.createElement('div');
-        dayCell.className = 'calendar-day-month';
-
-        const currentDate = new Date(currentYear, currentMonth, day);
-
-        // Check if date is in the past
-        if (currentDate < today) {
-          dayCell.classList.add('disabled');
-        } else {
-          dayCell.addEventListener('click', () => selectDate(currentDate, dayCell));
-        }
-
-        // Highlight today
-        if (currentDate.toDateString() === today.toDateString()) {
-          dayCell.classList.add('today');
-        }
-
-        const dayNumber = document.createElement('div');
-        dayNumber.className = 'day-number';
-        dayNumber.textContent = day;
-
-        dayCell.appendChild(dayNumber);
-
-        // Add events/availability indicator (you can customize this)
-        const eventsContainer = document.createElement('div');
-        eventsContainer.className = 'calendar-events';
-
-        // Add sample availability indicator (green dot for available days)
-        if (Math.random() > 0.3) { // Random availability for demo
-          const availableIndicator = document.createElement('div');
-          availableIndicator.className = 'calendar-event-small';
-          availableIndicator.textContent = 'Available';
-          eventsContainer.appendChild(availableIndicator);
-        }
-
-        dayCell.appendChild(eventsContainer);
-        calendarGrid.appendChild(dayCell);
-      }
-
-      monthCalendar.appendChild(calendarGrid);
-      calendarEl.appendChild(monthCalendar);
+  const prevButton = document.createElement('button');
+  prevButton.className = 'btn btn-outline-primary';
+  prevButton.innerHTML = '<i class="fas fa-chevron-left"></i>';
+  prevButton.addEventListener('click', () => {
+    currentMonth--;
+    if (currentMonth < 0) {
+      currentMonth = 11;
+      currentYear--;
     }
+    initializeMonthlyCalendar();
+  });
+
+  const nextButton = document.createElement('button');
+  nextButton.className = 'btn btn-outline-primary';
+  nextButton.innerHTML = '<i class="fas fa-chevron-right"></i>';
+  nextButton.addEventListener('click', () => {
+    currentMonth++;
+    if (currentMonth > 11) {
+      currentMonth = 0;
+      currentYear++;
+    }
+    initializeMonthlyCalendar();
+  });
+
+  const monthTitle = document.createElement('h5');
+  monthTitle.textContent = `${monthNames[currentMonth]} ${currentYear}`;
+  monthTitle.className = 'mb-0';
+
+  calendarHeader.appendChild(prevButton);
+  calendarHeader.appendChild(monthTitle);
+  calendarHeader.appendChild(nextButton);
+  monthCalendar.appendChild(calendarHeader);
+
+  const calendarGrid = document.createElement('div');
+  calendarGrid.className = 'calendar-grid';
+
+  const dayHeaders = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+  dayHeaders.forEach(day => {
+    const dayHeader = document.createElement('div');
+    dayHeader.className = 'calendar-header';
+    dayHeader.textContent = day;
+    calendarGrid.appendChild(dayHeader);
+  });
+
+  const firstDay = new Date(currentYear, currentMonth, 1);
+  const lastDay = new Date(currentYear, currentMonth + 1, 0);
+  const daysInMonth = lastDay.getDate();
+  const startingDay = firstDay.getDay();
+
+  for (let i = 0; i < startingDay; i++) {
+    const emptyCell = document.createElement('div');
+    emptyCell.className = 'calendar-day-month disabled';
+    calendarGrid.appendChild(emptyCell);
+  }
+
+  const today = new Date();
+  
+  for (let day = 1; day <= daysInMonth; day++) {
+    const dayCell = document.createElement('div');
+    dayCell.className = 'calendar-day-month';
+
+    const currentDate = new Date(currentYear, currentMonth, day);
+    const formattedDate = currentDate.toISOString().split("T")[0];
+
+    // Disable past dates OR dates NOT in Firestore
+    if (currentDate < today || 
+        !selectedFacilityData.availableDates.includes(formattedDate)) {
+      dayCell.classList.add('disabled');
+    } else {
+      dayCell.addEventListener('click', () => selectDate(currentDate, dayCell));
+    }
+
+    if (currentDate.toDateString() === today.toDateString()) {
+      dayCell.classList.add('today');
+    }
+
+    const dayNumber = document.createElement('div');
+    dayNumber.className = 'day-number';
+    dayNumber.textContent = day;
+    dayCell.appendChild(dayNumber);
+
+    const eventsContainer = document.createElement('div');
+    eventsContainer.className = 'calendar-events';
+
+    // Show AVAILABLE indicator
+    if (selectedFacilityData.availableDates.includes(formattedDate)) {
+      const availableIndicator = document.createElement('div');
+      availableIndicator.className = 'calendar-event-small';
+      availableIndicator.textContent = 'Available';
+      eventsContainer.appendChild(availableIndicator);
+    }
+
+    dayCell.appendChild(eventsContainer);
+    calendarGrid.appendChild(dayCell);
+  }
+
+  monthCalendar.appendChild(calendarGrid);
+  calendarEl.appendChild(monthCalendar);
+}
 
     // Select a date for booking
     function selectDate(date, element) {
@@ -4690,7 +5181,7 @@ function getStatusBadgeClass(status) {
         const bookingsSnapshot = await db.collection('bookings')
           .where('facilityId', '==', selectedFacility.id)
           .where('date', '==', selectedDate)
-          .where('status', 'in', ['pending', 'confirmed', 'active'])
+          .where('status', 'in', ['approved', 'confirmed', 'active'])
           .get();
 
         const bookedSlots = [];
@@ -4831,14 +5322,6 @@ function getStatusBadgeClass(status) {
       document.getElementById('searchFriendsBtn').addEventListener('click', handleFriendSearch);
       document.getElementById('friendSearch').addEventListener('input', handleFriendSearch);
       document.getElementById('friendFilter').addEventListener('change', handleFriendSearch);
-
-      // Chat modal event listeners
-      document.getElementById('sendMessageBtn').addEventListener('click', sendMessage);
-      document.getElementById('messageInput').addEventListener('keypress', function (e) {
-        if (e.key === 'Enter') {
-          sendMessage();
-        }
-      });
 
       // Add event listener for chat buttons
       document.addEventListener('click', function (e) {
@@ -5096,6 +5579,7 @@ function getStatusBadgeClass(status) {
             const userDoc = await db.collection('users').doc(otherParticipantId).get();
             return {
               chatId: doc.id,
+              otherUserId: otherParticipantId,
               otherUser: userDoc.exists ? userDoc.data() : { name: 'Unknown User' },
               lastMessage: chatData.lastMessage,
               lastMessageAt: chatData.lastMessageAt
@@ -5106,32 +5590,31 @@ function getStatusBadgeClass(status) {
 
         const chats = (await Promise.all(chatPromises)).filter(chat => chat !== null);
 
-        // Render active chats
-        chats.forEach(chat => {
-          const chatItem = document.createElement('div');
-          chatItem.className = 'list-group-item list-group-item-action';
-          chatItem.style.cursor = 'pointer';
+        // Render active chats — ensure we pass receiverId (string), not whole object
+chats.forEach(chat => {
+  const chatItem = document.createElement('div');
+  chatItem.className = 'list-group-item list-group-item-action';
+  chatItem.style.cursor = 'pointer';
 
-          const lastMessageTime = chat.lastMessageAt ?
-            formatMessageTime(chat.lastMessageAt.toDate()) : 'No messages';
+  const lastMessageTime = chat.lastMessageAt ? formatMessageTime(chat.lastMessageAt.toDate()) : 'No messages';
 
-          // In loadActiveChats() function, replace the avatar line with:
-          chatItem.innerHTML = `
-  <div class="d-flex align-items-center">
-    <img src="${chat.otherUser.photoURL || 'https://via.placeholder.com/40'}" 
-         class="rounded-circle me-3" width="40" height="40" style="object-fit: cover;" 
-         onerror="this.src='https://via.placeholder.com/40'">
-    <div class="flex-grow-1">
-      <h6 class="mb-1">${chat.otherUser.name || 'User'}</h6>
-      <p class="mb-1 text-muted small">${chat.lastMessage || 'Start a conversation'}</p>
-      <small class="text-muted">${lastMessageTime}</small>
+  chatItem.innerHTML = `
+    <div class="d-flex align-items-center">
+      <img src="${chat.otherUser.photoURL || 'https://via.placeholder.com/40'}" 
+           class="rounded-circle me-3" width="40" height="40" style="object-fit: cover;" 
+           onerror="this.src='https://via.placeholder.com/40'">
+      <div class="flex-grow-1">
+        <h6 class="mb-1">${chat.otherUser.name || 'User'}</h6>
+        <p class="mb-1 text-muted small">${chat.lastMessage || 'Start a conversation'}</p>
+        <small class="text-muted">${lastMessageTime}</small>
+      </div>
     </div>
-  </div>
-`;
+  `;
 
-          chatItem.addEventListener('click', () => openChat(chat.chatId, chat.otherUser));
-          activeChatsEl.appendChild(chatItem);
-        });
+  // IMPORTANT: pass the chatId and the other user's id (string)
+  chatItem.addEventListener('click', () => openChat(chat.chatId, chat.otherUserId));
+  activeChatsEl.appendChild(chatItem);
+});
 
       } catch (error) {
         console.error('Error loading active chats:', error);
@@ -5153,122 +5636,131 @@ function getStatusBadgeClass(status) {
       }
     }
 
-    // Open chat with a user
-    async function openChat(chatId, otherUser) {
-      const chatModal = new bootstrap.Modal(document.getElementById('chatModal'));
-      const chatUserName = document.getElementById('chatUserName');
-      const chatUserAvatar = document.getElementById('chatUserAvatar');
-      const chatUserStatus = document.getElementById('chatUserStatus');
+    async function openChat(chatId, receiver) {
+  try {
+    // receiver may be either a string (userId) or an object { id, name }
+    let receiverId = null;
 
-      // Store current chat info
-      window.currentChat = {
-        chatId,
-        otherUser,
-        otherUserId: otherUser.id
-      };
+    if (!chatId) {
+      console.error("openChat: missing chatId");
+      return;
+    }
 
-      // Update chat header
-      chatUserName.textContent = otherUser.name || 'User';
-      chatUserAvatar.src = otherUser.photoURL || generateDefaultAvatar(otherUser.name || 'User');
-      chatUserStatus.textContent = 'Online'; // You can implement real status updates
+    if (!receiver) {
+      receiverId = null;
+    } else if (typeof receiver === 'string') {
+      receiverId = receiver;
+    } else if (typeof receiver === 'object' && receiver.id) {
+      receiverId = receiver.id;
+    } else {
+      // fallback: try to read assumed id property
+      receiverId = receiver?.uid || null;
+    }
 
-      // Load messages
-      await loadChatMessages(chatId);
+    // Stop previous listener
+    if (typeof activeChatListener === 'function') {
+      activeChatListener();
+      activeChatListener = null;
+    }
 
-      // Set up real-time listener for new messages
+    activeChatId = chatId;
+    activeReceiverId = receiverId;
+
+    // If receiverId not provided (null), fetch from chat doc
+    if (!receiverId) {
+      const chatDoc = await db.collection('chats').doc(chatId).get();
+      if (!chatDoc.exists) {
+        console.warn('openChat: chat doc not found');
+      } else {
+        const data = chatDoc.data();
+        // determine participant id that is not current user
+        const other = (data.participants || []).find(id => id !== currentUser.uid);
+        receiverId = other || null;
+        activeReceiverId = receiverId;
+      }
+    }
+
+    // Load receiver info for header if we have an id
+    if (receiverId) {
+      const userSnap = await db.collection('users').doc(receiverId).get();
+      if (userSnap.exists) {
+        const u = userSnap.data();
+        document.getElementById("chatUserName").textContent = u.name || "Unknown";
+        document.getElementById("chatUserAvatar").src = u.photoURL || u.photoUrl || "https://via.placeholder.com/150";
+      }
+    }
+
+    // Start message listener (setupChatListener or loadMessages — use whichever you have)
+    if (typeof setupChatListener === 'function') {
       setupChatListener(chatId);
-
-      // Set up typing indicator listener
-      setupTypingListener(chatId);
-
-      chatModal.show();
-
-      // Focus on message input
-      setTimeout(() => {
-        document.getElementById('messageInput').focus();
-      }, 300);
+    } else {
+      loadMessages(chatId);
     }
 
-    // Start a new chat with a user
-    async function startNewChat(otherUserId, otherUserName) {
-      try {
-        // Check if chat already exists
-        const existingChatSnapshot = await db.collection('chats')
-          .where('participants', 'array-contains', currentUser.uid)
-          .get();
-
-        let existingChat = null;
-        existingChatSnapshot.forEach(doc => {
-          const chatData = doc.data();
-          if (chatData.participants.includes(otherUserId)) {
-            existingChat = { id: doc.id, ...chatData };
-          }
-        });
-
-        if (existingChat) {
-          // Open existing chat
-          openChat(existingChat.id, { id: otherUserId, name: otherUserName });
-        } else {
-          // Create new chat
-          const chatData = {
-            participants: [currentUser.uid, otherUserId],
-            createdAt: firebase.firestore.FieldValue.serverTimestamp(),
-            lastMessage: '',
-            lastMessageAt: firebase.firestore.FieldValue.serverTimestamp()
-          };
-
-          const chatRef = await db.collection('chats').add(chatData);
-          openChat(chatRef.id, { id: otherUserId, name: otherUserName });
-        }
-      } catch (error) {
-        console.error('Error starting chat:', error);
-        showToast('Error starting chat', 'danger');
-      }
+    // Finally open the modal
+    const modalEl = document.getElementById("chatModal");
+    if (modalEl) {
+      const modal = new bootstrap.Modal(modalEl);
+      modal.show();
+    } else {
+      console.warn('openChat: chatModal element not found in DOM');
     }
 
-    // Enhanced message loading with date separators
-    async function loadChatMessages(chatId) {
-      try {
-        const messagesSnapshot = await db.collection('chats')
-          .doc(chatId)
-          .collection('messages')
-          .orderBy('timestamp', 'asc')
-          .get();
+  } catch (e) {
+    console.error("openChat error:", e);
+    showToast('Unable to open chat', 'danger');
+  }
+}
+// generate stable chatId for a pair of users
+function generateChatId(user1, user2) {
+  return [user1, user2].sort().join("_");
+}
+    // Start (or reuse) a chat between currentUser and friendId
+async function startNewChat(friendId, friendName = '') {
+  try {
+    if (!currentUser || !friendId) return;
 
-        const chatMessages = document.getElementById('chatMessages');
-        chatMessages.innerHTML = '';
+    // Use deterministic chatId so we don't need to query all chats
+    const chatId = generateChatId(currentUser.uid, friendId);
 
-        if (messagesSnapshot.empty) {
-          chatMessages.innerHTML = `
-            <div class="text-center text-white" style="padding: 2rem;">
-              <i class="fas fa-comments fa-3x mb-3 opacity-50"></i>
-              <p>No messages yet</p>
-              <small class="opacity-75">Start the conversation!</small>
-            </div>
-          `;
-          return;
-        }
+    // Create/ensure chat doc (merge so it won't overwrite existing data)
+    await db.collection('chats').doc(chatId).set({
+      participants: [currentUser.uid, friendId],
+      lastMessage: '',
+      lastMessageAt: firebase.firestore.FieldValue.serverTimestamp(),
+      updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+    }, { merge: true });
 
-        let lastDate = null;
+    // Open the chat modal by passing chatId and receiverId (string)
+    openChat(chatId, friendId);
+  } catch (error) {
+    console.error('Error starting chat:', error);
+    showToast('Error starting chat', 'danger');
+  }
+}
 
-        messagesSnapshot.forEach(doc => {
-          const message = doc.data();
-          const messageDate = message.timestamp?.toDate().toDateString();
 
-          // Add date separator if date changed
-          if (messageDate !== lastDate) {
-            addDateSeparator(message.timestamp?.toDate());
-            lastDate = messageDate;
-          }
+    function loadMessages(chatId) {
+      const chatBox = document.getElementById("chatMessages");
+      chatBox.innerHTML = "";
 
-          addMessageToChat(message, doc.id);
+      activeChatListener = db.collection("messages")
+        .where("chatId", "==", chatId)
+        .orderBy("timestamp")
+        .onSnapshot((snapshot) => {
+          chatBox.innerHTML = ""; // prevent duplicates
+        
+          snapshot.forEach((doc) => {
+            const msg = doc.data();
+            const div = document.createElement("div");
+            div.className = msg.senderId === currentUser.uid ? "sent" : "received";
+            div.textContent = msg.text;
+            chatBox.appendChild(div);
+          });
+        
+          // auto scroll
+          chatBox.scrollTop = chatBox.scrollHeight;
         });
-
-        // Scroll to bottom
-        scrollToBottom();
-      } catch (error) {
-        console.error('Error loading messages:', error);
-      }
     }
 
     // Add date separator
@@ -5342,30 +5834,39 @@ function getStatusBadgeClass(status) {
     let typingTimer;
     const TYPING_TIMEOUT = 3000;
 
-    // Set up real-time listener for chat messages
-    function setupChatListener(chatId) {
-      // Remove existing listener if any
-      if (window.chatListener) {
-        window.chatListener();
-      }
+    let unsubscribeMessages = null;
 
-      window.chatListener = db.collection('chats')
-        .doc(chatId)
-        .collection('messages')
-        .orderBy('timestamp', 'asc')
-        .onSnapshot((snapshot) => {
-          snapshot.docChanges().forEach((change) => {
-            if (change.type === 'added') {
-              const message = change.doc.data();
-              addMessageToChat(message, change.doc.id);
+function setupChatListener(chatId) {
+    try {
+        // stop old listener if exists
+        if (unsubscribeMessages) {
+            unsubscribeMessages();
+            unsubscribeMessages = null;
+        }
 
-              // Scroll to bottom
-              const chatMessages = document.getElementById('chatMessages');
-              chatMessages.scrollTop = chatMessages.scrollHeight;
-            }
-          });
-        });
+        // start new listener
+        unsubscribeMessages = db.collection("messages")
+            .where("chatId", "==", chatId)
+            .orderBy("timestamp", "asc")
+            .onSnapshot(snapshot => {
+
+                const chatMessages = document.getElementById("chatMessages");
+                if (!chatMessages) return;
+
+                chatMessages.innerHTML = "";
+
+                snapshot.forEach(doc => {
+                    addMessageToChat(doc.data(), doc.id);
+                });
+
+                chatMessages.scrollTop = chatMessages.scrollHeight;
+            });
+
+    } catch (err) {
+        console.error("setupChatListener ERROR:", err);
     }
+}
+
 
     // Enhanced message display
     function addMessageToChat(message, messageId) {
@@ -5389,6 +5890,16 @@ function getStatusBadgeClass(status) {
 
       messageBubble.innerHTML = `
         <div class="message-text">${message.text}</div>
+        ${message.fileUrl ? `
+          <div class="message-file">
+            ${message.fileUrl.endsWith('.mp4') || message.fileUrl.endsWith('.mov') ?
+              `<video controls style="max-width: 200px; border-radius: 10px;">
+                 <source src="${message.fileUrl}">
+               </video>` :
+              `<img src="${message.fileUrl}" style="max-width: 200px; border-radius: 10px;">`
+            }
+          </div>
+        ` : ''}
         <div class="message-time">
           ${messageTime}
           ${statusIcon}
@@ -5417,63 +5928,101 @@ function getStatusBadgeClass(status) {
       chatMessages.scrollTop = chatMessages.scrollHeight;
     }
 
-    // Enhanced sendMessage function with notifications
-    async function sendMessage() {
-      const messageInput = document.getElementById('messageInput');
-      const messageText = messageInput.value.trim();
+    //-------------------------------------------------------------------
+// Helper: Get other user from chatId
+//-------------------------------------------------------------------
+function getChatPartnerId(chatId) {
+    const parts = chatId.split("_");
+    return parts[0] === currentUser.uid ? parts[1] : parts[0];
+}
 
-      if (!messageText || !window.currentChat) return;
+async function sendMessage() {
+    const messageInput = document.getElementById("messageInput");
+    const messageText = messageInput.value.trim();
 
-      try {
-        // Clear typing indicator
-        await updateTypingIndicator(false);
+    // Don't send if both text and file are empty
+    if (!messageText && !selectedFileUrl) return;
 
-        const messageData = {
-          text: messageText,
-          senderId: currentUser.uid,
-          senderName: currentUser.displayName || 'User',
-          timestamp: firebase.firestore.FieldValue.serverTimestamp(),
-          read: false
-        };
+    if (!activeChatId) {
+        console.warn("No active chat selected");
+        return;
+    }
 
-        // Add message to subcollection
-        await db.collection('chats')
-          .doc(window.currentChat.chatId)
-          .collection('messages')
-          .add(messageData);
+    // Determine receiver ID from chatId
+    const receiverId = getChatPartnerId(activeChatId);
 
-        // Update chat last message and timestamp
-        await db.collection('chats')
-          .doc(window.currentChat.chatId)
-          .update({
-            lastMessage: messageText,
-            lastMessageAt: firebase.firestore.FieldValue.serverTimestamp(),
-            lastMessageSender: currentUser.uid
-          });
+    const messageData = {
+        chatId: activeChatId,
+        senderId: currentUser.uid,
+        receiverId: receiverId,
+        text: messageText || "",
+        fileUrl: selectedFileUrl || null,
+        timestamp: firebase.firestore.FieldValue.serverTimestamp()
+    };
 
-        // Create notification for the recipient
-        const otherUserId = window.currentChat.otherUser.id;
+    try {
+        // Save message to Firestore
+        await db.collection("messages").add(messageData);
+
+        // Send notification to receiver
         await createNotification(
-          otherUserId,
-          'new_message',
-          'New Message',
-          `You have a new message from ${currentUser.displayName || 'User'}`,
-          {
-            chatId: window.currentChat.chatId,
-            senderId: currentUser.uid,
-            senderName: currentUser.displayName || 'User',
-            message: messageText.substring(0, 100) // First 100 chars
-          }
+            receiverId,
+            "new_message",
+            window.userProfileData?.name || "Message",
+            messageText || "[Attachment]",
+            { chatId: activeChatId }
         );
 
-        // Clear input
-        messageInput.value = '';
+        // Clear input and reset attachment
+        messageInput.value = "";
+        selectedFileUrl = null;
 
-      } catch (error) {
-        console.error('Error sending message:', error);
-        showToast('Error sending message', 'danger');
-      }
+    } catch (err) {
+        console.error("Error sending message:", err);
+        showToast("Failed to send message", "danger");
     }
+}
+
+// -------------------------------
+// Press Enter to send message
+// -------------------------------
+document.getElementById("messageInput").addEventListener("keydown", function (e) {
+    if (e.key === "Enter" && !e.shiftKey) {
+        e.preventDefault(); // prevent newline
+        sendMessage();
+    }
+});
+
+
+// -------------------------------
+// Handle file attachment
+// -------------------------------
+document.getElementById('attachBtn').addEventListener('click', () => {
+    document.getElementById('chatAttachmentInput').click();
+});
+
+document.getElementById("chatAttachmentInput").addEventListener("change", async function () {
+    const file = this.files[0];
+    if (!file) return;
+
+    try {
+        const url = await uploadToCloudinary(file);
+
+        // Assign uploaded file URL to global variable
+        selectedFileUrl = url;
+
+        // Optionally: auto-send attachment immediately
+        sendMessage();
+
+    } catch (err) {
+        console.error("File upload failed:", err);
+        showToast("File upload failed", "danger");
+    } finally {
+        // Reset input value so same file can be selected again
+        this.value = "";
+    }
+});
+
     // Enhanced message time formatting
     function formatMessageTime(timestamp) {
       if (!timestamp) return '';
@@ -5507,10 +6056,6 @@ function getStatusBadgeClass(status) {
 
     document.getElementById('videoCallBtn').addEventListener('click', function () {
       showToast('Video call feature coming soon!', 'info');
-    });
-
-    document.getElementById('attachBtn').addEventListener('click', function () {
-      showToast('File attachment feature coming soon!', 'info');
     });
 
     // Typing indicator management
@@ -5679,6 +6224,8 @@ function getStatusBadgeClass(status) {
 
         // Render items
         renderMarketplaceItems(filteredItems);
+        // After rendering all items:
+        addMarketplaceEventListeners();
 
       } catch (error) {
         console.error('Error loading marketplace items:', error);
@@ -5838,18 +6385,14 @@ function getStatusBadgeClass(status) {
       return conditionClasses[condition] || 'bg-secondary';
     }
 
-    // Format time ago
     function formatTimeAgo(date) {
-      const now = new Date();
-      const diffInSeconds = Math.floor((now - date) / 1000);
-
-      if (diffInSeconds < 60) return 'just now';
-      if (diffInSeconds < 3600) return `${Math.floor(diffInSeconds / 60)} minutes ago`;
-      if (diffInSeconds < 86400) return `${Math.floor(diffInSeconds / 3600)} hours ago`;
-      if (diffInSeconds < 2592000) return `${Math.floor(diffInSeconds / 86400)} days ago`;
-
-      return date.toLocaleDateString();
-    }
+  if (!date) return '';
+  const diff = (Date.now() - date.getTime()) / 1000; // seconds
+  if (diff < 60) return 'Just now';
+  if (diff < 3600) return Math.floor(diff/60) + 'm ago';
+  if (diff < 86400) return Math.floor(diff/3600) + 'h ago';
+  return date.toLocaleDateString();
+}
 
     // List a new item in marketplace
     async function listNewItem() {
@@ -5914,7 +6457,7 @@ if (imageFile) {
         // Clear form
         document.getElementById('itemName').value = '';
         document.getElementById('itemPrice').value = '';
-        document.getElementById('itemImageUrl').value = '';
+        document.getElementById('itemImageFile').value = '';
         document.getElementById('itemDescription').value = '';
         document.getElementById('contactNumber').value = '';
 
@@ -6644,8 +7187,7 @@ if (photoFile) {
 
         // Clear form
         document.getElementById('postContent').value = '';
-        document.getElementById('photoUrl').value = '';
-        document.getElementById('videoUrl').value = '';
+        document.getElementById('postPhotoFile').value = '';
 
         // Reload posts and stats
         await loadCommunityPosts();
@@ -6980,7 +7522,7 @@ async function submitBooking() {
             slots: selectedFacility.slots || ["5-6 PM"],
             snacks: selectedSnacks.length > 0 ? selectedSnacks : null,
             sportType: selectedFacility.type || "Tennis Court",
-            status: "pending", // Start as pending, can be changed to "completed" later
+            status: "approved", // Start as approved, can be changed to "completed" later
             time: selectedTimeSlot,
             type: selectedFacility.type || "Tennis Court",
             updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
@@ -7009,7 +7551,7 @@ async function submitBooking() {
             currentUser.uid,
             'booking_created',
             'Booking Submitted',
-            `Your booking for ${selectedFacility.name} on ${selectedDate.toLocaleDateString()} at ${selectedTimeSlot} has been submitted and is pending approval.`,
+            `Your booking for ${selectedFacility.name} on ${selectedDate.toLocaleDateString()} at ${selectedTimeSlot} has been created.`,
             {
                 bookingId: bookingRef.id,
                 facilityName: selectedFacility.name,
@@ -7120,73 +7662,95 @@ async function createNotification(userId, type, title, message, data = {}) {
         console.error('Error creating rejection notification:', error);
       }
     }
-    // Load notifications for dropdown
     async function loadNotifications() {
-      try {
-        const notificationsSnapshot = await db.collection('notifications')
-          .where('userId', '==', currentUser.uid)
-          .orderBy('createdAt', 'desc')
-          .limit(5)
-          .get();
+  try {
+    if (!currentUser) return;
 
-        const notificationsDropdown = document.querySelector('.dropdown-menu');
-        if (!notificationsDropdown) return;
+    const snapshot = await db.collection('notifications')
+      .where('userId', '==', currentUser.uid)
+      .orderBy('createdAt', 'desc')
+      .limit(10)
+      .get();
 
-        // Clear existing notifications (except header and view all link)
-        const existingNotifications = notificationsDropdown.querySelectorAll('.notification-item');
-        existingNotifications.forEach(item => item.remove());
+    const dropdown = document.querySelector('.dropdown-menu.dropdown-menu-end');
 
-        if (notificationsSnapshot.empty) {
-          const noNotificationsItem = document.createElement('li');
-          noNotificationsItem.innerHTML = '<a class="dropdown-item text-muted" href="#">No notifications</a>';
-          notificationsDropdown.insertBefore(noNotificationsItem, notificationsDropdown.querySelector('.dropdown-divider'));
-          return;
-        }
-
-        // Add notifications to dropdown
-        notificationsSnapshot.forEach(doc => {
-          const notification = doc.data();
-          const notificationItem = document.createElement('li');
-          notificationItem.className = 'notification-item';
-
-          const notificationClass = notification.read ? '' : 'fw-bold';
-          const timeAgo = formatTimeAgo(notification.createdAt?.toDate());
-
-          notificationItem.innerHTML = `
-                <a class="dropdown-item ${notificationClass}" href="#" data-notification-id="${doc.id}">
-                    <div class="d-flex w-100 justify-content-between">
-                        <h6 class="mb-1">${notification.title}</h6>
-                        <small>${timeAgo}</small>
-                    </div>
-                    <p class="mb-1">${notification.message}</p>
-                </a>
-            `;
-
-          notificationsDropdown.insertBefore(notificationItem, notificationsDropdown.querySelector('.dropdown-divider'));
-
-          // Add click event to mark as read
-          notificationItem.querySelector('a').addEventListener('click', async (e) => {
-            e.preventDefault();
-            if (!notification.read) {
-              await markNotificationAsRead(doc.id);
-            }
-            // Handle notification click based on type
-            handleNotificationClick(notification);
-          });
-        });
-
-        // Update notification badge count
-        const unreadCount = await getUnreadNotificationsCount(currentUser.uid);
-        const notificationBadge = document.querySelector('.header-actions .badge');
-        if (notificationBadge) {
-          notificationBadge.textContent = unreadCount;
-          notificationBadge.style.display = unreadCount > 0 ? 'inline' : 'none';
-        }
-
-      } catch (error) {
-        console.error('Error loading notifications:', error);
-      }
+    if (!dropdown) {
+      console.error("Notification dropdown not found");
+      return;
     }
+
+    // Remove previous notifications
+    dropdown.querySelectorAll('.notification-item').forEach(el => el.remove());
+
+    // Ensure EXACTLY ONE divider exists
+    let divider = dropdown.querySelector('.dropdown-divider');
+
+    if (!divider) {
+      divider = document.createElement('li');
+      divider.innerHTML = `<hr class="dropdown-divider">`;
+      dropdown.appendChild(divider);
+    }
+
+    // If no notifications
+    if (snapshot.empty) {
+      const emptyItem = document.createElement('li');
+      emptyItem.className = 'notification-item';
+      emptyItem.innerHTML = `
+        <a class="dropdown-item text-muted" href="#">No notifications</a>
+      `;
+
+      if (divider.parentNode === dropdown) {
+        dropdown.insertBefore(emptyItem, divider);
+      } else {
+        dropdown.appendChild(emptyItem);
+      }
+      return;
+    }
+
+    // Add notifications
+    snapshot.forEach(doc => {
+      const data = doc.data();
+
+      const item = document.createElement('li');
+      item.className = 'notification-item';
+
+      item.innerHTML = `
+        <a class="dropdown-item ${data.read ? '' : 'fw-bold'}" href="#" data-id="${doc.id}">
+          <div class="d-flex w-100 justify-content-between">
+            <h6 class="mb-1">${data.title}</h6>
+            <small>${formatTimeAgo(data.createdAt?.toDate())}</small>
+          </div>
+          <p class="mb-1">${data.message}</p>
+        </a>
+      `;
+
+      if (divider.parentNode === dropdown) {
+        dropdown.insertBefore(item, divider);
+      } else {
+        dropdown.appendChild(item);
+      }
+
+      item.querySelector("a").addEventListener("click", async (e) => {
+        e.preventDefault();
+        if (!data.read) await markNotificationAsRead(doc.id);
+        handleNotificationClick(data);
+      });
+    });
+
+    // Update badge
+    const unread = await getUnreadNotificationsCount(currentUser.uid);
+    const badge = document.querySelector('.header-actions .badge');
+
+    if (badge) {
+      badge.textContent = unread;
+      badge.style.display = unread > 0 ? 'inline' : 'none';
+    }
+
+  } catch (err) {
+    console.error("Error loading notifications:", err);
+  }
+}
+
 
     // Handle notification clicks based on type
     function handleNotificationClick(notification) {
