@@ -3599,6 +3599,15 @@
                                         Available for hire
                                     </label>
                                 </div>
+                                <div class="form-group mb-3">
+                                <label class="form-label">Applicable Facilities</label>
+                                <select class="form-select" id="createcoachFacilities" multiple>
+                                    ${adminFacilities.map(facility =>
+                                    `<option value="${facility.id}">${facility.name} (${facility.type})</option>`
+                                    ).join('')}
+                                </select>
+                                <small class="form-text text-muted">Hold Ctrl/Cmd to select multiple facilities. Leave empty for all facilities.</small>
+                            </div>
                             </form>
                         </div>
                         <div class="modal-footer">
@@ -5222,6 +5231,7 @@
 
           bookingsSnapshot.forEach(doc => {
             const booking = doc.data();
+            const commission = booking.price * 0.05;
             bookings.push({ id: doc.id, ...booking });
 
             // Calculate total revenue
@@ -7439,7 +7449,10 @@
         let events = [];
 
         try {
-          eventsSnapshot = await db.collection("events").get();
+          eventsSnapshot = await db.collection("events")
+          .where("creatorRole", "==", "admin")
+          .where("creatorId", "==", auth.currentUser.uid)
+          .get();
         } catch (error) {
           console.log("Trying 'tournaments' collection...");
           try {
@@ -7457,9 +7470,9 @@
               id: doc.id,
               ...eventData,
               // Ensure proper date formatting
-              startDate: eventData.startDate ? eventData.startDate.toDate() : null,
-              endDate: eventData.endDate ? eventData.endDate.toDate() : null,
-              registrationDeadline: eventData.registrationDeadline ? eventData.registrationDeadline.toDate() : null
+              startDate: eventData.startDate ? eventData.startDate : null,
+              endDate: eventData.endDate ? eventData.endDate : null,
+              registrationDeadline: eventData.registrationDeadline ? eventData.registrationDeadline : null
             });
           });
         }
@@ -7480,9 +7493,9 @@
       `;
         } else {
           events.forEach(event => {
-            const startDate = event.startDate ? event.startDate.toLocaleDateString() : 'N/A';
-            const endDate = event.endDate ? event.endDate.toLocaleDateString() : 'N/A';
-            const registrationDeadline = event.registrationDeadline ? event.registrationDeadline.toLocaleDateString() : 'N/A';
+            const startDate = event.startDate ? event.startDate : 'N/A';
+            const endDate = event.endDate ? event.endDate : 'N/A';
+            const registrationDeadline = event.registrationDeadline ? event.registrationDeadline : 'N/A';
 
             // Check event status
             const now = new Date();
@@ -7687,16 +7700,33 @@
               <div class="row">
                 <div class="col-md-6">
                   <div class="form-group mb-3">
-                    <label class="form-label">Start Date & Time *</label>
-                    <input type="datetime-local" class="form-control" id="eventStartDate" 
-                           value="${eventData?.startDate ? eventData.startDate.toISOString().slice(0, 16) : ''}" required>
+                    <label class="form-label">Start Date *</label>
+                    <input type="date" class="form-control" id="eventStartDate" 
+                           value="${eventData?.startDate ? eventData.startDate : ''}" required>
                   </div>
                 </div>
                 <div class="col-md-6">
                   <div class="form-group mb-3">
-                    <label class="form-label">End Date & Time *</label>
-                    <input type="datetime-local" class="form-control" id="eventEndDate" 
-                           value="${eventData?.endDate ? eventData.endDate.toISOString().slice(0, 16) : ''}" required>
+                    <label class="form-label">End Date *</label>
+                    <input type="date" class="form-control" id="eventEndDate" 
+                           value="${eventData?.endDate ? eventData.endDate : ''}" required>
+                  </div>
+                </div>
+              </div>
+
+              <div class="row">
+                <div class="col-md-6">
+                  <div class="form-group mb-3">
+                    <label class="form-lable">Start Time *</label>
+                    <input type="time" class="form-control" id="eventStartTime" 
+                           value="${eventData?.startTime || ''}" required>
+                  </div>
+                </div>
+                <div class="col-md-6">
+                  <div class="form-group mb-3">
+                    <label class="form-lable">End Time *</label>
+                    <input type="time" class="form-control" id="eventEndTime" 
+                           value="${eventData?.endTime || ''}" required>
                   </div>
                 </div>
               </div>
@@ -7705,9 +7735,13 @@
                 <div class="col-md-6">
                   <div class="form-group mb-3">
                     <label class="form-label">Registration Deadline</label>
-                    <input type="datetime-local" class="form-control" id="eventRegDeadline" 
-                           value="${eventData?.registrationDeadline ? eventData.registrationDeadline.toISOString().slice(0, 16) : ''}">
+                    <input type="date" class="form-control" id="eventRegDeadline" 
+                           value="${eventData?.registrationDeadline ? eventData.registrationDeadline : ''}">
                   </div>
+                  <div class="form-group mb-3">
+                    <label class="form-label">Registration Deadline Time</label>
+                    <input type="time" class="form-control" id="eventRegDeadlineTime" 
+                           value="${eventData?.registrationDeadlineTime || ''}">
                 </div>
                 <div class="col-md-6">
                   <div class="form-group mb-3">
@@ -7748,6 +7782,15 @@
                 <label class="form-label">Rules & Regulations</label>
                 <textarea class="form-control" id="eventRules" rows="3" 
                           placeholder="Event rules, format, scoring system...">${eventData?.rules || ''}</textarea>
+              </div>
+              <div class="form-group mt-3">
+                <label class="form-label">Event Image</label>
+                <input type="file" id="eventImage" class="form-control" accept="image/*">
+              </div>
+
+              <div class="mt-2">
+                <img id="eventImagePreview"
+                     style="max-width:200px; display:none; border-radius:10px;">
               </div>
               
               <div class="form-group mb-3">
@@ -7797,6 +7840,16 @@
 
       // Add modal to page
       document.body.insertAdjacentHTML('beforeend', modalContent);
+      // 🔹 Show existing image when editing
+      if (eventId && eventData?.imageUrl) {
+        setTimeout(() => {
+          const preview = document.getElementById("eventImagePreview");
+          if (preview) {
+            preview.src = eventData.imageUrl;
+            preview.style.display = "block";
+          }
+        }, 50);
+      }
 
       // Set default dates if creating new event
       if (!eventId) {
@@ -7808,9 +7861,10 @@
           const nextWeek = new Date(now);
           nextWeek.setDate(now.getDate() + 7);
 
-          document.getElementById('eventStartDate').value = tomorrow.toISOString().slice(0, 16);
-          document.getElementById('eventEndDate').value = nextWeek.toISOString().slice(0, 16);
-          document.getElementById('eventRegDeadline').value = now.toISOString().slice(0, 16);
+          document.getElementById('eventStartDate').value = tomorrow.slice(0, 16);
+          document.getElementById('eventEndDate').value = nextWeek.slice(0, 16);
+          document.getElementById('eventRegDeadline').value = now.slice(0, 16);
+          document.getElementById('eventRegDeadlineTime').value = now.slice(11, 16);
         }, 100);
       }
 
@@ -7822,11 +7876,27 @@
       document.getElementById('eventModal').addEventListener('hidden.bs.modal', function () {
         this.remove();
       });
+      document.addEventListener("change", function (e) {
+        if (e.target.id === "eventImage") {
+          const file = e.target.files[0];
+          if (!file) return;
+        
+          const preview = document.getElementById("eventImagePreview");
+          preview.src = URL.createObjectURL(file);
+          preview.style.display = "block";
+        }
+      });
     }
 
     // Save Event Function
     async function saveEvent() {
       try {
+        const imageFile = document.getElementById("eventImage").files[0];
+        let imageUrl = "";
+
+        if (imageFile) {
+          imageUrl = await uploadToCloudinary(imageFile);
+        }
         // Get form values
         const eventId = document.getElementById('eventId').value;
         const eventName = document.getElementById('eventName').value;
@@ -7835,7 +7905,10 @@
         const eventFacility = document.getElementById('eventFacility').value;
         const eventStartDate = document.getElementById('eventStartDate').value;
         const eventEndDate = document.getElementById('eventEndDate').value;
+        const eventStartTime = document.getElementById('eventStartTime').value;
+        const eventEndTime = document.getElementById('eventEndTime').value;
         const eventRegDeadline = document.getElementById('eventRegDeadline').value;
+        const eventRegDeadlineTime = document.getElementById('eventRegDeadlineTime').value;
         const eventMaxParticipants = document.getElementById('eventMaxParticipants').value;
         const eventEntryFee = document.getElementById('eventEntryFee').value;
         const eventPrizePool = document.getElementById('eventPrizePool').value;
@@ -7846,12 +7919,12 @@
         const eventActive = document.getElementById('eventActive').checked;
 
         // Validation
-        if (!eventName || !eventType || !eventSport || !eventStartDate || !eventEndDate) {
+        if (!eventName || !eventType || !eventSport || !eventStartDate || !eventEndDate || !eventStartTime || !eventEndTime) {
           showToast('Please fill in all required fields', 'warning');
           return;
         }
 
-        if (new Date(eventStartDate) >= new Date(eventEndDate)) {
+        if (new Date(eventStartDate) > new Date(eventEndDate)) {
           showToast('End date must be after start date', 'warning');
           return;
         }
@@ -7862,11 +7935,15 @@
           type: eventType,
           sport: eventSport,
           facilityId: eventFacility || null,
-          startDate: firebase.firestore.Timestamp.fromDate(new Date(eventStartDate)),
-          endDate: firebase.firestore.Timestamp.fromDate(new Date(eventEndDate)),
+          startDate: eventStartDate,
+          endDate: eventEndDate,
+          startTime: eventStartTime,
+          endTime: eventEndTime,
           description: eventDescription,
           rules: eventRules,
           contactInfo: eventContact,
+          imageUrl: imageUrl,
+          creatorRole: 'admin',
           isPublic: eventPublic,
           status: eventActive ? 'active' : 'inactive',
           updatedAt: firebase.firestore.FieldValue.serverTimestamp()
@@ -7874,7 +7951,8 @@
 
         // Add optional fields if provided
         if (eventRegDeadline) {
-          eventData.registrationDeadline = firebase.firestore.Timestamp.fromDate(new Date(eventRegDeadline));
+          eventData.registrationDeadline = eventRegDeadline;
+          eventData.registrationDeadlineTime = eventRegDeadlineTime;
         }
         if (eventMaxParticipants) {
           eventData.maxParticipants = parseInt(eventMaxParticipants);
@@ -7888,7 +7966,7 @@
 
         // Add createdBy for new events
         if (!eventId) {
-          eventData.createdBy = currentUser.uid;
+          eventData.creatorId = currentUser.uid;
           eventData.createdAt = firebase.firestore.FieldValue.serverTimestamp();
           eventData.participants = [];
         }
@@ -7939,10 +8017,10 @@
         console.log('Event data loaded:', event);
 
         // Format dates for display
-        const startDate = event.startDate ? event.startDate.toDate() : null;
-        const endDate = event.endDate ? event.endDate.toDate() : null;
-        const registrationDeadline = event.registrationDeadline ? event.registrationDeadline.toDate() : null;
-        const createdAt = event.createdAt ? event.createdAt.toDate() : null;
+        const startDate = event.startDate ? event.startDate : null;
+        const endDate = event.endDate ? event.endDate : null;
+        const registrationDeadline = event.registrationDeadline ? event.registrationDeadline : null;
+        const createdAt = event.createdAt ? event.createdAt : null;
 
         // Calculate event status
         const now = new Date();
@@ -8045,22 +8123,30 @@
                       <div class="row">
                         <div class="col-md-6">
                           <p><strong>Start Date:</strong><br>
-                            ${startDate ? startDate.toLocaleString() : 'Not set'}
+                            ${startDate ? startDate : 'Not set'}
                           </p>
                           <p><strong>End Date:</strong><br>
-                            ${endDate ? endDate.toLocaleString() : 'Not set'}
+                            ${endDate ? endDate : 'Not set'}
+                          </p>
+                        </div>
+                        <div class="col-md-6">
+                          <p><strong>Start Time:</strong><br>
+                            ${event.startTime || 'Not specified'}
+                          </p>
+                          <p><strong>End Time:</strong><br>
+                            ${event.endTime || 'Not specified'}
                           </p>
                         </div>
                         <div class="col-md-6">
                           ${registrationDeadline ? `
                             <p><strong>Registration Deadline:</strong><br>
-                              ${registrationDeadline.toLocaleString()}
+                              ${registrationDeadline}
                             </p>
                           ` : ''}
                           <p><strong>Duration:</strong><br>
                             ${startDate && endDate ?
-            Math.ceil((endDate - startDate) / (1000 * 60 * 60 * 24)) + ' days' :
-            'Not specified'}
+                            Math.ceil((endDate - startDate) / (1000 * 60 * 60 * 24)) + ' days' :
+                            'Not specified'}
                           </p>
                         </div>
                       </div>
@@ -8106,7 +8192,9 @@
                       ` : ''}
                     </div>
                   </div>
+                </div>
 
+                <div class="row">
                   <!-- Participation Card -->
                   <div class="card mb-4">
                     <div class="card-header">
@@ -8157,7 +8245,7 @@
                       ${createdAt ? `
                         <hr>
                         <small class="text-muted">
-                          Created: ${createdAt.toLocaleDateString()}
+                          Created: ${createdAt.toDate().toLocaleString()}
                         </small>
                       ` : ''}
                     </div>
@@ -8186,6 +8274,22 @@
                 </div>
               </div>
             </div>
+          </div>
+        </div>
+      </div>
+      <div class="modal fade" id="participantsModal" tabindex="-1">
+        <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+          <div class="modal-content">
+          
+            <div class="modal-header">
+              <h5 class="modal-title">Event Participants</h5>
+              <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+          
+            <div class="modal-body">
+              <ul class="list-group" id="participantsList"></ul>
+            </div>
+          
           </div>
         </div>
       </div>
@@ -8220,27 +8324,57 @@
       try {
         const eventDoc = await db.collection("events").doc(eventId).get();
         if (!eventDoc.exists) {
-          showToast('Event not found', 'danger');
+          showToast("Event not found", "danger");
           return;
         }
-
+      
         const event = eventDoc.data();
-        const participants = event.participants || [];
-
-        if (participants.length === 0) {
-          showToast('No participants registered for this event', 'info');
+      
+        if (!event.participants || event.participants.length === 0) {
+          showToast("No participants registered", "info");
           return;
         }
-
-        // You can implement a detailed participants modal here
-        showToast(`Viewing ${participants.length} participants for this event`, 'info');
-
-        // For now, just show a simple alert with participant count
-        alert(`This event has ${participants.length} participant(s) registered.`);
-
+      
+        let participantsList = [];
+        const participantPromises = event.participants.map(async (userId) => {
+          const userDoc = await db.collection("users").doc(userId).get();
+          return userDoc.exists
+            ? {
+                name: userDoc.data().name || "User",
+                email: userDoc.data().email || "N/A"
+              }
+            : {
+                name: "User",
+                email: "N/A"
+              };
+        });
+      
+        participantsList = await Promise.all(participantPromises);
+      
+        // 🔹 Render in modal
+        const list = document.getElementById("participantsList");
+        list.innerHTML = "";
+      
+        participantsList.forEach((p, index) => {
+          list.innerHTML += `
+            <li class="list-group-item d-flex justify-content-between align-items-center">
+              <div>
+                <strong>${p.name}</strong><br>
+                <small class="text-muted">${p.email}</small>
+              </div>
+              <span class="badge bg-primary">${index + 1}</span>
+            </li>
+          `;
+        });
+      
+        // 🔹 Show modal
+        new bootstrap.Modal(
+          document.getElementById("participantsModal")
+        ).show();
+      
       } catch (error) {
-        console.error('Error viewing participants:', error);
-        showToast('Error loading participants', 'danger');
+        console.error("Error viewing participants:", error);
+        showToast("Error loading participants", "danger");
       }
     }
 
@@ -8789,7 +8923,7 @@ async function saveProduct() {
 
     // Add createdBy for new products
     if (!productId) {
-      productData.createdBy = currentUser.uid;
+      productData.creatorId = currentUser.uid;
       productData.createdAt = firebase.firestore.FieldValue.serverTimestamp();
       productData.sold = 0;
       productData.views = 0;
@@ -9432,6 +9566,7 @@ async function saveProduct() {
         const form = document.getElementById('addCoachForm');
         const formData = new FormData(form);
 
+
         // Validate required fields
         const requiredFields = ['name', 'sport', 'experience', 'rate', 'availability', 'status'];
         for (let field of requiredFields) {
@@ -9454,6 +9589,8 @@ async function saveProduct() {
           specialties: formData.get('specialties') ? formData.get('specialties').split(',').map(s => s.trim()) : [],
           availableForHire: formData.get('availableForHire') === 'on',
           photoURL: formData.get('photoURL') || null,
+          facilities: Array.from(document.getElementById('createcoachFacilities').selectedOptions)
+            .map(option => option.value),
           createdAt: firebase.firestore.FieldValue.serverTimestamp(),
           updatedAt: firebase.firestore.FieldValue.serverTimestamp()
         };
@@ -9464,6 +9601,8 @@ async function saveProduct() {
             delete coachData[key];
           }
         });
+
+        await addCoachToFacilities(coachData.name, coachData.facilities);
 
         await db.collection('coaches').add(coachData);
 
@@ -9481,6 +9620,39 @@ async function saveProduct() {
       } catch (error) {
         console.error('Error adding coach:', error);
         showToast('Error adding coach', 'danger');
+      }
+    }
+    // Simple function to add promo string to facilities
+    async function addCoachToFacilities(name, facilityIds) {
+      try {
+        if (!facilityIds || facilityIds.length === 0) {
+          console.log('No facilities selected for this Coach');
+          return;
+        }
+
+        console.log('Adding Coach to facilities:', facilityIds);
+
+        // Update each selected facility with simple promo string
+        const updatePromises = facilityIds.map(async (facilityId) => {
+          try {
+            await db.collection('facilities').doc(facilityId).update({
+              coachNames: firebase.firestore.FieldValue.arrayUnion(name),
+              updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+            });
+            console.log(`Coach "${name}" added to facility: ${facilityId}`);
+          } catch (error) {
+            console.error(`Error updating facility ${facilityId}:`, error);
+          }
+        });
+
+        await Promise.all(updatePromises);
+
+        console.log(`Successfully added Coach to ${facilityIds.length} facilities`);
+        showToast(`Coach "${name}" added to ${facilityIds.length} facility(s)`, 'success');
+
+      } catch (error) {
+        console.error('Error adding coach to facilities:', error);
+        showToast('Error adding coach to facilities', 'warning');
       }
     }
 
@@ -9746,6 +9918,15 @@ async function saveProduct() {
                                         Available for hire
                                     </label>
                                 </div>
+                                <div class="form-group mb-3">
+                                <label class="form-label">Applicable Facilities</label>
+                                <select class="form-select" id="editcoachFacilities" multiple>
+                                    ${adminFacilities.map(facility =>
+                                    `<option value="${facility.id}">${facility.name} (${facility.type})</option>`
+                                    ).join('')}
+                                </select>
+                                <small class="form-text text-muted">Hold Ctrl/Cmd to select multiple facilities. Leave empty for all facilities.</small>
+                            </div>
                             </form>
                         </div>
                         <div class="modal-footer">
@@ -9765,6 +9946,17 @@ async function saveProduct() {
 
         // Add modal to page
         document.body.insertAdjacentHTML('beforeend', editModalHTML);
+        // Set up facilities selection if editing
+        if (coach && coach.facilities) {
+          setTimeout(() => {
+            const facilitiesSelect = document.getElementById('editcoachFacilities');
+            if (facilitiesSelect) {
+              Array.from(facilitiesSelect.options).forEach(option => {
+                option.selected = coach.facilities.includes(option.value);
+              });
+            }
+          }, 100);
+        }
 
         // Show modal
         const editModal = new bootstrap.Modal(document.getElementById('editCoachModal'));
@@ -9812,7 +10004,13 @@ async function saveProduct() {
             delete coachData[key];
           }
         });
+        coachData.facilities = Array.from(
+          document.getElementById('editcoachFacilities').selectedOptions
+        ).map(option => option.value);
 
+        if (coachData.facilities.length > 0) {
+          await addCoachToFacilities(coachData.name, coachData.facilities);
+        }
         await db.collection('coaches').doc(coachId).update(coachData);
 
         showToast('Coach updated successfully', 'success');
@@ -11068,7 +11266,7 @@ async function handlePDFEdit() {
                                         
                                         <div class="form-group mb-3">
                                             <label class="form-label">New Date</label>
-                                            <input type="date" class="form-control" id="newBookingDate" min="${new Date().toISOString().split('T')[0]}" required>
+                                            <input type="date" class="form-control" id="newBookingDate" min="${new Date().split('T')[0]}" required>
                                         </div>
                                         
                                         <div class="form-group mb-3">

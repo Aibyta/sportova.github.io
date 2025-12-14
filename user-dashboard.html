@@ -497,30 +497,32 @@
       color: #856404;
     }
 
-    /* Product Cards */
-    .product-card {
-      background: white;
-      border-radius: 10px;
-      overflow: hidden;
-      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
-      transition: all 0.3s;
-    }
-
-    .product-card:hover {
-      transform: translateY(-5px);
-      box-shadow: 0 6px 12px rgba(0, 0, 0, 0.1);
-    }
-
-    /* Post Cards */
     .post-card {
-      background: white;
-      color: #222;
-      border-radius: 1rem;
-      padding: 1.5rem;
-      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.05);
-      margin-bottom: 2rem;
-      animation: fadeSlide .5s ease;
-    }
+  margin-bottom: 20px;
+  box-shadow: 0 0 8px rgba(0,0,0,0.05);
+  border-radius: 8px;
+  overflow: hidden; /* prevent image overflow */
+}
+
+.post-card .carousel-inner {
+  max-height: 350px; /* fixed height for all posts */
+  overflow: hidden;
+}
+
+.post-card .carousel-item img {
+  width: 100%;
+  max-height: 350px;
+  object-fit: cover; /* fill the area without stretching */
+}
+.post-card .user-info img {
+  margin-left: 10px;
+  margin-top: 10px;
+  width: 40px;
+  height: 40px;
+  object-fit: cover; /* crop to fit */
+  border-radius: 50%; /* circle */
+}
+
 
     .media {
       width: 100%;
@@ -1134,7 +1136,39 @@
       overflow: hidden;
       border: none;
       box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
-      height: 100%;
+      height: 520px;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* IMAGE CONTAINER */
+    .product-img-wrapper {
+      height: 220px;              /* ✅ fixed image area */
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: #f8f9fa;
+      overflow: hidden;           /* ✅ prevents overflow */
+    }
+
+    /* IMAGE */
+    .product-img {
+      max-height: 100%;
+      max-width: 100%;
+      object-fit: contain;        /* ✅ no cropping */
+    }
+
+    /* TEXT */
+    .product-card .card-body {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .product-card .card-text {
+      max-height: 3em;
+      overflow: hidden;
+      font-size: 0.85rem;
     }
 
     .product-card:hover {
@@ -1281,6 +1315,81 @@
       gap: 8px;
       flex-wrap: wrap;
     }
+    /* Event Card Styles */
+    .event-card {
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+        border: none;
+        border-radius: 10px;
+        overflow: hidden;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        height: 100%;
+    }
+
+    .event-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 8px 15px rgba(0, 0, 0, 0.2);
+    }
+
+    .event-card .card-img-top {
+        height: 200px;
+        object-fit: cover;
+    }
+
+    .event-card .card-body {
+        display: flex;
+        flex-direction: column;
+    }
+
+    .event-card .card-title {
+        font-size: 1.1rem;
+        font-weight: 600;
+        margin-bottom: 0.5rem;
+    }
+
+    .event-card .card-text {
+        flex-grow: 1;
+        font-size: 0.9rem;
+        color: #666;
+        margin-bottom: 1rem;
+    }
+
+    .event-card .badge {
+        font-size: 0.75rem;
+        padding: 0.25rem 0.5rem;
+    }
+
+    /* Event modal styles */
+    #eventDetailsModal .modal-body {
+        max-height: 70vh;
+        overflow-y: auto;
+    }
+
+    #eventDetailsModal img {
+        max-height: 300px;
+        object-fit: cover;
+    }
+
+    /* Event filter form */
+    #createEventForm input:invalid,
+    #createEventForm select:invalid {
+        border-color: #dc3545;
+    }
+
+    #createEventForm input:valid,
+    #createEventForm select:valid {
+        border-color: #28a745;
+    }
+
+    /* Responsive adjustments */
+    @media (max-width: 768px) {
+        .event-card .card-img-top {
+            height: 150px;
+        }
+
+        .event-card .card-title {
+            font-size: 1rem;
+        }
+    }
   </style>
 </head>
 
@@ -1308,7 +1417,10 @@
             class="sidebar-text">Marketplace</span></a></li>
       <li><a href="#" data-page="community"><i class="fas fa-comments"></i> <span
             class="sidebar-text">Community</span></a></li>
-      <li><a href="#" data-page="profile"><i class="fas fa-user"></i> <span class="sidebar-text">My Profile</span></a>
+      <li><a href="#" data-page="events"><i class="fas fa-calendar-alt"></i> <span 
+            class="sidebar-text">Events</span></a></li>
+      <li><a href="#" data-page="profile"><i class="fas fa-user"></i> <span 
+            class="sidebar-text">My Profile</span></a>
       </li>
     </ul>
 
@@ -2099,7 +2211,7 @@ function showEventPreview(event, eventId) {
             ${event.time ? `<p class="mb-2"><strong>Time:</strong> ${event.time}</p>` : ''}
             ${event.sport ? `<p class="mb-2"><strong>Sport:</strong> ${event.sport}</p>` : ''}
             ${event.type ? `<p class="mb-2"><strong>Type:</strong> ${event.type}</p>` : ''}
-            ${event.location ? `<p class="mb-2"><strong>Location:</strong> ${event.location}</p>` : ''}
+            <p><strong>Location:</strong> ${locationText}</p>           
             ${event.description ? `<p class="mb-3"><strong>Description:</strong><br>${event.description}</p>` : ''}
             ${event.contactInfo ? `<p class="mb-0"><strong>Contact:</strong> ${event.contactInfo}</p>` : ''}
           </div>
@@ -2322,6 +2434,9 @@ async function registerForEvent(eventId) {
         case 'community':
           content = loadCommunityPage();
           break;
+        case 'events':
+          content = loadEventsPage();
+          break;
         case 'profile':
           content = loadProfilePage();
           break;
@@ -2347,6 +2462,7 @@ async function registerForEvent(eventId) {
         'my-bookings': 'My Bookings',
         'marketplace': 'Marketplace',
         'community': 'Community',
+        'events': 'Events',
         'profile': 'My Profile'
       };
 
@@ -2850,16 +2966,16 @@ async function registerForEvent(eventId) {
             </div>
             <div class="col-md-6">
               <div class="form-group mb-3">
-  <label class="form-label">Upload Image</label>
-  
-  <input type="file" id="itemImageFile"
-         accept="image/*"
-         class="form-control">
+              <label class="form-label">Upload Image</label>
 
-  <img id="itemImagePreview"
-       style="max-height: 150px; display:none; margin-top:10px;"
-       class="img-fluid rounded" />
-</div>
+              <input type="file" id="itemImageFile" multiple
+                     accept="image/*"
+                     class="form-control">
+
+              <img id="itemImagePreview"
+                   style="max-height: 150px; display:none; margin-top:10px;"
+                   class="d-flex mt-2 rounded" />
+            </div>
 
             </div>
             <div class="col-md-6">
@@ -2960,84 +3076,385 @@ async function registerForEvent(eventId) {
     <div class="row" id="marketplaceItems">
       <!-- Marketplace items will be loaded dynamically -->
     </div>
+    <!-- marketplace model -->
+    <div class="modal fade" id="productModal" tabindex="-1">
+      <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content">
+        
+          <div class="modal-header">
+            <h5 class="modal-title" id="modalProductTitle"></h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+          </div>
+        
+          <div class="modal-body">
+            <!-- Image Carousel -->
+            <div id="productCarousel" class="carousel slide mb-3" data-bs-ride="carousel">
+              <div class="carousel-inner" id="carouselImages"></div>
+            
+              <button class="carousel-control-prev" type="button" data-bs-target="#productCarousel" data-bs-slide="prev">
+                <span class="carousel-control-prev-icon"></span>
+              </button>
+              <button class="carousel-control-next" type="button" data-bs-target="#productCarousel" data-bs-slide="next">
+                <span class="carousel-control-next-icon"></span>
+              </button>
+            </div>
+          
+            <p id="modalProductDesc"></p>
+            <h5 id="modalProductPrice"></h5>
+          </div>
+        
+        </div>
+      </div>
+    </div>
   `;
-  document.getElementById("itemImageFile").addEventListener("change", function(e) {
-  const file = e.target.files[0];
-  if (file) {
-    const preview = document.getElementById("itemImagePreview");
-    preview.src = URL.createObjectURL(file);
-    preview.style.display = "block";
-  }
-});
+    // Image preview
+      document.getElementById("itemImageFile").addEventListener("change", function (e) {
+      const preview = document.getElementById("itemImagePreview");
+      preview.innerHTML = "";
+      
+      Array.from(e.target.files).forEach(file => {
+        const img = document.createElement("img");
+        img.src = URL.createObjectURL(file);
+        img.style.maxHeight = "80px";
+        img.style.marginRight = "5px";
+        img.classList.add("rounded");
+        preview.appendChild(img);
+      });
+    
+      preview.style.display = "flex";
+    });
 
-    }
+    };
+    async function openProductModal(productId) {
+  const doc = await db.collection("marketplace").doc(productId).get();
+  if (!doc.exists) return;
+
+  const product = doc.data();
+
+  document.getElementById("modalProductTitle").innerText = product.name;
+  document.getElementById("modalProductDesc").innerText = product.description;
+  document.getElementById("modalProductPrice").innerText = `RM${product.price}`;
+
+  const carousel = document.getElementById("carouselImages");
+  carousel.innerHTML = "";
+
+  product.images.forEach((img, index) => {
+    carousel.innerHTML += `
+      <div class="carousel-item ${index === 0 ? 'active' : ''}">
+        <img src="${img}" class="d-block w-100"
+             style="max-height:400px; object-fit:contain;">
+      </div>
+    `;
+  });
+
+  new bootstrap.Modal(document.getElementById("productModal")).show();
+}
+
 
     // Updated Community Page Loader
     function loadCommunityPage() {
       return `
     <div class="row mb-4">
-      <div class="col-md-12">
-        <div class="form-card">
-          <h4>Create a Post</h4>
-          <div class="form-group">
-            <textarea class="form-control" id="postContent" rows="3" placeholder="What's on your mind?"></textarea>
-          </div>
-          <div class="row">
-            <div class="mb-3">
-  <label class="form-label">Upload Photo</label>
-  <input type="file" id="postPhotoFile" accept="image/*" class="form-control">
-  <img id="postPhotoPreview" class="img-fluid mt-2 rounded" style="max-height: 180px; display:none;" />
+  <div class="col-md-12">
+    <div class="form-card p-3 shadow-sm rounded">
+      <h4>Create a Post</h4>
+      <div class="form-group mb-3">
+        <textarea class="form-control" id="postContent" rows="3" placeholder="What's on your mind?"></textarea>
+      </div>
+
+      <div class="form-group mb-3">
+        <label class="form-label">Upload Photos</label>
+        <input type="file" id="postPhotoFile" accept="image/*" multiple class="form-control">
+        <div id="postPhotoPreview" class="d-flex flex-wrap mt-2 gap-2"></div>
+      </div>
+
+      <div class="d-flex justify-content-end mt-3">
+        <button class="btn btn-primary" id="createPostBtn">Post</button>
+      </div>
+    </div>
+  </div>
 </div>
-          </div>
-          <div class="d-flex justify-content-end mt-3">
-            <button class="btn btn-primary" id="createPostBtn">Post</button>
-          </div>
-        </div>
-      </div>
+
+<div class="row">
+  <div class="col-md-8" id="communityPosts">
+    <!-- Community posts will be loaded dynamically -->
+  </div>
+
+  <div class="col-md-4">
+    <div class="table-card p-3 shadow-sm rounded">
+      <h5>Community Stats</h5>
+      <ul class="list-group">
+        <li class="list-group-item d-flex justify-content-between align-items-center">
+          Active Members
+          <span class="badge bg-primary rounded-pill" id="activeMembers">0</span>
+        </li>
+        <li class="list-group-item d-flex justify-content-between align-items-center">
+          Posts This Week
+          <span class="badge bg-primary rounded-pill" id="postsThisWeek">0</span>
+        </li>
+        <li class="list-group-item d-flex justify-content-between align-items-center">
+          Events Created
+          <span class="badge bg-primary rounded-pill" id="eventsCreated">0</span>
+        </li>
+      </ul>
     </div>
 
-    <div class="row">
-      <div class="col-md-8" id="communityPosts">
-        <!-- Community posts will be loaded dynamically -->
-      </div>
-      <div class="col-md-4">
-        <div class="table-card">
-          <h5>Community Stats</h5>
-          <ul class="list-group">
-            <li class="list-group-item d-flex justify-content-between align-items-center">
-              Active Members
-              <span class="badge bg-primary rounded-pill" id="activeMembers">0</span>
-            </li>
-            <li class="list-group-item d-flex justify-content-between align-items-center">
-              Posts This Week
-              <span class="badge bg-primary rounded-pill" id="postsThisWeek">0</span>
-            </li>
-            <li class="list-group-item d-flex justify-content-between align-items-center">
-              Events Created
-              <span class="badge bg-primary rounded-pill" id="eventsCreated">0</span>
-            </li>
-          </ul>
-        </div>
-
-        <div class="table-card mt-4">
-          <h5>Top Players</h5>
-          <div class="list-group" id="topPlayers">
-            <!-- Top players will be loaded dynamically -->
-          </div>
-        </div>
+    <div class="table-card p-3 shadow-sm rounded mt-4">
+      <h5>Top Players</h5>
+      <div class="list-group" id="topPlayers">
+        <!-- Top players will be loaded dynamically -->
       </div>
     </div>
+  </div>
+</div>
+<!-- Post Modal -->
+<div class="modal fade" id="postModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered modal-lg">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="postModalUser">User</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <!-- Carousel for multiple images -->
+        <div id="postModalCarousel" class="carousel slide" data-bs-ride="carousel">
+          <div class="carousel-inner" id="postModalCarouselInner"></div>
+
+          <button class="carousel-control-prev" type="button" data-bs-target="#postModalCarousel" data-bs-slide="prev">
+            <span class="carousel-control-prev-icon"></span>
+          </button>
+          <button class="carousel-control-next" type="button" data-bs-target="#postModalCarousel" data-bs-slide="next">
+            <span class="carousel-control-next-icon"></span>
+          </button>
+        </div>
+
+        <p class="mt-3" id="postModalContent"></p>
+      </div>
+    </div>
+  </div>
+</div>
   `;
-  // Image preview
-document.getElementById("postPhotoFile").addEventListener("change", (e) => {
-  const file = e.target.files[0];
-  if (file) {
-    const preview = document.getElementById("postPhotoPreview");
-    preview.src = URL.createObjectURL(file);
-    preview.style.display = "block";
-  }
-});
+      document.getElementById("postPhotoFile").addEventListener("change", (e) => {
+      const preview = document.getElementById("postPhotoPreview");
+      preview.innerHTML = "";
+      
+      Array.from(e.target.files).forEach(file => {
+        const img = document.createElement("img");
+        img.src = URL.createObjectURL(file);
+        img.style.height = "80px";
+        img.style.marginRight = "8px";
+        img.className = "rounded mb-2";
+        preview.appendChild(img);
+      });
+    });
+    }
+    function loadEventsPage() {
+      return `
+        <div class="row mb-4">
+          <div class="col-md-12">
+            <div class="form-card">
+              <h4>Create New Event</h4>
+              <form id="createEventForm">
+                <div class="row">
+                  <div class="col-md-6">
+                    <div class="form-group">
+                      <label class="form-label">Event Name</label>
+                      <input type="text" class="form-control" id="eventName" required placeholder="e.g. Tennis Tournament">
+                    </div>
+                  </div>
+                  <div class="col-md-6">
+                    <div class="form-group">
+                      <label class="form-label">Sport Type</label>
+                      <select class="form-select" id="eventSport" required>
+                        <option value="tennis">Tennis</option>
+                        <option value="badminton">Badminton</option>
+                        <option value="basketball">Basketball</option>
+                        <option value="football">Football</option>
+                        <option value="volleyball">Volleyball</option>
+                        <option value="swimming">Swimming</option>
+                        <option value="other">Other</option>
+                      </select>
+                    </div>
+                  </div>
+                  <div class="col-md-4">
+                    <div class="form-group">
+                      <label class="form-label">Start Date</label>
+                      <input type="date" class="form-control" id="eventStartDate" required min="${new Date().toISOString().split('T')[0]}">
+                    </div>
+                  </div>
+                  <div class="col-md-4">
+                    <div class="form-group">
+                      <label class="form-label">End Date</label>
+                      <input type="date" class="form-control" id="eventEndDate">
+                      <small class="text-muted">Leave empty if single day event</small>
+                    </div>
+                  </div>
+                  <div class="col-md-4">
+                    <div class="form-group">
+                      <label class="form-label">Start Time</label>
+                      <input
+                        type="time"
+                        class="form-control"
+                        id="eventStartTime"
+                        required
+                      >
+                    </div>
+                  </div>
 
+                  <div class="col-md-4">
+                    <div class="form-group">
+                      <label class="form-label">End Time</label>
+                      <input
+                        type="time"
+                        class="form-control"
+                        id="eventEndTime"
+                        required
+                      >
+                    </div>
+                  </div>
+                  <div class="col-md-6">
+                    <div class="form-group">
+                      <label class="form-label">Location</label>
+                      <input type="text" class="form-control" id="eventLocation" required placeholder="e.g. Sportova Tennis Court">
+                    </div>
+                  </div>
+                  <div class="col-md-6">
+                    <div class="form-group">
+                      <label class="form-label">Max Participants</label>
+                      <input type="number" class="form-control" id="eventMaxParticipants" min="2" placeholder="Leave empty for unlimited">
+                    </div>
+                  </div>
+                  <div class="col-md-12">
+                    <div class="form-group">
+                      <label class="form-label">Event Description</label>
+                      <textarea class="form-control" id="eventDescription" rows="3" placeholder="Describe your event..."></textarea>
+                    </div>
+                  </div>
+                  <div class="col-md-6">
+                    <div class="form-group mb-3">
+                      <label class="form-label">Event Image</label>
+                      <input type="file" id="eventImageFile" accept="image/*" class="form-control">
+                      <img id="eventImagePreview" class="img-fluid mt-2 rounded" style="max-height: 200px; display:none;" />
+                    </div>
+                  </div>
+                  <div class="col-md-6">
+                    <div class="form-group">
+                      <label class="form-label">Contact Information</label>
+                      <input type="text" class="form-control" id="eventContact" placeholder="Your contact number or email">
+                    </div>
+                    <div class="form-group">
+                      <label class="form-label">Event Type</label>
+                      <select class="form-select" id="eventType">
+                        <option value="tournament">Tournament</option>
+                        <option value="friendly">Friendly Match</option>
+                        <option value="training">Training Session</option>
+                        <option value="social">Social Gathering</option>
+                        <option value="other">Other</option>
+                      </select>
+                    </div>
+                  </div>
+                  <div class="col-md-12">
+                    <div class="d-flex justify-content-end">
+                      <button type="button" class="btn btn-secondary me-2" onclick="clearEventForm()">Clear</button>
+                      <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-plus-circle me-2"></i> Create Event
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+      
+        <div class="row mb-4">
+          <div class="col-md-12">
+            <div class="form-card">
+              <h4>Filter Events</h4>
+              <div class="row">
+                <div class="col-md-3">
+                  <div class="form-group">
+                    <label class="form-label">Sport Type</label>
+                    <select class="form-select" id="filterEventSport">
+                      <option value="all">All Sports</option>
+                      <option value="tennis">Tennis</option>
+                      <option value="badminton">Badminton</option>
+                      <option value="basketball">Basketball</option>
+                      <option value="football">Football</option>
+                      <option value="other">Other</option>
+                    </select>
+                  </div>
+                </div>
+                <div class="col-md-3">
+                  <div class="form-group">
+                    <label class="form-label">Event Type</label>
+                    <select class="form-select" id="filterEventType">
+                      <option value="all">All Types</option>
+                      <option value="tournament">Tournament</option>
+                      <option value="friendly">Friendly Match</option>
+                      <option value="training">Training Session</option>
+                      <option value="social">Social Gathering</option>
+                    </select>
+                  </div>
+                </div>
+                <div class="col-md-3">
+                  <div class="form-group">
+                    <label class="form-label">Date Range</label>
+                    <select class="form-select" id="filterEventDate">
+                      <option value="all">All Dates</option>
+                      <option value="today">Today</option>
+                      <option value="week">This Week</option>
+                      <option value="month">This Month</option>
+                      <option value="upcoming">Upcoming</option>
+                      <option value="past">Past Events</option>
+                    </select>
+                  </div>
+                </div>
+                <div class="col-md-3">
+                  <div class="form-group">
+                    <label class="form-label">Show</label>
+                    <select class="form-select" id="filterEventShow">
+                      <option value="all">All Events</option>
+                      <option value="my">My Events</option>
+                      <option value="registered">Registered Events</option>
+                      <option value="available">Available to Join</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+              <div class="row mt-3">
+                <div class="col-md-12">
+                  <div class="d-flex justify-content-between">
+                    <button class="btn btn-primary" id="filterEventsBtn">
+                      <i class="fas fa-filter me-2"></i> Apply Filters
+                    </button>
+                    <button class="btn btn-outline-secondary" id="clearEventFiltersBtn">
+                      <i class="fas fa-times me-2"></i> Clear Filters
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      
+        <div class="row" id="eventsList">
+          <!-- Events will be loaded dynamically -->
+          <div class="col-12 text-center">
+            <div class="spinner-border text-primary" role="status">
+              <span class="visually-hidden">Loading events...</span>
+            </div>
+          </div>
+        </div>
+      `;
+      document.getElementById("eventStartTime").addEventListener("change", () => {
+        const start = document.getElementById("eventStartTime").value;
+        const endInput = document.getElementById("eventEndTime");
+
+        if (start) {
+          endInput.min = start;
+        }
+      });
     }
 
 
@@ -3176,6 +3593,9 @@ document.getElementById("postPhotoFile").addEventListener("change", (e) => {
           break;
         case 'community':
           initializeCommunityPage();
+          break;
+        case 'events':
+          initializeEventsPage();
           break;
         case 'profile':
           initializeProfilePage();
@@ -4919,7 +5339,7 @@ async function loadFacilities(filters = {}) {
     async function loadAvailableCoachesForFacility(facilityId) {
       try {
         const coachesSnapshot = await db.collection('coaches')
-          .where('facilityId', '==', facilityId)
+          .where('facilities', 'array-contains', facilityId)
           .where('availableForHire', '==', true)
           .get();
 
@@ -6255,14 +6675,23 @@ document.getElementById("chatAttachmentInput").addEventListener("change", async 
 
         const isOwner = item.sellerId === currentUser.uid;
         const isSold = item.status === 'sold';
+        const firstImage = item.images?.[0]
 
         col.innerHTML = `
-      <div class="product-card card h-100 ${isSold ? 'opacity-75' : ''}">
+      <div class="product-card card ${isSold ? 'opacity-75' : ''}"
+          onclick="openProductModal('${item.id}')"
+          style="cursor:pointer">
         ${isSold ? '<div class="sold-badge">SOLD</div>' : ''}
-        <img src="${item.imageUrl || 'https://via.placeholder.com/300x200?text=No+Image'}" 
-             class="card-img-top" alt="${item.name}"
-             style="height: 200px; object-fit: cover;"
-             onerror="this.src='https://via.placeholder.com/300x200?text=No+Image'">
+        <div class="product-img-wrapper position-relative">
+          <img src="${firstImage}" class="product-img" alt="product">
+
+          <!-- IMAGE COUNT BADGE -->
+          ${item.images && item.images.length > 1 ? `
+            <span class="badge bg-dark position-absolute bottom-0 end-0 m-2">
+              ${item.images.length} photos
+            </span>
+          ` : ''}
+        </div>
         <div class="card-body d-flex flex-column">
           <div class="d-flex justify-content-between align-items-start mb-2">
             <h5 class="card-title">${item.name}</h5>
@@ -6401,15 +6830,18 @@ document.getElementById("chatAttachmentInput").addEventListener("change", async 
         const itemPrice = parseFloat(document.getElementById('itemPrice').value);
         const itemCondition = document.getElementById('itemCondition').value;
         const itemCategory = document.getElementById('itemCategory').value;
-        // Handle image upload
-let itemImageUrl = null;
-const imageFile = document.getElementById("itemImageFile").files[0];
+        // Handle MULTIPLE image upload
+        const imageFiles = document.getElementById("itemImageFile").files;
+        let imageUrls = [];
 
-if (imageFile) {
-  itemImageUrl = await uploadToCloudinary(imageFile);
-} else {
-  itemImageUrl = "https://via.placeholder.com/300x200?text=No+Image";
-}
+        if (imageFiles.length > 0) {
+          for (const file of imageFiles) {
+            const url = await uploadToCloudinary(file);
+            imageUrls.push(url);
+          }
+        } else {
+          imageUrls.push("https://via.placeholder.com/300x200?text=No+Image");
+        }
 
         const itemDescription = document.getElementById('itemDescription').value.trim();
         const contactNumber = document.getElementById('contactNumber').value.trim();
@@ -6440,7 +6872,7 @@ if (imageFile) {
           price: itemPrice,
           condition: itemCondition,
           category: itemCategory,
-          imageUrl: itemImageUrl || 'https://via.placeholder.com/300x200?text=No+Image',
+          images: imageUrls,
           description: itemDescription,
           sellerId: currentUser.uid,
           sellerName: currentUser.displayName || 'User',
@@ -6717,7 +7149,39 @@ if (imageFile) {
         showToast('Error loading posts', 'danger');
       }
     }
+async function openPostModalById(postId) {
+  const doc = await db.collection('posts').doc(postId).get();
+  if (!doc.exists) return;
+  openPostModal({ id: doc.id, ...doc.data() });
+}
+    function openPostModal(post) {
+  const modalUser = document.getElementById("postModalUser");
+  const modalContent = document.getElementById("postModalContent");
+  const carouselInner = document.getElementById("postModalCarouselInner");
 
+  // Set user and content
+  modalUser.textContent = post.userName || "User";
+  modalContent.textContent = post.content || "";
+
+  // Build carousel
+  carouselInner.innerHTML = "";
+  if (post.images && post.images.length > 0) {
+    post.images.forEach((img, index) => {
+      const itemDiv = document.createElement("div");
+      itemDiv.className = "carousel-item" + (index === 0 ? " active" : "");
+      itemDiv.innerHTML = `<img src="${img}" class="d-block w-100" style="max-height:400px; object-fit:contain;">`;
+      carouselInner.appendChild(itemDiv);
+    });
+  } else {
+    carouselInner.innerHTML = `<div class="carousel-item active">
+      <img src="placeholder.png" class="d-block w-100" style="max-height:400px; object-fit:contain;">
+    </div>`;
+  }
+
+  // Show Bootstrap modal
+  const postModal = new bootstrap.Modal(document.getElementById("postModal"));
+  postModal.show();
+}
 
     // Create post element with emoji reactions
     function createPostElement(post) {
@@ -6725,30 +7189,38 @@ if (imageFile) {
       postDiv.className = 'post-card';
       postDiv.id = `post-${post.id}`;
 
-      const mediaHtml = post.photoUrl ? `
-    <img src="${post.photoUrl}" class="media mb-3" alt="Post image" onerror="this.style.display='none'">
-  ` : post.videoUrl ? `
-    <video src="${post.videoUrl}" class="media mb-3" controls onerror="this.style.display='none'"></video>
-  ` : '';
+      const mediaHtml = post.images && post.images.length > 0 ? `
+<div id="postCarousel-${post.id}" class="carousel slide mb-3">
+  <div class="carousel-inner">
+    ${post.images.map((img, index) => `
+      <div class="carousel-item ${index === 0 ? 'active' : ''}">
+        <img src="${img}"
+             class="d-block w-100 rounded post-image"
+             style="max-height:350px; object-fit:contain; cursor:pointer"
+             onclick="openPostModalById('${post.id}')">
+      </div>
+    `).join('')}
+  </div>
+</div>
+` : '';
 
       // Get user's current reaction if any
       const userReaction = post.reactions ?
         Object.keys(post.reactions).find(emoji => post.reactions[emoji].includes(currentUser.uid)) : null;
 
       postDiv.innerHTML = `
-    <div class="d-flex align-items-center mb-3">
-      <img src="${post.userPhotoUrl || generateDefaultAvatar(post.userName || 'User')}" 
-           class="rounded-circle me-3" width="50" height="50" style="object-fit: cover;"
-           onerror="this.src='https://via.placeholder.com/50'">
+    <div class="user-info d-flex align-items-center mb-3">
+      <img src="${post.userPhotoUrl}">
       <div>
         <h6 class="mb-0">${post.userName || 'User'}</h6>
         <small class="text-muted">${formatTimeAgo(post.createdAt?.toDate())}</small>
       </div>
     </div>
     
-    <div class="post-content">
-      <p class="mb-3">${post.content}</p>
+    <div class="post-content-section mb-3">
+      <!-- Carousel or main image -->
       ${mediaHtml}
+      <p class="post-content">${post.content}</p>
     </div>
     
     <!-- Reactions Section -->
@@ -7144,33 +7616,41 @@ if (imageFile) {
 
       return Math.round(score);
     }
+let userProfileCache = null;
+
+async function getUserProfile() {
+  if (userProfileCache) return userProfileCache;
+
+  const doc = await db.collection('users').doc(currentUser.uid).get();
+  userProfileCache = doc.exists ? doc.data() : {};
+  return userProfileCache;
+}
 
     // Create a new post - FIXED VERSION
     async function createPost() {
       try {
         const content = document.getElementById('postContent').value.trim();
-        let uploadedPhotoUrl = null;
+        const photoFiles = document.getElementById("postPhotoFile").files;
+        let imageUrls = [];
 
-const photoFile = document.getElementById("postPhotoFile").files[0];
-
-if (photoFile) {
-  uploadedPhotoUrl = await uploadToCloudinary(photoFile, "image");
-}
-
-
-
+        if (photoFiles.length > 0) {
+          for (const file of photoFiles) {
+            const url = await uploadToCloudinary(file, "image");
+            imageUrls.push(url);
+          }
+        }
         if (!content) {
           showToast('Please enter post content', 'warning');
           return;
         }
 
         // Get user data properly
-        const userData = window.userProfileData || {};
-        const userPhotoUrl = userData.photoUrl || currentUser.photoURL || '';
+        const userData = await getUserProfile();
+        const userPhotoUrl = userData.photoURL;
 
         const postData = {
           content: content,
-          photoUrl: uploadedPhotoUrl,
+          images: imageUrls,
           userId: currentUser.uid,
           userName: currentUser.displayName || 'User',
           userPhotoUrl: userPhotoUrl,
@@ -7251,7 +7731,7 @@ if (photoFile) {
 
         // Get user data properly
         const userData = window.userProfileData || {};
-        const userPhotoUrl = userData.photoUrl || currentUser.photoURL || '';
+        const userPhotoUrl = userData.photoURL || currentUser.photoURL || '';
 
         const comment = {
           id: generateId(), // Generate a unique ID for the comment
@@ -7749,6 +8229,631 @@ async function createNotification(userId, type, title, message, data = {}) {
   } catch (err) {
     console.error("Error loading notifications:", err);
   }
+}
+async function initializeEventsPage() {
+  // Image preview
+  document.getElementById('eventImageFile')?.addEventListener('change', (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      const preview = document.getElementById('eventImagePreview');
+      preview.src = URL.createObjectURL(file);
+      preview.style.display = 'block';
+    }
+  });
+
+  // Form submission
+  document.getElementById('createEventForm')?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    await createEvent();
+  });
+
+  // Filter buttons
+  document.getElementById('filterEventsBtn')?.addEventListener('click', () => {
+    filterEvents();
+  });
+
+  document.getElementById('clearEventFiltersBtn')?.addEventListener('click', () => {
+    clearEventFilters();
+  });
+
+  // Load all events initially
+  await loadEvents();
+}
+// Clear event form
+function clearEventForm() {
+  document.getElementById('createEventForm').reset();
+  const preview = document.getElementById('eventImagePreview');
+  preview.style.display = 'none';
+  preview.src = '';
+}
+
+// Create new event
+async function createEvent() {
+  try {
+    const eventData = {
+      name: document.getElementById('eventName').value.trim(),
+      sport: document.getElementById('eventSport').value,
+      startDate: document.getElementById('eventStartDate').value,
+      endDate: document.getElementById('eventEndDate').value || document.getElementById('eventStartDate').value,
+      startTime: document.getElementById('eventStartTime').value,
+      endTime: document.getElementById('eventEndTime').value,
+      location: document.getElementById('eventLocation').value.trim(),
+      maxParticipants: document.getElementById('eventMaxParticipants').value ? parseInt(document.getElementById('eventMaxParticipants').value) : null,
+      description: document.getElementById('eventDescription').value.trim(),
+      contactInfo: document.getElementById('eventContact').value.trim(),
+      type: document.getElementById('eventType').value,
+      creatorId: currentUser.uid,
+      creatorName: window.userProfileData?.name || currentUser.displayName || 'User',
+      participants: [], // Empty array initially
+      status: 'upcoming',
+      createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+      updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+    };
+
+    // Upload image if selected
+    const imageFile = document.getElementById('eventImageFile').files[0];
+    if (imageFile) {
+      const imageUrl = await uploadToCloudinary(imageFile);
+      eventData.imageUrl = imageUrl;
+    }
+
+    // Save to Firestore
+    await db.collection('events').add(eventData);
+
+    showToast('Event created successfully!', 'success');
+    clearEventForm();
+    await loadEvents(); // Reload events list
+
+  } catch (error) {
+    console.error('Error creating event:', error);
+    showToast('Error creating event: ' + error.message, 'danger');
+  }
+}
+
+// Load events with filters
+async function loadEvents(filters = {}) {
+  try {
+    const eventsList = document.getElementById('eventsList');
+    eventsList.innerHTML = '<div class="col-12 text-center"><div class="spinner-border text-primary" role="status"><span class="visually-hidden">Loading events...</span></div></div>';
+
+    let eventsQuery = db.collection('events').orderBy('startDate', 'asc');
+    
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    // Apply filters
+    if (filters.dateRange) {
+      if (filters.dateRange === 'today') {
+        eventsQuery = eventsQuery.where('startDate', '==', today.toISOString().split('T')[0]);
+      } else if (filters.dateRange === 'upcoming') {
+        eventsQuery = eventsQuery.where('startDate', '>=', today);
+      } else if (filters.dateRange === 'past') {
+        eventsQuery = eventsQuery.where('startDate', '<', today);
+      }
+    }
+
+    const eventsSnapshot = await eventsQuery.get();
+    
+    let events = [];
+    eventsSnapshot.forEach(doc => {
+      const event = {
+        id: doc.id,
+        ...doc.data()
+      };
+      events.push(event);
+    });
+
+    // Apply additional filters client-side
+    if (filters.sport && filters.sport !== 'all') {
+      events = events.filter(event => event.sport === filters.sport);
+    }
+
+    if (filters.eventType && filters.eventType !== 'all') {
+      events = events.filter(event => event.type === filters.eventType);
+    }
+
+    if (filters.show === 'my') {
+      events = events.filter(event => event.creatorId === currentUser.uid);
+    } else if (filters.show === 'registered') {
+      events = events.filter(event => 
+        event.participants && event.participants.includes(currentUser.uid)
+      );
+    } else if (filters.show === 'available') {
+      events = events.filter(event => {
+        const isFull = event.maxParticipants && 
+                      event.participants && 
+                      event.participants.length >= event.maxParticipants;
+        const isRegistered = event.participants && 
+                           event.participants.includes(currentUser.uid);
+        return !isFull && !isRegistered && event.creatorId !== currentUser.uid;
+      });
+    }
+
+    // Filter by date for week/month
+    if (filters.dateRange === 'week') {
+      const nextWeek = new Date();
+      nextWeek.setDate(nextWeek.getDate() + 7);
+      events = events.filter(event => {
+        const eventDate = new Date(event.startDate);
+        return eventDate >= today && eventDate <= nextWeek;
+      });
+    } else if (filters.dateRange === 'month') {
+      const nextMonth = new Date();
+      nextMonth.setMonth(nextMonth.getMonth() + 1);
+      events = events.filter(event => {
+        const eventDate = new Date(event.startDate);
+        return eventDate >= today && eventDate <= nextMonth;
+      });
+    }
+
+    renderEvents(events);
+
+  } catch (error) {
+    console.error('Error loading events:', error);
+    const eventsList = document.getElementById('eventsList');
+    eventsList.innerHTML = `
+      <div class="col-12 text-center">
+        <div class="alert alert-danger">
+          <i class="fas fa-exclamation-triangle me-2"></i>
+          Error loading events: ${error.message}
+        </div>
+      </div>
+    `;
+  }
+}
+async function resolveEventLocation(event) {
+  // Priority 1: direct event location
+  if (event.location) {
+    return event.location;
+  }
+
+  // Priority 2: facility-based location
+  if (event.facilityId) {
+    const facilityDoc = await db
+      .collection("facilities")
+      .doc(event.facilityId)
+      .get();
+
+    if (facilityDoc.exists) {
+      return facilityDoc.data().location || "";
+    }
+  }
+
+  return "";
+}
+async function resolveEventCreatorName(event) {
+  // Priority 1: direct event location
+  if (event.creatorName) {
+    return event.creatorName;
+  }
+
+  // Priority 2: facility-based location
+  if (event.creatorId) {
+    const usersDoc = await db
+      .collection("users")
+      .doc(event.creatorId)
+      .get();
+
+    if (usersDoc.exists) {
+      return usersDoc.data().name || "";
+    }
+  }
+
+  return "";
+}
+// Render events list
+async function renderEvents(events) {
+  const eventsList = document.getElementById('eventsList');
+  eventsList.innerHTML = '';
+
+  if (events.length === 0) {
+    eventsList.innerHTML = `
+      <div class="col-12 text-center">
+        <div class="alert alert-info">
+          <i class="fas fa-info-circle me-2"></i>
+          No events found matching your criteria.
+        </div>
+      </div>
+    `;
+    return;
+  }
+
+  for (const event of events) {
+    const col = document.createElement('div');
+    col.className = 'col-md-4 mb-4';
+    
+    // Check if user is registered
+    const isRegistered = event.participants && 
+                        event.participants.includes(currentUser.uid);
+    const isCreator = event.creatorId === currentUser.uid;
+    const isFull = event.maxParticipants && 
+                   event.participants && 
+                   event.participants.length >= event.maxParticipants;
+    
+    // Format date
+    const startDate = new Date(event.startDate);
+    const formattedDate = startDate.toLocaleDateString('en-US', {
+      weekday: 'short',
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric'
+    });
+
+    // Calculate participants info
+    const participantsCount = event.participants ? event.participants.length : 0;
+    const spotsLeft = event.maxParticipants ? 
+                     event.maxParticipants - participantsCount : 'Unlimited';
+    const locationText = await resolveEventLocation(event);
+    const creatorNames = await resolveEventCreatorName(event);
+
+    col.innerHTML = `
+      <div class="card h-100 event-card">
+        <img src="${event.imageUrl || 'https://via.placeholder.com/300x200?text=Event'}" 
+             class="card-img-top" alt="${event.name}"
+             style="height: 200px; object-fit: cover;"
+             onerror="this.src='https://via.placeholder.com/300x200?text=Event'">
+        <div class="card-body d-flex flex-column">
+          <div class="d-flex justify-content-between align-items-start mb-2">
+            <h5 class="card-title">${event.name}</h5>
+            <span class="badge bg-primary text-capitalize">${event.type}</span>
+          </div>
+          <p class="card-text flex-grow-1">${event.description || 'No description provided'}</p>
+          
+          <div class="mb-3">
+            <p class="mb-1">
+              <i class="fas fa-calendar-alt me-2"></i>
+              ${formattedDate}
+              ${event.time ? `<br><small><i class="fas fa-clock me-2"></i>${event.time}</small>` : ''}
+            </p>
+            <p class="mb-1">
+              <i class="fas fa-map-marker-alt me-2"></i>
+              ${locationText}
+            </p>
+            <p class="mb-1">
+              <i class="fas fa-users me-2"></i>
+              ${participantsCount} participants
+              ${event.maxParticipants ? `<br><small>${spotsLeft} spots left</small>` : ''}
+            </p>
+            <p class="mb-0">
+              <i class="fas fa-basketball-ball me-2"></i>
+              ${event.sport}
+            </p>
+          </div>
+
+          <div class="mt-auto">
+            <div class="d-flex justify-content-between align-items-center">
+              <small class="text-muted">
+                By: ${creatorNames}
+              </small>
+              
+              ${isCreator ? `
+                <span class="badge bg-success">Created by You</span>
+              ` : isRegistered ? `
+                <span class="badge bg-info">Registered</span>
+              ` : isFull ? `
+                <span class="badge bg-danger">Full</span>
+              ` : `
+                <button class="btn btn-sm btn-primary register-event-btn" 
+                        data-event-id="${event.id}">
+                  <i class="fas fa-user-plus me-1"></i> Register
+                </button>
+              `}
+            </div>
+            
+            <div class="mt-2">
+              <button class="btn btn-sm btn-outline-secondary view-event-btn w-100" 
+                      data-event-id="${event.id}">
+                <i class="fas fa-eye me-1"></i> View Details
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    `;
+
+    eventsList.appendChild(col);
+  };
+
+  // Add event listeners
+  addEventListeners();
+}
+
+// Add event listeners for register and view buttons
+function addEventListeners() {
+  // Register buttons
+  document.querySelectorAll('.register-event-btn').forEach(btn => {
+    btn.addEventListener('click', function() {
+      const eventId = this.getAttribute('data-event-id');
+      registerForEventFromList(eventId);
+    });
+  });
+
+  // View details buttons
+  document.querySelectorAll('.view-event-btn').forEach(btn => {
+    btn.addEventListener('click', function() {
+      const eventId = this.getAttribute('data-event-id');
+      viewEventDetails(eventId);
+    });
+  });
+}
+
+// Register for event from events list
+async function registerForEventFromList(eventId) {
+  try {
+    const eventDoc = await db.collection('events').doc(eventId).get();
+    if (!eventDoc.exists) {
+      showToast('Event not found', 'danger');
+      return;
+    }
+
+    const event = eventDoc.data();
+    
+    // Check if already registered
+    if (event.participants && event.participants.includes(currentUser.uid)) {
+      showToast('You are already registered for this event', 'warning');
+      return;
+    }
+
+    // Check if event is full
+    if (event.maxParticipants && event.participants && 
+        event.participants.length >= event.maxParticipants) {
+      showToast('This event is already full', 'warning');
+      return;
+    }
+
+    // Register user
+    await db.collection('events').doc(eventId).update({
+      participants: firebase.firestore.FieldValue.arrayUnion(currentUser.uid),
+      updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+    });
+
+    showToast('Successfully registered for the event!', 'success');
+    await loadEvents(); // Reload events
+
+  } catch (error) {
+    console.error('Error registering for event:', error);
+    showToast('Error registering for event: ' + error.message, 'danger');
+  }
+}
+
+// View event details
+async function viewEventDetails(eventId) {
+  try {
+    const eventDoc = await db.collection('events').doc(eventId).get();
+    if (!eventDoc.exists) {
+      showToast('Event not found', 'danger');
+      return;
+    }
+
+    const event = eventDoc.data();
+    const isRegistered = event.participants && 
+                        event.participants.includes(currentUser.uid);
+    const isCreator = event.creatorId === currentUser.uid;
+    const locationText = await resolveEventLocation(event);
+    const creatorNames = await resolveEventCreatorName(event);
+
+    // Format dates
+    const startDate = new Date(event.startDate);
+    const formattedStartDate = startDate.toLocaleDateString('en-US', {
+      weekday: 'long',
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    });
+
+    let formattedEndDate = '';
+    if (event.endDate && event.endDate !== event.startDate) {
+      const endDate = new Date(event.endDate);
+      formattedEndDate = endDate.toLocaleDateString('en-US', {
+        weekday: 'long',
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric'
+      });
+    }
+
+    // Get participants list
+    let participantsList = [];
+    if (event.participants && event.participants.length > 0) {
+      const participantPromises = event.participants.map(async (userId) => {
+        const userDoc = await db.collection('users').doc(userId).get();
+        return userDoc.exists ? userDoc.data().name || 'User' : 'User';
+      });
+      participantsList = await Promise.all(participantPromises);
+    }
+
+    // Create modal
+    const modalHtml = `
+      <div class="modal fade" id="eventDetailsModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+          <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+              <h5 class="modal-title">Event Details</h5>
+              <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+              <div class="row">
+                <div class="col-md-6">
+                  <img src="${event.imageUrl || 'https://via.placeholder.com/500x300?text=Event'}" 
+                       class="img-fluid rounded mb-3" alt="${event.name}"
+                       onerror="this.src='https://via.placeholder.com/500x300?text=Event'">
+                </div>
+                <div class="col-md-6">
+                  <h4>${event.name}</h4>
+                  <p class="text-muted">${event.type.charAt(0).toUpperCase() + event.type.slice(1)} • ${event.sport}</p>
+                  
+                  <div class="mb-4">
+                    <h6>Event Information</h6>
+                    <p><strong>Date:</strong> ${formattedStartDate}</p>
+                    ${formattedEndDate ? `<p><strong>End Date:</strong> ${formattedEndDate}</p>` : ''}
+                    ${event.startTime ? `<p><strong>Time:</strong> ${event.startTime}` : ''} - 
+                    ${event.endTime ? `${event.endTime}</p>` : ''}
+                    <p><strong>Location:</strong> ${locationText}</p>
+                    ${event.contactInfo ? `<p><strong>Contact:</strong> ${event.contactInfo}</p>` : ''}
+                  </div>
+                </div>
+              </div>
+              
+              <div class="row mt-4">
+                <div class="col-md-12">
+                  <h6>Description</h6>
+                  <p>${event.description || 'No description provided.'}</p>
+                </div>
+              </div>
+              
+              <div class="row mt-4">
+                <div class="col-md-6">
+                  <h6>Participants (${participantsList.length}${event.maxParticipants ? '/' + event.maxParticipants : ''})</h6>
+                  ${participantsList.length > 0 ? 
+                    `<ul class="list-group">
+                      ${participantsList.map(participant => `<li class="list-group-item">${participant}</li>`).join('')}
+                    </ul>` :
+                    `<p class="text-muted">No participants yet.</p>`
+                  }
+                </div>
+                
+                <div class="col-md-6">
+                  <h6>Event Details</h6>
+                  <ul class="list-group">
+                    <li class="list-group-item d-flex justify-content-between">
+                      <span>Organizer:</span>
+                      <span>${creatorNames}</span>
+                    </li>
+                    <li class="list-group-item d-flex justify-content-between">
+                      <span>Status:</span>
+                      <span class="badge ${event.status === 'upcoming' ? 'bg-primary' : 'bg-success'}">
+                        ${event.status}
+                      </span>
+                    </li>
+                    <li class="list-group-item d-flex justify-content-between">
+                      <span>Spots Available:</span>
+                      <span>${event.maxParticipants ? 
+                             (event.maxParticipants - participantsList.length) + ' remaining' : 
+                             'Unlimited'}</span>
+                    </li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+            
+            <div class="modal-footer">
+              <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+              
+              ${!isCreator && !isRegistered && 
+                (!event.maxParticipants || participantsList.length < event.maxParticipants) ? `
+                <button type="button" class="btn btn-primary" onclick="registerForEventFromModal('${eventId}')">
+                  <i class="fas fa-user-plus me-2"></i> Register Now
+                </button>
+              ` : isRegistered ? `
+                <button type="button" class="btn btn-warning" onclick="unregisterFromEvent('${eventId}')">
+                  <i class="fas fa-user-minus me-2"></i> Unregister
+                </button>
+              ` : ''}
+              
+              ${isCreator ? `
+                <button type="button" class="btn btn-danger" onclick="deleteEvent('${eventId}')">
+                  <i class="fas fa-trash me-2"></i> Delete Event
+                </button>
+              ` : ''}
+            </div>
+          </div>
+        </div>
+      </div>
+    `;
+
+    // Remove existing modal
+    const existingModal = document.getElementById('eventDetailsModal');
+    if (existingModal) existingModal.remove();
+
+    // Add modal to DOM
+    document.body.insertAdjacentHTML('beforeend', modalHtml);
+
+    // Show modal
+    const modal = new bootstrap.Modal(document.getElementById('eventDetailsModal'));
+    modal.show();
+
+    // Remove modal when hidden
+    document.getElementById('eventDetailsModal').addEventListener('hidden.bs.modal', function() {
+      this.remove();
+    });
+
+  } catch (error) {
+    console.error('Error viewing event details:', error);
+    showToast('Error loading event details', 'danger');
+  }
+}
+
+// Register from modal
+async function registerForEventFromModal(eventId) {
+  await registerForEventFromList(eventId);
+  
+  // Close modal
+  const modal = bootstrap.Modal.getInstance(document.getElementById('eventDetailsModal'));
+  if (modal) modal.hide();
+}
+
+// Unregister from event
+async function unregisterFromEvent(eventId) {
+  if (!confirm('Are you sure you want to unregister from this event?')) return;
+
+  try {
+    await db.collection('events').doc(eventId).update({
+      participants: firebase.firestore.FieldValue.arrayRemove(currentUser.uid),
+      updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+    });
+
+    showToast('Successfully unregistered from event', 'success');
+    await loadEvents(); // Reload events
+    
+    // Close modal if open
+    const modal = bootstrap.Modal.getInstance(document.getElementById('eventDetailsModal'));
+    if (modal) modal.hide();
+
+  } catch (error) {
+    console.error('Error unregistering from event:', error);
+    showToast('Error unregistering from event', 'danger');
+  }
+}
+
+// Delete event (creator only)
+async function deleteEvent(eventId) {
+  if (!confirm('Are you sure you want to delete this event? This action cannot be undone.')) return;
+
+  try {
+    await db.collection('events').doc(eventId).delete();
+    showToast('Event deleted successfully', 'success');
+    await loadEvents(); // Reload events
+    
+    // Close modal
+    const modal = bootstrap.Modal.getInstance(document.getElementById('eventDetailsModal'));
+    if (modal) modal.hide();
+
+  } catch (error) {
+    console.error('Error deleting event:', error);
+    showToast('Error deleting event', 'danger');
+  }
+}
+
+// Filter events
+function filterEvents() {
+  const filters = {
+    sport: document.getElementById('filterEventSport').value,
+    eventType: document.getElementById('filterEventType').value,
+    dateRange: document.getElementById('filterEventDate').value,
+    show: document.getElementById('filterEventShow').value
+  };
+
+  loadEvents(filters);
+}
+
+// Clear event filters
+function clearEventFilters() {
+  document.getElementById('filterEventSport').value = 'all';
+  document.getElementById('filterEventType').value = 'all';
+  document.getElementById('filterEventDate').value = 'all';
+  document.getElementById('filterEventShow').value = 'all';
+  
+  loadEvents(); // Load all events
 }
 
 
