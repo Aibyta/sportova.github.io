@@ -3685,7 +3685,7 @@ async function loadAllBookings() {
       }
 
       // Only show cancel button for pending or confirmed bookings
-      const canCancel = statusText === 'approved' || statusText === 'confirmed';
+      const canCancel = statusText === 'approved';
 
       row.innerHTML = `
         <td>${facilityName}</td>
@@ -3694,7 +3694,7 @@ async function loadAllBookings() {
         <td><span class="badge badge-status ${statusClass}">${statusText}</span></td>
         <td><a href="${booking.locationLink}" target="_blank" class="text-decoration-none">
             <i class="bi bi-geo-alt"></i>
-            </a></td
+            </a></td>
         <td>
           <button class="btn btn-sm btn-outline-primary view-booking-btn" data-id="${booking.id}">
             <i class="fas fa-eye"></i> View
@@ -3938,11 +3938,6 @@ async function viewBookingDetails(bookingId) {
               <button type="button" class="btn btn-primary" onclick="printBookingDetails('${bookingId}')">
                 <i class="fas fa-print me-1"></i> Print Receipt
               </button>
-              ${status === 'approved' || status === 'confirmed' ? `
-                <button type="button" class="btn btn-danger" onclick="cancelBookingFromModal('${bookingId}')">
-                  <i class="fas fa-times me-1"></i> Cancel Booking
-                </button>
-              ` : ''}
             </div>
           </div>
         </div>
@@ -7993,7 +7988,7 @@ async function submitBooking() {
             facilityName: selectedFacility.name,
             imageUrl: selectedFacility.imageUrl || "https://bestshoeswomen.com/wp-content/uploads/2022/07/New-Balance-Court-Shoes.jpg",
             location: selectedFacility.location || "Maple,Malaysia",
-            loocationLink: selectedFacility.locationLink || "",
+            locationLink: selectedFacility.locationLink || "",
             loyaltyPointsUsed: loyaltyPointsUsed,
             maxBookings: selectedFacility.maxBookings || 1,
             name: selectedFacility.name,
