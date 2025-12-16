@@ -1655,6 +1655,7 @@
     let currentYear = new Date().getFullYear();
     let selectedFacilityData = null;   // global
     let selectedFileUrl = null;
+    let selectedAmenities = [];
 
     // Authentication state observer
     auth.onAuthStateChanged((user) => {
@@ -2739,7 +2740,11 @@ async function registerForEvent(eventId) {
                 <h5 class="mt-4">Available Snacks</h5>
                 <div id="snacksList"></div>
               </div>
-              
+              <div id="snacksSelectList">
+                <h5 class="mt-4">Amenities</h5>
+                <div id="amenitiesSelectList"></div>
+              </div>
+
               <div class="mt-3 d-flex justify-content-between">
                 <button class="btn btn-secondary" id="backToStep3">Back</button>
                 <button class="btn btn-primary" id="nextToStep5">Next</button>
@@ -2751,15 +2756,6 @@ async function registerForEvent(eventId) {
           <div class="booking-step" id="step5-content">
             <div class="form-card">
               <h4>Booking Summary & Payment</h4>
-
-              <!-- Amenities Section -->
-              <div class="summary-card mb-4">
-                <h5>Amenities Included</h5>
-                <div id="summaryAmenities" class="mb-3">
-                  <!-- Amenities will be loaded dynamically -->
-                </div>
-              </div>
-
               <div class="summary-card mb-4">
                 <h5>Booking Details</h5>
                 <div class="summary-item">
@@ -2785,6 +2781,10 @@ async function registerForEvent(eventId) {
                 <div class="summary-item">
                   <span>Snacks:</span>
                   <span id="summarySnacks">-</span>
+                </div>
+                <div class="summary-item">
+                  <span>Amenities:</span>
+                  <span id="summaryAmenities">-</span>
                 </div>
                 <div class="summary-item">
                   <span>Promo Discount:</span>
@@ -4390,9 +4390,18 @@ async function printBookingDetails(bookingId) {
                       <span>${facilityDetails.location || booking.location || 'N/A'}</span>
                   </div>
                   <div class="info-item">
-                      <span>Amenities:</span>
-                      <span>${facilityDetails.amenities ? facilityDetails.amenities.join(', ') : 'Standard amenities'}</span>
-                  </div>
+  <span>Amenities Included</span>
+  <span>
+    ${
+      Array.isArray(facilityDetails.amenities) &&
+      facilityDetails.amenities.length > 0
+        ? facilityDetails.amenities
+            .map(a => a.amenity || a.title || a)
+            .join(', ')
+        : 'Standard amenities'
+    }
+  </span>
+</div>
               </div>
 
               <div class="info-section">
@@ -4937,6 +4946,57 @@ async function loadFacilities(filters = {}) {
             facilitiesList.appendChild(col);
         });
     }
+function renderAmenitiesForSelection(amenities) {
+  const container = document.getElementById("amenitiesSelectList");
+  if (!container) return;
+
+  container.innerHTML = amenities.map((a, index) => `
+    <div class="snack-card amenity-card"
+         onclick="toggleAmenity(${index})"
+         id="amenity-${index}">
+      
+      <div class="d-flex align-items-center">
+        <img src="${a.amenityImage}"
+             class="me-3"
+             style="width:50px;height:50px;object-fit:contain;border-radius:8px">
+
+        <div class="flex-grow-1">
+          <h6 class="mb-1">${a.amenity}</h6>
+          <small class="text-muted">
+            ${a.amenityPrice && a.amenityPrice !== "0"
+              ? `RM${a.amenityPrice}`
+              : 'Free'}
+          </small>
+        </div>
+
+        <i class="fas fa-check-circle text-success d-none"></i>
+      </div>
+    </div>
+  `).join("");
+}
+function toggleAmenity(index) {
+  const amenity = window.facilityAmenities[index];
+  const card = document.getElementById(`amenity-${index}`);
+  const icon = card.querySelector("i");
+
+  const exists = selectedAmenities.find(a => a.amenity === amenity.amenity);
+
+  if (exists) {
+    // REMOVE
+    selectedAmenities = selectedAmenities.filter(
+      a => a.amenity !== amenity.amenity
+    );
+    card.classList.remove("selected");
+    icon.classList.add("d-none");
+  } else {
+    // ADD
+    selectedAmenities.push(amenity);
+    card.classList.add("selected");
+    icon.classList.remove("d-none");
+  }
+
+  updateBookingSummary();
+}
 
     // Search facilities based on filters
     async function searchFacilities() {
@@ -5084,7 +5144,7 @@ async function loadFacilities(filters = {}) {
         loadAvailableSnacksFromFacility();
 
         // Load amenities from facility data
-        loadAmenitiesFromFacility();
+        loadAmenitiesFromFacility(selectedFacility.id);
 
         // Load terms from facility data
         loadTermsFromFacility();
@@ -5177,16 +5237,36 @@ async function loadFacilities(filters = {}) {
         availableSnacks = [];
       }
     }
-    // Load amenities from facility data
-    function loadAmenitiesFromFacility() {
-      try {
-        // Store amenities for later use in summary
-        window.facilityAmenities = selectedFacility.amenities || [];
-      } catch (error) {
-        console.error('Error loading amenities:', error);
-        window.facilityAmenities = [];
-      }
+    async function loadAmenitiesFromFacility(facilityId) {
+  try {
+    const snap = await db.collection("facilities").doc(facilityId).get();
+
+    if (!snap.exists) {
+      window.facilityAmenities = [];
+      renderAmenitiesForSelection([]);
+      return;
     }
+
+    const data = snap.data();
+    window.facilityAmenities = data.amenities || [];
+
+    console.log("Amenities loaded:", window.facilityAmenities);
+
+    renderAmenitiesForSelection(window.facilityAmenities);
+
+  } catch (err) {
+    console.error("Amenity fetch error:", err);
+    window.facilityAmenities = [];
+    renderAmenitiesForSelection([]);
+  }
+}
+function calculateAmenitiesTotal() {
+  return selectedAmenities.reduce(
+    (total, a) => total + Number(a.amenityPrice || 0),
+    0
+  );
+}
+
     // Load terms and conditions from facility data
     function loadTermsFromFacility() {
       try {
@@ -5629,7 +5709,7 @@ async function loadFacilities(filters = {}) {
     }
     // Update amenities display in summary
     function updateAmenitiesDisplay() {
-      const amenitiesContainer = document.getElementById('summaryAmenities');
+      //const amenitiesContainer = document.getElementById('summaryAmenities');
       amenitiesContainer.innerHTML = '';
 
       if (window.facilityAmenities && window.facilityAmenities.length > 0) {
@@ -5668,6 +5748,21 @@ async function loadFacilities(filters = {}) {
       const courtFee = selectedFacility.price || 0;
       const coachFee = selectedCoach ? selectedCoach.rate : 0;
       const snacksFee = selectedSnacks.reduce((total, snack) => total + (snack.price || 0), 0);
+
+      const amenitiesEl = document.getElementById("summaryAmenities");
+          if (selectedAmenities.length === 0) {
+        amenitiesEl.innerHTML = `<span class="text-muted">No amenities selected</span>`;
+      } else {
+        amenitiesEl.innerHTML = selectedAmenities.map(a => `
+          <div class="d-flex justify-content-between">
+            <span>${a.amenity} : </span>
+            <span>RM ${Number(a.amenityPrice || 0).toFixed(2)}</span>
+          </div>
+        `).join("");
+      }
+    
+      // ✅ include amenities in total
+      const amenitiesTotal = calculateAmenitiesTotal();
     
       // Calculate promo discount (10% for NEWUSER10)
       let discount = 0;
@@ -5676,7 +5771,7 @@ async function loadFacilities(filters = {}) {
       }
     
       // Calculate subtotal before loyalty points
-      const subtotalBeforeLoyalty = courtFee + coachFee + snacksFee - discount;
+      const subtotalBeforeLoyalty = courtFee + coachFee + snacksFee + amenitiesTotal - discount;
     
       // Calculate loyalty points discount (1 point = RM0.10)
       let loyaltyDiscount = 0;
@@ -7937,6 +8032,11 @@ async function submitBooking() {
         const courtFee = selectedFacility.price || 0;
         const coachFee = selectedCoach ? selectedCoach.rate : 0;
         const snacksFee = selectedSnacks.reduce((total, snack) => total + snack.price, 0);
+        const amenitiesFee = selectedAmenities.reduce(
+          (total, a) => total + Number(a.amenityPrice || 0),
+          0
+        );
+        
         // Check if terms are agreed
         const agreeTerms = document.getElementById('agreeTerms').checked;
         if (!agreeTerms) {
@@ -7958,14 +8058,14 @@ async function submitBooking() {
         
         if (useLoyaltyPoints && userLoyaltyPoints > 0) {
             // Maximum discount that can be applied is the subtotal before loyalty
-            const subtotalBeforeLoyalty = courtFee + coachFee + snacksFee - discount;
+            const subtotalBeforeLoyalty = courtFee + coachFee + snacksFee + amenitiesFee - discount;
             const maxLoyaltyPoints = Math.floor(subtotalBeforeLoyalty / 0.1);
             loyaltyPointsUsed = Math.min(userLoyaltyPoints, maxLoyaltyPoints);
             loyaltyDiscount = loyaltyPointsUsed * 0.1;
         }
 
         // Calculate final total
-        const totalAmount = courtFee + coachFee + snacksFee - discount - loyaltyDiscount;
+        const totalAmount = courtFee + coachFee + snacksFee + amenitiesFee - discount - loyaltyDiscount;
 
         // Prepare coach data if selected
         const coachData = selectedCoach ? {
@@ -7976,7 +8076,7 @@ async function submitBooking() {
 
         // Prepare booking data according to your Firestore structure
         const bookingData = {
-            amenities: selectedFacility.amenities || ["Parking", "Changing Rooms", "Equipment Rental"],
+            amenities: selectedAmenities.length > 0 ? selectedAmenities : [],
             amount: parseFloat(totalAmount.toFixed(2)),
             capacity: selectedFacility.capacity || 50,
             coach: coachData,
