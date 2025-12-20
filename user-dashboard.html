@@ -4319,25 +4319,27 @@ async function submitBooking() {
         }
 
         showToast('Booking submitted successfully!', 'success');
-        fetch("http://localhost:5000/send-email", {
+        fetch("https://nste-email-api.onrender.com/send-email", {
   method: "POST",
-  headers: { "Content-Type": "application/json" },
+  headers: {
+    "Content-Type": "application/json"
+  },
   body: JSON.stringify({
-  name: currentUser.displayName || "User",
-  email: currentUser.email,
-  date: `${selectedDate.getFullYear()}-${String(selectedDate.getMonth()+1).padStart(2,'0')}-${String(selectedDate.getDate()).padStart(2,'0')}`,
-  slot: selectedTimeSlot
-})
+    name: currentUser.displayName || "User",
+    email: currentUser.email,
+    date: `${selectedDate.getFullYear()}-${String(selectedDate.getMonth() + 1).padStart(2, '0')}-${String(selectedDate.getDate()).padStart(2, '0')}`,
+    slot: selectedTimeSlot
+  })
 })
 .then(res => res.json())
 .then(res => {
   if (res.status === "success") {
     console.log("📧 Booking email sent");
   } else {
-    console.error("Email error:", res.message);
+    console.error("❌ Email error:", res.message);
   }
 })
-.catch(err => console.error("Email API failed:", err));
+.catch(err => console.error("❌ Email API failed:", err));
 
         // Reset booking process
         resetBookingProcess();
@@ -8891,5 +8893,6 @@ function loadProfilePage() {
 }
   </script>
 </body>
+
 
 </html>
