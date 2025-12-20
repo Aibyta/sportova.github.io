@@ -201,6 +201,10 @@
       color: var(--primary-color);
       margin-bottom: 15px;
     }
+    .toast {
+      pointer-events: auto !important;
+      cursor: pointer;
+    }
 
     /* Table Styles */
     .table-card {
@@ -615,48 +619,42 @@
       font-weight: 500;
     }
 
-    /* Time Slot Styling */
-    .time-slot {
-      padding: 10px 15px;
-      border: 1px solid #dee2e6;
-      border-radius: 8px;
-      margin: 5px;
-      cursor: pointer;
-      transition: all 0.2s;
-      text-align: center;
-      flex: 1 0 30%;
-      max-width: 30%;
-    }
+#timeSlots {
+  gap: 10px;
+}
 
-    .time-slot.available {
-      background-color: #d1edff;
-      border-color: #0d6efd;
-    }
+.time-slot {
+  padding: 14px;
+  min-width: 120px;
+  border-radius: 8px;
+  border: 2px solid #dee2e6;
+  text-align: center;
+  font-weight: 600;
+  cursor: pointer;
+  background-color: #f8f9fa; /* default */
+}
 
-    .time-slot.available:hover {
-      background-color: #b8daff;
-    }
+/* 🟢 AVAILABLE */
+.time-slot.available {
+  background-color: #e6f4ea !important;
+  border-color: #28a745 !important;
+  color: #155724 !important;
+}
 
-    .time-slot.booked {
-      background-color: #fdecea;
-      border-color: #d32f2f;
-      color: #d32f2f;
-      cursor: not-allowed;
-      opacity: 0.7;
-    }
+/* 🔴 BOOKED */
+.time-slot.booked {
+  background-color: #fdecea !important;
+  border-color: #dc3545 !important;
+  color: #721c24 !important;
+  cursor: not-allowed;
+}
 
-    .time-slot.unavailable {
-      background-color: #f8d7da;
-      border-color: #dc3545;
-      color: #721c24;
-      cursor: not-allowed;
-    }
-
-    .time-slot.selected {
-      background-color: #0d6efd;
-      color: white;
-      border-color: #0a58ca;
-    }
+/* 🔵 SELECTED */
+.time-slot.selected {
+  background-color: #cce5ff !important;
+  border-color: #0d6efd !important;
+  color: #084298 !important;
+}
 
     /* Coach Card */
     .coach-card {
@@ -1453,24 +1451,6 @@
   <div class="main-content" id="mainContent">
     <div class="header">
       <h1 id="pageTitle">Dashboard</h1>
-      <div class="header-actions">
-        <div class="dropdown ms-3">
-          <button class="btn btn-light dropdown-toggle" type="button" data-bs-toggle="dropdown">
-            <i class="fas fa-bell"></i>
-            <span class="badge bg-danger">3</span>
-          </button>
-          <!-- Update the dropdown menu in the header section -->
-          <ul class="dropdown-menu dropdown-menu-end">
-            <li>
-              <h6 class="dropdown-header">Notifications</h6>
-            </li>
-            <li><a class="dropdown-item" href="#" id="markAllReadBtn">Mark all as read</a></li>
-            <li><hr class="dropdown-divider"></li>
-            <!-- Notifications will be loaded here dynamically -->
-            <li><a class="dropdown-item" href="#" id="viewAllNotifications">View all notifications</a></li>
-          </ul>
-        </div>
-      </div>
     </div>
 
     <!-- Page Content will be loaded here -->
@@ -1562,6 +1542,9 @@
             <button class="btn btn-sm btn-outline-secondary me-2" id="videoCallBtn">
               <i class="fas fa-video"></i>
             </button>
+            <button id="deleteChatBtn" class="btn btn-sm btn-outline-danger ms-2" title="Clear Chat">
+              <i class="fas fa-trash"></i>
+            </button>
             <button class="btn btn-sm btn-outline-danger" data-bs-dismiss="modal">
               <i class="fas fa-times"></i>
             </button>
@@ -1580,6 +1563,7 @@
               <input type="file" id="chatAttachmentInput" class="d-none" accept="image/*,video/*">
               <i class="fas fa-paperclip"></i>
             </button>
+            <!-- Your HTML -->
             <div class="message-input-wrapper">
               <input type="text" class="form-control message-input" id="messageInput" placeholder="Type a message...">
               <button class="btn btn-sm btn-outline-secondary emoji-btn" id="emojiBtn">
@@ -1675,17 +1659,12 @@
         // Load user data from Firestore
         loadUserData(user.uid).then(() => {
           userDataLoaded = true;
-          // Initialize the current page
-          loadPageContent(currentPage);
         });
 
         // Set up beforeunload event for logout confirmation
         window.addEventListener('beforeunload', handleBeforeUnload);
         // Initialize notification system
-        initializeHeaderNotifications();
-        loadNotifications();
-        setupNotificationListener();
-        setupRealtimeNotificationListener();
+        startNotificationListener();
 
         // Add event listener for mark all as read
         document.getElementById('markAllReadBtn')?.addEventListener('click', async (e) => {
@@ -1762,58 +1741,85 @@
         console.error('Error initializing user document:', error);
       }
     }
-    function setupRealtimeNotificationListener() {
-    if (!currentUser) return;
+    let notificationUnsubscribe = null;
+function startNotificationListener() {
+  console.log("🔔 Notification listener started");
 
-    if (unsubscribeRealtimeNotifications) {
-        unsubscribeRealtimeNotifications();
-    }
+  notificationUnsubscribe = db.collection("notifications")
+    .where("userId", "==", currentUser.uid)
+    .where("isRead", "==", false)   // ✅ FIXED
+    .onSnapshot(snapshot => {
 
-    unsubscribeRealtimeNotifications = db.collection("notifications")
-        .where("userId", "==", currentUser.uid)
-        .where("read", "==", false)
-        .orderBy("createdAt", "desc")
-        .onSnapshot(snapshot => {
-            snapshot.docChanges().forEach(change => {
-                if (change.type === "added") {
-                    const data = change.doc.data();
+      console.log("📩 Notification snapshot fired");
+      console.log("Docs count:", snapshot.size);
 
-                    // Show toast
-                    showIncomingMessageToast(data.title, data.message);
+      snapshot.docChanges().forEach(change => {
+        if (change.type === "added") {
+          const notif = change.doc.data();
 
-                    // Update dropdown without refresh
-                    loadNotifications();
-                }
-            });
-        });
+          showToast(
+            `💬 ${notif.title}: ${notif.message}`,
+            "info"
+          );
+        }
+      });
+    });
 }
-async function showIncomingMessageToast(senderId, message) {
-    try {
-        const userSnap = await db.collection("users").doc(senderId).get();
-        const sender = userSnap.data();
-
-        const toastHtml = `
-            <div class="toast align-items-center text-white bg-primary border-0 show" role="alert">
-              <div class="d-flex">
-                <div class="toast-body">
-                  <strong>${sender.name || "New Message"}</strong><br>${message}
-                </div>
-                <button type="button" class="btn-close btn-close-white me-2 m-auto"
-                  data-bs-dismiss="toast"></button>
-              </div>
-            </div>
-        `;
-
-        const container = document.getElementById("notificationContainer");
-        container.innerHTML = toastHtml;
-
-        setTimeout(() => {
-            container.innerHTML = "";
-        }, 4000);
-
-    } catch (err) {
-        console.error("Error showing toast:", err);
+function showIncomingMessageNotification(notification) {
+  showToast(
+    `💬 ${notification.title}: ${notification.message}`,
+    "info",
+    () => {
+      if (notification.data?.chatId) {
+        openChat(notification.data.chatId); // 🧠 mark happens inside openChat
+      }
     }
+  );
+}
+async function markNotificationAsRead(chatId) {
+  try {
+    console.log("🔄 Marking notifications as read for chat:", chatId);
+
+    const snap = await db.collection("notifications")
+      .where("userId", "==", currentUser.uid)
+      .where("data.chatId", "==", chatId)
+      .where("isRead", "==", false)
+      .get();
+
+    if (snap.empty) {
+      console.log("ℹ️ No unread notifications found for this chat");
+      return;
+    }
+
+    const batch = db.batch();
+    snap.forEach(doc => {
+      batch.update(doc.ref, { isRead: true }); // ✅ CORRECT
+    });
+
+    await batch.commit();
+
+    console.log("✅ Notifications marked as read");
+    updateNotificationBadge();
+
+  } catch (err) {
+    console.error("❌ Error marking notification as read:", err);
+  }
+}
+async function updateNotificationBadge() {
+  const snap = await db.collection("notifications")
+    .where("userId", "==", currentUser.uid)
+    .where("isRead", "==", false)
+    .get();
+
+  const badge = document.getElementById("notificationCount");
+  if (!badge) return;
+
+  if (snap.size > 0) {
+    badge.textContent = snap.size;
+    badge.style.display = "inline-block";
+  } else {
+    badge.style.display = "none";
+  }
 }
     // Generate default avatar based on name (make sure this function exists)
     function generateDefaultAvatar(name) {
@@ -1830,73 +1836,6 @@ async function showIncomingMessageToast(senderId, message) {
       sessionStorage.clear();
       localStorage.removeItem('firebase:authUser:AIzaSyDjMwv9Bxff1bUE7CR_S-DPx3NV5kkinTU:[DEFAULT]');
     }
-
-    async function loadHeaderNotifications() {
-  try {
-    const notificationsSnapshot = await db.collection("notifications")
-      .where("adminId", "==", currentUser.uid)
-      .where("read", "==", false)
-      .orderBy("timestamp", "desc")
-      .limit(5)
-      .get();
-
-    const notifications = [];
-    notificationsSnapshot.forEach(doc => {
-      notifications.push({
-        id: doc.id,
-        ...doc.data()
-      });
-    });
-
-    // Update notification badge
-    const badge = document.querySelector('.header-actions .badge');
-    if (badge) {
-      badge.textContent = notifications.length;
-    }
-
-    // Update dropdown content
-    const dropdownMenu = document.querySelector('.header-actions .dropdown-menu');
-    if (dropdownMenu) {
-      let dropdownHTML = `
-        <li><h6 class="dropdown-header">Notifications</h6></li>
-      `;
-
-      if (notifications.length === 0) {
-        dropdownHTML += `
-          <li><a class="dropdown-item text-muted" href="#">No new notifications</a></li>
-        `;
-      } else {
-        notifications.forEach(notification => {
-          dropdownHTML += `
-            <li>
-              <a class="dropdown-item" href="#" onclick="viewNotification('${notification.id}')">
-                <strong>${notification.title}</strong><br>
-                <small>${notification.message}</small>
-              </a>
-            </li>
-          `;
-        });
-      }
-
-      dropdownHTML += `
-        <li><hr class="dropdown-divider"></li>
-        <li><a class="dropdown-item" href="#" onclick="loadPageContent('notifications')">View all notifications</a></li>
-      `;
-
-      dropdownMenu.innerHTML = dropdownHTML;
-    }
-
-  } catch (error) {
-    console.error('Error loading header notifications:', error);
-  }
-}
-
-// Call this function after authentication
-function initializeHeaderNotifications() {
-  loadHeaderNotifications();
-  // Refresh notifications every 30 seconds
-  setInterval(loadHeaderNotifications, 30000);
-}
 
     // Calculate user bookings from bookings collection
     async function calculateUserBookings(userId) {
@@ -2039,76 +1978,6 @@ function initializeHeaderNotifications() {
         // You can add cleanup here, but Firebase handles session persistence
       });
     }
-    // Notification system functions
-    async function createNotification(userId, type, title, message, data = {}) {
-      try {
-        const notificationData = {
-          userId: userId,
-          type: type,
-          title: title,
-          message: message,
-          data: data,
-          read: false,
-          createdAt: firebase.firestore.FieldValue.serverTimestamp(),
-          updatedAt: firebase.firestore.FieldValue.serverTimestamp()
-        };
-
-        await db.collection('notifications').add(notificationData);
-        console.log('Notification created:', type);
-      } catch (error) {
-        console.error('Error creating notification:', error);
-      }
-    }
-    // Get user's unread notifications count
-    async function getUnreadNotificationsCount(userId) {
-      try {
-        const notificationsSnapshot = await db.collection('notifications')
-          .where('userId', '==', userId)
-          .where('read', '==', false)
-          .get();
-
-        return notificationsSnapshot.size;
-      } catch (error) {
-        console.error('Error getting notifications count:', error);
-        return 0;
-      }
-    }
-
-    // Mark notification as read
-    async function markNotificationAsRead(notificationId) {
-      try {
-        await db.collection('notifications').doc(notificationId).update({
-          read: true,
-          updatedAt: firebase.firestore.FieldValue.serverTimestamp()
-        });
-      } catch (error) {
-        console.error('Error marking notification as read:', error);
-      }
-    }
-
-    // Mark all notifications as read
-    async function markAllNotificationsAsRead(userId) {
-      try {
-        const notificationsSnapshot = await db.collection('notifications')
-          .where('userId', '==', userId)
-          .where('read', '==', false)
-          .get();
-
-        const batch = db.batch();
-        notificationsSnapshot.forEach(doc => {
-          const notificationRef = db.collection('notifications').doc(doc.id);
-          batch.update(notificationRef, {
-            read: true,
-            updatedAt: firebase.firestore.FieldValue.serverTimestamp()
-          });
-        });
-
-        await batch.commit();
-        showToast('All notifications marked as read', 'success');
-      } catch (error) {
-        console.error('Error marking all notifications as read:', error);
-      }
-    }
 
 // Helper function to create notifications
 async function createNotification(userId, type, title, message, data = {}) {
@@ -2119,7 +1988,7 @@ async function createNotification(userId, type, title, message, data = {}) {
             title: title,
             message: message,
             data: data,
-            read: false,
+            isRead: false,
             timestamp: firebase.firestore.FieldValue.serverTimestamp()
         });
     } catch (error) {
@@ -2164,155 +2033,6 @@ async function createNotification(userId, type, title, message, data = {}) {
       } catch (error) {
         console.error('Error creating rejection notification:', error);
       }
-    }
-    async function loadNotifications() {
-  try {
-    if (!currentUser) return;
-
-    const snapshot = await db.collection('notifications')
-      .where('userId', '==', currentUser.uid)
-      .orderBy('createdAt', 'desc')
-      .limit(10)
-      .get();
-
-    const dropdown = document.querySelector('.dropdown-menu.dropdown-menu-end');
-
-    if (!dropdown) {
-      console.error("Notification dropdown not found");
-      return;
-    }
-
-    // Remove previous notifications
-    dropdown.querySelectorAll('.notification-item').forEach(el => el.remove());
-
-    // Ensure EXACTLY ONE divider exists
-    let divider = dropdown.querySelector('.dropdown-divider');
-
-    if (!divider) {
-      divider = document.createElement('li');
-      divider.innerHTML = `<hr class="dropdown-divider">`;
-      dropdown.appendChild(divider);
-    }
-
-    // If no notifications
-    if (snapshot.empty) {
-      const emptyItem = document.createElement('li');
-      emptyItem.className = 'notification-item';
-      emptyItem.innerHTML = `
-        <a class="dropdown-item text-muted" href="#">No notifications</a>
-      `;
-
-      if (divider.parentNode === dropdown) {
-        dropdown.insertBefore(emptyItem, divider);
-      } else {
-        dropdown.appendChild(emptyItem);
-      }
-      return;
-    }
-
-    // Add notifications
-    snapshot.forEach(doc => {
-      const data = doc.data();
-
-      const item = document.createElement('li');
-      item.className = 'notification-item';
-
-      item.innerHTML = `
-        <a class="dropdown-item ${data.read ? '' : 'fw-bold'}" href="#" data-id="${doc.id}">
-          <div class="d-flex w-100 justify-content-between">
-            <h6 class="mb-1">${data.title}</h6>
-            <small>${formatTimeAgo(data.createdAt?.toDate())}</small>
-          </div>
-          <p class="mb-1">${data.message}</p>
-        </a>
-      `;
-
-      if (divider.parentNode === dropdown) {
-        dropdown.insertBefore(item, divider);
-      } else {
-        dropdown.appendChild(item);
-      }
-
-      item.querySelector("a").addEventListener("click", async (e) => {
-        e.preventDefault();
-        if (!data.read) await markNotificationAsRead(doc.id);
-        handleNotificationClick(data);
-      });
-    });
-
-    // Update badge
-    const unread = await getUnreadNotificationsCount(currentUser.uid);
-    const badge = document.querySelector('.header-actions .badge');
-
-    if (badge) {
-      badge.textContent = unread;
-      badge.style.display = unread > 0 ? 'inline' : 'none';
-    }
-
-  } catch (err) {
-    console.error("Error loading notifications:", err);
-  }
-}
-    // Handle notification clicks based on type
-    function handleNotificationClick(notification) {
-      switch (notification.type) {
-        case 'booking_created':
-        case 'booking_approved':
-        case 'booking_rejected':
-          // Navigate to bookings page
-          currentPage = 'my-bookings';
-          localStorage.setItem('currentPage', 'my-bookings');
-          updatePageTitle('my-bookings');
-          loadPageContent('my-bookings');
-          initializeMyBookingsPage();
-          break;
-
-        case 'new_message':
-          // Navigate to find friends page and open chat
-          currentPage = 'find-friends';
-          localStorage.setItem('currentPage', 'find-friends');
-          updatePageTitle('find-friends');
-          loadPageContent('find-friends');
-          initializeFindFriendsPage();
-          // You could automatically open the chat here
-          break;
-
-        default:
-          // Default behavior
-          break;
-      }
-
-      // Close dropdown
-      const dropdown = bootstrap.Dropdown.getInstance(document.querySelector('.dropdown-toggle'));
-      if (dropdown) {
-        dropdown.hide();
-      }
-    }
-    // Real-time notification listener
-    function setupNotificationListener() {
-      if (!currentUser) return;
-
-      db.collection('notifications')
-        .where('userId', '==', currentUser.uid)
-        .where('read', '==', false)
-        .orderBy('createdAt', 'desc')
-        .onSnapshot((snapshot) => {
-          // Update notification count
-          const unreadCount = snapshot.size;
-          const notificationBadge = document.querySelector('.header-actions .badge');
-          if (notificationBadge) {
-            notificationBadge.textContent = unreadCount;
-            notificationBadge.style.display = unreadCount > 0 ? 'inline' : 'none';
-          }
-
-          // Show toast for new notifications
-          snapshot.docChanges().forEach((change) => {
-            if (change.type === 'added') {
-              const notification = change.doc.data();
-              showToast(`${notification.title}: ${notification.message}`, 'info');
-            }
-          });
-        });
     }
     // Call this when the app loads
     setupSessionManagement();
@@ -2418,15 +2138,17 @@ async function loadRecentBookings(userId) {
       let formattedDate = 'Date not set';
       if (booking.date) {
         try {
-           const bookingDate = new Date(booking.date + 'T00:00:00');
-    formattedDate = bookingDate.toLocaleDateString('en-IN', {
-      day: 'numeric',
-      month: 'long',
-      year: 'numeric'
-    });
-  } catch (e) {
-    formattedDate = 'Invalid date';
-  }
+           const bookingDate = booking.date.toDate ? booking.date.toDate() : new Date(booking.date);
+        formattedDate = bookingDate.toLocaleDateString('en-US', {
+          weekday: 'long',
+          year: 'numeric',
+          month: 'long',
+          day: 'numeric'
+        });
+      } catch (error) {
+        console.error('Error formatting date:', error);
+        formattedDate = 'Invalid date';
+      }
       }
 
       // Get facility name from different possible fields
@@ -2760,11 +2482,20 @@ async function registerForEvent(eventId) {
       });
     });
 
-    // Load the correct page on initial load
     document.addEventListener('DOMContentLoaded', function () {
-      const savedPage = localStorage.getItem('currentPage') || 'dashboard';
-      updatePageTitle(savedPage);
-    });
+  const params = new URLSearchParams(window.location.search);
+  const pageFromUrl = params.get('page');
+
+  const pageToLoad =
+    pageFromUrl ||
+    localStorage.getItem('currentPage') ||
+    'dashboard';
+
+  localStorage.setItem('currentPage', pageToLoad);
+
+  updatePageTitle(pageToLoad);
+  loadPageContent(pageToLoad); // ✅ THIS is critical
+});
 
     // Logout function
     logoutBtn.addEventListener('click', () => {
@@ -3206,40 +2937,6 @@ async function registerForEvent(eventId) {
         </div>
       `;
     }
-// Initialize Book Facility Page with Search
-async function initializeBookFacilityPage() {
-    // Load locations from Firestore
-    await loadLocationsFromFirestore();
-    
-    // Load facilities from Firestore initially
-    await loadFacilities();
-
-    // Search facilities functionality
-    document.getElementById('searchFacilitiesBtn').addEventListener('click', () => {
-        searchFacilities();
-    });
-
-    // Clear filters button
-    document.getElementById('clearFiltersBtn').addEventListener('click', clearFacilityFilters);
-
-    // Add enter key support for search
-    const searchInputs = ['sportType', 'bookingDate', 'bookingTime', 'customLocationInput'];
-    searchInputs.forEach(inputId => {
-        const input = document.getElementById(inputId);
-        if (input) {
-            input.addEventListener('keypress', function(e) {
-                if (e.key === 'Enter') {
-                    searchFacilities();
-                }
-            });
-        }
-    });
-
-    // Handle custom location selection
-    document.getElementById('bookinglocation').addEventListener('change', function() {
-        handleLocationSelection(this.value);
-    });
-}
 
 // Load unique locations from Firestore
 async function loadLocationsFromFirestore() {
@@ -4299,17 +3996,21 @@ function calculateAmenitiesTotal() {
 
   const availableSlots = selectedFacility.slots || [];
 
-  const bookedSlots = await getBookedSlots();
+  const bookedSlots = await getBookedSlots(); // already normalized
 
   availableSlots.forEach(slot => {
     const slotEl = document.createElement('div');
     slotEl.className = 'time-slot';
     slotEl.textContent = slot;
 
-    if (bookedSlots.includes(slot)) {
+    // 🔑 normalize facility slot BEFORE comparison
+    const normalizedSlot = slot.replace(/\s+/g, '').toLowerCase();
+
+    if (bookedSlots.includes(normalizedSlot)) {
       // 🔴 BOOKED SLOT
       slotEl.classList.add('booked');
       slotEl.innerHTML += `<small class="d-block text-danger">Booked</small>`;
+      slotEl.style.pointerEvents = 'none';
     } else {
       // 🟢 AVAILABLE SLOT
       slotEl.classList.add('available');
@@ -4319,23 +4020,38 @@ function calculateAmenitiesTotal() {
     timeSlotsEl.appendChild(slotEl);
   });
 }
-
     async function getBookedSlots() {
   try {
-    const formattedDate = `${selectedDate.getFullYear()}-${String(selectedDate.getMonth()+1).padStart(2,'0')}-${String(selectedDate.getDate()).padStart(2,'0')}`;
+    const startOfDay = new Date(
+      selectedDate.getFullYear(),
+      selectedDate.getMonth(),
+      selectedDate.getDate(),
+      0, 0, 0
+    );
+
+    const endOfDay = new Date(
+      selectedDate.getFullYear(),
+      selectedDate.getMonth(),
+      selectedDate.getDate(),
+      23, 59, 59
+    );
 
     const bookingsSnapshot = await db.collection('bookings')
       .where('facilityId', '==', selectedFacility.id)
-      .where('date', '==', formattedDate)
+      .where('date', '>=', startOfDay)
+      .where('date', '<=', endOfDay)
       .where('status', 'in', ['approved', 'confirmed', 'active'])
       .get();
 
     const bookedSlots = [];
+
     bookingsSnapshot.forEach(doc => {
       bookedSlots.push(doc.data().time);
     });
 
+    console.log("✅ Booked slots found:", bookedSlots);
     return bookedSlots;
+
   } catch (error) {
     console.error('Error getting booked slots:', error);
     return [];
@@ -4466,8 +4182,41 @@ function calculateAmenitiesTotal() {
       selectedSnacks = [];
       currentMonth = new Date().getMonth();
       currentYear = new Date().getFullYear();
-      goToStep(1);
     }
+    // Initialize Book Facility Page with Search
+async function initializeBookFacilityPage() {
+    // Load locations from Firestore
+    await loadLocationsFromFirestore();
+    
+    // Load facilities from Firestore initially
+    await loadFacilities();
+
+    // Search facilities functionality
+    document.getElementById('searchFacilitiesBtn').addEventListener('click', () => {
+        searchFacilities();
+    });
+
+    // Clear filters button
+    document.getElementById('clearFiltersBtn').addEventListener('click', clearFacilityFilters);
+
+    // Add enter key support for search
+    const searchInputs = ['sportType', 'bookingDate', 'bookingTime', 'customLocationInput'];
+    searchInputs.forEach(inputId => {
+        const input = document.getElementById(inputId);
+        if (input) {
+            input.addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    searchFacilities();
+                }
+            });
+        }
+    });
+
+    // Handle custom location selection
+    document.getElementById('bookinglocation').addEventListener('change', function() {
+        handleLocationSelection(this.value);
+    });
+}
 // Submit booking - UPDATED VERSION with notification and correct Firestore structure
 async function submitBooking() {
     try {
@@ -4490,7 +4239,7 @@ async function submitBooking() {
         if (!agreeTerms) {
           showToast('You must agree to the terms and conditions', 'warning');
           document.getElementById('agreeTerms').focus();
-          return;e
+          return;
         }
 
         // Calculate promo discount (10% for NEWUSER10)
@@ -4569,47 +4318,6 @@ async function submitBooking() {
             userLoyaltyPoints = newLoyaltyPoints;
         }
 
-        // Create notification for user
-        await createNotification(
-            currentUser.uid,
-            'booking_created',
-            'Booking Submitted',
-            `Your booking for ${selectedFacility.name} on ${selectedDate.toLocaleDateString()} at ${selectedTimeSlot} has been created.`,
-            {
-                bookingId: bookingRef.id,
-                facilityName: selectedFacility.name,
-                date: selectedDate,
-                time: selectedTimeSlot
-            }
-        );
-
-        // Create notification for admins (all users with admin role)
-        const adminsSnapshot = await db.collection('users')
-            .where('role', '==', 'admin')
-            .get();
-
-        const adminPromises = [];
-        adminsSnapshot.forEach((adminDoc) => {
-            adminPromises.push(
-                createNotification(
-                    adminDoc.id,
-                    'new_booking_request',
-                    'New Booking Request',
-                    `New booking request from ${currentUser.displayName} for ${selectedFacility.name}`,
-                    {
-                        bookingId: bookingRef.id,
-                        userId: currentUser.uid,
-                        userName: currentUser.displayName,
-                        facilityName: selectedFacility.name,
-                        date: selectedDate,
-                        time: selectedTimeSlot
-                    }
-                )
-            );
-        });
-
-        await Promise.all(adminPromises);
-
         showToast('Booking submitted successfully!', 'success');
         fetch("http://localhost:5000/send-email", {
   method: "POST",
@@ -4634,14 +4342,14 @@ async function submitBooking() {
         // Reset booking process
         resetBookingProcess();
 
-        // Show facilities list again
-        document.getElementById('facilitiesList').style.display = 'block';
-        document.getElementById('bookingSteps').style.display = 'none';
-
         // Reload dashboard stats to reflect new booking
         if (currentUser) {
             await updateDashboardStats(currentUser.uid);
         }
+        // ✅ After booking is successfully saved
+        setTimeout(() => {
+  window.location.href = "user-dashboard.html?page=my-bookings";
+}, 1200);
 
     } catch (error) {
         console.error('Error submitting booking:', error);
@@ -4707,50 +4415,6 @@ function loadFindFriendsPage() {
         </div>
       `;
     }
-// Initialize Find Friends Page
-    async function initializeFindFriendsPage() {
-      await loadAllUsers();
-      await loadSuggestedFriends();
-      await loadActiveChats();
-
-      // Search functionality
-      document.getElementById('searchFriendsBtn').addEventListener('click', handleFriendSearch);
-      document.getElementById('friendSearch').addEventListener('input', handleFriendSearch);
-      document.getElementById('friendFilter').addEventListener('change', handleFriendSearch);
-
-      // Add event listener for chat buttons
-      document.addEventListener('click', function (e) {
-        if (e.target && e.target.classList.contains('start-chat-btn')) {
-          const userId = e.target.getAttribute('data-user-id');
-          const userName = e.target.getAttribute('data-user-name');
-          startNewChat(userId, userName);
-        }
-      });
-
-      // Emoji picker functionality
-      document.getElementById('emojiBtn').addEventListener('click', function () {
-        const emojiPicker = document.getElementById('emojiPicker');
-        emojiPicker.classList.toggle('show');
-      });
-
-      // Close emoji picker when clicking outside
-      document.addEventListener('click', function (e) {
-        if (!e.target.closest('#emojiPicker') && !e.target.closest('#emojiBtn')) {
-          document.getElementById('emojiPicker').classList.remove('show');
-        }
-      });
-
-      // Add emoji to message input
-      document.querySelectorAll('.emoji-option').forEach(emoji => {
-        emoji.addEventListener('click', function () {
-          const emojiChar = this.getAttribute('data-emoji');
-          const messageInput = document.getElementById('messageInput');
-          messageInput.value += emojiChar;
-          document.getElementById('emojiPicker').classList.remove('show');
-          messageInput.focus();
-        });
-      });
-    }
 
     // Load all users except current user and admins
     async function loadAllUsers(searchTerm = '', filter = 'all') {
@@ -4777,27 +4441,55 @@ function loadFindFriendsPage() {
             });
           }
         });
+        // Get all chats of current user
+    const chatsSnap = await db.collection('chats')
+      .where('participants', 'array-contains', currentUser.uid)
+      .get();
 
-        // Apply filters and search
+    const chattedUserIds = new Set();
+    chatsSnap.forEach(doc => {
+      const participants = doc.data().participants || [];
+      participants.forEach(uid => {
+        if (uid !== currentUser.uid) chattedUserIds.add(uid);
+      });
+    });
         let filteredUsers = users.filter(user => {
-          // Search filter
-          const matchesSearch = !searchTerm ||
-            user.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            user.primarySport?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            user.skillLevel?.toLowerCase().includes(searchTerm.toLowerCase());
+  // Skip hidden users
+  const hidden = window.userProfileData.hiddenUsers || [];
+  if (hidden.includes(user.id)) return false;
 
-          // Additional filters
+  // Only show users with chats initially
+  return chattedUserIds.has(user.id);
+});
+
+// Apply search filter
+if (searchTerm) {
+  filteredUsers = users.filter(user => {
+    const matchesSearch = user.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                          user.primarySport?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                          user.skillLevel?.toLowerCase().includes(searchTerm.toLower());
+    return matchesSearch;
+  });
+}
+if (searchTerm) {
+  const searchResults = users.filter(user => {
+    return user.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+           user.primarySport?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+           user.skillLevel?.toLowerCase().includes(searchTerm.toLowerCase());
+  });
+
+  searchResults.forEach(user => addUserCardToAllUsers(user));
+  return; // skip normal rendering
+}
+
           let matchesFilter = true;
           if (filter === 'sameSport' && currentUserData.primarySport) {
-            matchesFilter = user.primarySport === currentUserData.primarySport;
+             return matchesFilter = user.primarySport === currentUserData.primarySport;
           } else if (filter === 'sameLevel' && currentUserData.skillLevel) {
-            matchesFilter = user.skillLevel === currentUserData.skillLevel;
+            return matchesFilter = user.skillLevel === currentUserData.skillLevel;
           } else if (filter === 'sameLocation' && currentUserData.location) {
-            matchesFilter = user.location === currentUserData.location;
+            return matchesFilter = user.location === currentUserData.location;
           }
-
-          return matchesSearch && matchesFilter;
-        });
 
         if (filteredUsers.length === 0) {
           allUsersList.innerHTML = '<div class="text-center p-3">No users match your criteria</div>';
@@ -4812,9 +4504,17 @@ function loadFindFriendsPage() {
 
       } catch (error) {
         console.error('Error loading users:', error);
-        showToast('Error loading users', 'danger');
+        showToast('User not found', 'danger');
       }
     }
+    function addUserCardToAllUsers(user) {
+  const allUsersList = document.getElementById('allUsersList');
+  // Prevent duplicate
+  if (!allUsersList.querySelector(`.friend-card[data-user-id="${user.id}"]`)) {
+    const card = createUserCard(user, false);
+    allUsersList.appendChild(card);
+  }
+}
 
     // Load suggested friends based on similarities
     async function loadSuggestedFriends() {
@@ -4896,49 +4596,82 @@ function loadFindFriendsPage() {
 
       return score;
     }
+async function hideUserPermanently(userId) {
+  if (!userId) return;
 
-    // Create user card component
+  try {
+    // Add userId to currentUser hiddenUsers array
+    const userRef = db.collection('users').doc(currentUser.uid);
+    await userRef.update({
+      hiddenUsers: firebase.firestore.FieldValue.arrayUnion(userId)
+    });
+
+    // Remove from UI
+    const card = document.querySelector(`.friend-card[data-user-id="${userId}"]`);
+    if (card) card.remove();
+
+    // Update local copy
+    if (!window.userProfileData.hiddenUsers) window.userProfileData.hiddenUsers = [];
+    window.userProfileData.hiddenUsers.push(userId);
+
+    showToast("User hidden successfully", "success");
+
+  } catch (err) {
+    console.error("Error hiding user:", err);
+    showToast("Failed to hide user", "danger");
+  }
+}
+
     function createUserCard(user, isSuggested = false) {
-      const userCard = document.createElement('div');
-      userCard.className = 'friend-card';
+  const userCard = document.createElement('div');
+  userCard.className = 'friend-card';
+  userCard.dataset.userId = user.id;
 
-      const skillLevelClass = user.skillLevel ?
-        `skill-level ${user.skillLevel.toLowerCase()}` : 'skill-level beginner';
+  const skillLevelClass = user.skillLevel ?
+    `skill-level ${user.skillLevel.toLowerCase()}` : 'skill-level beginner';
+  const skillLevelText = user.skillLevel ?
+    user.skillLevel.charAt(0).toUpperCase() + user.skillLevel.slice(1) : 'Beginner';
+  const avatarUrl = user.photoURL || 'https://via.placeholder.com/60';
 
-      const skillLevelText = user.skillLevel ?
-        user.skillLevel.charAt(0).toUpperCase() + user.skillLevel.slice(1) : 'Beginner';
-
-      // Use a placeholder image instead of trying to generate one
-      const avatarUrl = user.photoURL || 'https://via.placeholder.com/60';
-
-      userCard.innerHTML = `
-    <div class="d-flex align-items-center">
-      <img src="${avatarUrl}" 
-           class="friend-avatar me-3" alt="${user.name}" 
-           style="width: 60px; height: 60px; object-fit: cover; border-radius: 50%;"
-           onerror="this.src='https://via.placeholder.com/60'">
-      <div class="flex-grow-1">
-        <h6 class="mb-1">${user.name || 'User'}</h6>
-        <p class="mb-1 text-muted">
-          <i class="fas fa-map-marker-alt me-1"></i>
-          ${user.location || 'Location not set'}
-        </p>
-        <p class="mb-1">
-          <span class="${skillLevelClass}">${skillLevelText}</span>
-          ${user.primarySport ? `<span class="badge bg-secondary ms-1">${user.primarySport}</span>` : ''}
-        </p>
-        ${isSuggested ? `<small class="text-success"><i class="fas fa-star me-1"></i>Suggested</small>` : ''}
+  userCard.innerHTML = `
+    <div class="d-flex align-items-center justify-content-between">
+      <div class="d-flex align-items-center">
+        <img src="${avatarUrl}" 
+             class="friend-avatar me-3" alt="${user.name}" 
+             style="width: 60px; height: 60px; object-fit: cover; border-radius: 50%;"
+             onerror="this.src='https://via.placeholder.com/60'">
+        <div>
+          <h6 class="mb-1">${user.name || 'User'}</h6>
+          <p class="mb-1 text-muted">
+            <i class="fas fa-map-marker-alt me-1"></i>
+            ${user.location || 'Location not set'}
+          </p>
+          <p class="mb-1">
+            <span class="${skillLevelClass}">${skillLevelText}</span>
+            ${user.primarySport ? `<span class="badge bg-secondary ms-1">${user.primarySport}</span>` : ''}
+          </p>
+          ${isSuggested ? `<small class="text-success"><i class="fas fa-star me-1"></i>Suggested</small>` : ''}
+        </div>
       </div>
-      <div>
-        <button class="btn btn-sm btn-outline-primary start-chat-btn" data-user-id="${user.id}" data-user-name="${user.name || 'User'}">
+      <div class="d-flex flex-column align-items-end">
+        <button class="btn btn-sm btn-outline-primary mb-1 start-chat-btn" 
+                data-user-id="${user.id}" data-user-name="${user.name || 'User'}">
           <i class="fas fa-comment"></i> Chat
+        </button>
+        <button class="btn btn-sm btn-outline-danger remove-user-card-btn" title="Remove User">
+          <i class="fas fa-times"></i>
         </button>
       </div>
     </div>
   `;
 
-      return userCard;
-    }
+  // Remove card from interface only
+  userCard.querySelector('.remove-user-card-btn').addEventListener('click', () => {
+  hideUserPermanently(user.id);
+});
+
+  return userCard;
+}
 
     // Handle friend search and filtering
     function handleFriendSearch() {
@@ -5091,7 +4824,6 @@ chats.forEach(chat => {
     } else {
       loadMessages(chatId);
     }
-
     // Finally open the modal
     const modalEl = document.getElementById("chatModal");
     if (modalEl) {
@@ -5100,12 +4832,53 @@ chats.forEach(chat => {
     } else {
       console.warn('openChat: chatModal element not found in DOM');
     }
+    await markNotificationAsRead(chatId); 
 
   } catch (e) {
     console.error("openChat error:", e);
     showToast('Unable to open chat', 'danger');
   }
 }
+async function deleteEntireChat(chatId) {
+  try {
+    if (!chatId) return;
+
+    const confirmDelete = confirm("Are you sure you want to clear this chat?");
+    if (!confirmDelete) return;
+
+    // 1️⃣ Delete all messages under this chat
+    const messagesSnap = await db.collection("messages")
+      .where("chatId", "==", chatId)
+      .get();
+
+    const batch = db.batch();
+    messagesSnap.forEach(doc => batch.delete(doc.ref));
+    await batch.commit();
+
+    // 2️⃣ Reset chat metadata
+    await db.collection("chats").doc(chatId).update({
+      lastMessage: "",
+      lastMessageAt: firebase.firestore.FieldValue.serverTimestamp()
+    });
+
+    // 3️⃣ Clear UI
+    document.getElementById("chatMessages").innerHTML =
+      `<div class="text-center text-muted mt-3">Chat cleared</div>`;
+
+    showToast("Chat cleared successfully", "success");
+
+  } catch (err) {
+    console.error("Delete chat error:", err);
+    showToast("Failed to clear chat", "danger");
+  }
+}
+document.getElementById("deleteChatBtn").addEventListener("click", () => {
+  if (!activeChatId) {
+    showToast("No chat selected", "warning");
+    return;
+  }
+  deleteEntireChat(activeChatId);
+});
 // generate stable chatId for a pair of users
 function generateChatId(user1, user2) {
   return [user1, user2].sort().join("_");
@@ -5487,6 +5260,55 @@ document.getElementById("chatAttachmentInput").addEventListener("change", async 
         updateTypingIndicator(false);
       }, TYPING_TIMEOUT);
     });
+    // Initialize Find Friends Page
+    async function initializeFindFriendsPage() {
+      await loadAllUsers();
+      await loadSuggestedFriends();
+      await loadActiveChats();
+
+      // Search functionality
+      document.getElementById('searchFriendsBtn').addEventListener('click', handleFriendSearch);
+      document.getElementById('friendSearch').addEventListener('input', handleFriendSearch);
+      document.getElementById('friendFilter').addEventListener('change', handleFriendSearch);
+
+      // Add event listener for chat buttons
+      document.addEventListener('click', function (e) {
+        if (e.target && e.target.classList.contains('start-chat-btn')) {
+          const userId = e.target.getAttribute('data-user-id');
+          const userName = e.target.getAttribute('data-user-name');
+          startNewChat(userId, userName);
+        }
+      });
+
+      // Working JavaScript
+document.addEventListener('click', (e) => {
+  const emojiBtn = document.getElementById('emojiBtn');
+  const emojiPicker = document.getElementById('emojiPicker');
+  const messageInput = document.getElementById('messageInput');
+
+  if (!emojiBtn || !emojiPicker || !messageInput) return;
+
+  // Toggle emoji picker when button clicked
+  if (e.target.closest('#emojiBtn')) {
+    e.stopPropagation(); // Prevent immediate close
+    emojiPicker.classList.toggle('show');
+    return;
+  }
+
+  // Close emoji picker when clicking outside
+  if (!e.target.closest('#emojiPicker')) {
+    emojiPicker.classList.remove('show');
+  }
+
+  // Add emoji to input if clicked
+  if (e.target.classList.contains('emoji-option')) {
+    const emojiChar = e.target.getAttribute('data-emoji');
+    messageInput.value += emojiChar;
+    emojiPicker.classList.remove('show');
+    messageInput.focus();
+  }
+});
+    }
   //My bookings page
   function loadMyBookingsPage() {
       return `
@@ -5518,10 +5340,23 @@ document.getElementById("chatAttachmentInput").addEventListener("change", async 
     }
 // Initialize My Bookings Page
     async function initializeMyBookingsPage() {
-      await loadAllBookings();
+  firebase.auth().onAuthStateChanged(async (user) => {
+    if (!user) {
+      console.warn("Auth not ready yet");
+      return;
     }
+
+    currentUser = user; // ✅ ensure global user is set
+    await loadAllBookings();
+  });
+}
 // Fixed version of loadAllBookings
 async function loadAllBookings() {
+   if (!currentUser || !currentUser.uid) {
+    console.warn("loadAllBookings called without user");
+    return;
+  }
+
   try {
     const bookingsSnapshot = await db.collection('bookings')
       .where('userId', '==', currentUser.uid)
@@ -8883,10 +8718,6 @@ function loadProfilePage() {
   <label class="form-label">Change Profile Picture</label>
   <input type="file" id="profileImageFile" accept="image/*" class="form-control">
 </div>
-
-              <div class="d-grid gap-2">
-                <button class="btn btn-outline-secondary" id="changePasswordBtn">Change Password</button>
-              </div>
             </div>
 
             <div class="form-card mt-4">

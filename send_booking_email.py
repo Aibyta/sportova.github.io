@@ -12,10 +12,10 @@ def send_booking_email(name, email, slot, date):
     <html>
     <body style="font-family: Arial, sans-serif;">
       <h2>Hi {name},</h2>
-      <p>Your booking for the slot <b>{slot}</b> on <b>{date}</b> is confirmed and awaiting for admin approval! 🎉</p>
+      <p>Your booking for the slot <b>{slot}</b> on <b>{date}</b> is confirmed! 🎉</p>
       <hr />
-      <p>See you soon at the NSTE Court.</p>
-      <p style="color:gray;">- NSTE Team</p>
+      <p>See you soon at the Court.</p>
+      <p style="color:gray;">- SPORTOVA Team</p>
     </body>
     </html>
     """

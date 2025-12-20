@@ -1136,8 +1136,6 @@
             class="sidebar-text">Calendar & Scheduling</span></a></li>
       <li><a href="#" data-page="ai-insights"><i class="fas fa-brain"></i> <span class="sidebar-text">AI
             Insights</span></a></li>
-      <li><a href="#" data-page="notifications"><i class="fas fa-bell"></i> <span
-            class="sidebar-text">Notifications</span></a></li>
       <li><a href="#" data-page="promo-vouchers"><i class="fas fa-tags"></i> <span class="sidebar-text">Promo &
             Vouchers</span></a></li>
       <li><a href="#" data-page="events-tournaments"><i class="fas fa-trophy"></i> <span class="sidebar-text">Events &
@@ -1172,26 +1170,6 @@
   <div class="main-content" id="mainContent">
     <div class="header">
       <h1 id="pageTitle">Dashboard</h1>
-      <div class="header-actions">
-        <div class="dropdown ms-3">
-          <button class="btn btn-light dropdown-toggle" type="button" data-bs-toggle="dropdown">
-            <i class="fas fa-bell"></i>
-            <span class="badge bg-danger">3</span>
-          </button>
-          <ul class="dropdown-menu dropdown-menu-end">
-            <li>
-              <h6 class="dropdown-header">Notifications</h6>
-            </li>
-            <li><a class="dropdown-item" href="#">New booking request</a></li>
-            <li><a class="dropdown-item" href="#">Payment received</a></li>
-            <li><a class="dropdown-item" href="#">System update available</a></li>
-            <li>
-              <hr class="dropdown-divider">
-            </li>
-            <li><a class="dropdown-item" href="#">View all notifications</a></li>
-          </ul>
-        </div>
-      </div>
     </div>
 
     <!-- Page Content will be loaded here -->
@@ -1378,9 +1356,6 @@
         if (user.photoURL) {
           adminAvatar.src = user.photoURL;
         }
-
-        // Initialize header notifications
-        initializeHeaderNotifications();
 
         // Load admin facilities and dashboard data
         loadAdminFacilities().then(() => {
@@ -1623,12 +1598,24 @@
 
             // Handle different date formats for display
             if (booking.timestamp && booking.timestamp.toDate) {
-              displayDate = booking.timestamp.toDate().toLocaleString();
+              displayDate = booking.timestamp.toDate().toLocaleString('en-US', {
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric'
+    });
             } else if (booking.date && booking.date.toDate) {
-              displayDate = booking.date.toDate().toLocaleString();
+              displayDate = booking.date.toDate().toLocaleString('en-US', {
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric'
+    });
             } else if (booking.date) {
               try {
-                displayDate = new Date(booking.date).toLocaleString();
+                displayDate = new Date(booking.date).toLocaleString('en-US', {
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric'
+    });
               } catch (e) {
                 displayDate = booking.date; // Use raw string if Date conversion fails
               }
@@ -1794,9 +1781,6 @@
             break;
           case 'ai-insights':
             content = await loadAIInsightsPage();
-            break;
-          case 'notifications':
-            content = await loadNotificationsPage();
             break;
           case 'promo-vouchers':
             content = await loadPromoVouchersPage();
@@ -3666,7 +3650,7 @@
               ...booking,
               commission: commission,
               netamount: netamount,
-              paymentDate: booking.timestamp ? booking.timestamp.toDate() : new Date()
+              paymentDate: booking.date ? booking.date.toDate() : new Date()
             });
           }
         });
@@ -6782,121 +6766,6 @@
       }
     }
 
-    async function loadNotificationsPage() {
-      try {
-        // Fetch notifications from Firestore
-        let notifications = [];
-
-        try {
-          const notificationsSnapshot = await db.collection("notifications")
-            .where("adminId", "==", currentUser.uid)
-            .orderBy("timestamp", "desc")
-            .limit(50)
-            .get();
-
-          notificationsSnapshot.forEach(doc => {
-            notifications.push({
-              id: doc.id,
-              ...doc.data(),
-              timestamp: doc.data().timestamp ? doc.data().timestamp.toDate() : new Date()
-            });
-          });
-        } catch (error) {
-          console.log('No notifications collection found, using sample data');
-          // Fallback to sample notifications
-          notifications = getSampleNotifications();
-        }
-
-        let notificationsHTML = '';
-
-        if (notifications.length === 0) {
-          notificationsHTML = `
-        <div class="text-center py-5">
-          <i class="fas fa-bell-slash fa-3x text-muted mb-3"></i>
-          <h5 class="text-muted">No Notifications</h5>
-          <p class="text-muted">You're all caught up!</p>
-        </div>
-      `;
-        } else {
-          notifications.forEach(notification => {
-            const timeAgo = getTimeAgo(notification.timestamp);
-            notificationsHTML += `
-          <div class="list-group-item ${notification.read ? '' : 'bg-light'}">
-            <div class="d-flex w-100 justify-content-between">
-              <h6 class="mb-1">${notification.title}</h6>
-              <small class="text-muted">${timeAgo}</small>
-            </div>
-            <p class="mb-1">${notification.message}</p>
-            ${!notification.read ? `
-              <button class="btn btn-sm btn-outline-primary mt-2" onclick="markNotificationAsRead('${notification.id}')">
-                Mark as Read
-              </button>
-            ` : ''}
-          </div>
-        `;
-          });
-        }
-
-        return `
-      <div class="d-flex justify-content-between align-items-center mb-4">
-        <h3>Notifications</h3>
-        <div>
-          <button class="btn btn-outline-primary me-2" onclick="markAllNotificationsAsRead()">
-            <i class="fas fa-check-double me-1"></i> Mark All as Read
-          </button>
-          <button class="btn btn-outline-danger" onclick="clearAllNotifications()">
-            <i class="fas fa-trash me-1"></i> Clear All
-          </button>
-        </div>
-      </div>
-      
-      <div class="table-card">
-        <div class="list-group">
-          ${notificationsHTML}
-        </div>
-      </div>
-    `;
-      } catch (error) {
-        console.error("Error loading notifications page:", error);
-        return `
-      <div class="alert alert-danger">
-        <h4>Error Loading Notifications</h4>
-        <p>There was an error loading notifications. Please try again.</p>
-        <button class="btn btn-primary mt-2" onclick="loadPageContent('notifications')">
-          <i class="fas fa-redo me-1"></i> Retry
-        </button>
-      </div>
-    `;
-      }
-    }
-
-    // Helper function for sample notifications
-    function getSampleNotifications() {
-      return [
-        {
-          id: '1',
-          title: 'New Booking Request',
-          message: 'John Doe has requested to book Badminton Court for tomorrow at 2 PM',
-          timestamp: new Date(Date.now() - 300000), // 5 minutes ago
-          read: false
-        },
-        {
-          id: '2',
-          title: 'Payment Received',
-          message: 'Payment of RM50.00 received for booking #BK001234',
-          timestamp: new Date(Date.now() - 1800000), // 30 minutes ago
-          read: false
-        },
-        {
-          id: '3',
-          title: 'System Update',
-          message: 'New features available in the admin dashboard',
-          timestamp: new Date(Date.now() - 3600000), // 1 hour ago
-          read: true
-        }
-      ];
-    }
-
     function getTimeAgo(date) {
       const seconds = Math.floor((new Date() - date) / 1000);
       let interval = seconds / 31536000;
@@ -6911,488 +6780,6 @@
       interval = seconds / 60;
       if (interval > 1) return Math.floor(interval) + " minutes ago";
       return "just now";
-    }
-
-    async function loadHeaderNotifications() {
-      try {
-        const notificationsSnapshot = await db.collection("notifications")
-          .where("adminId", "==", currentUser.uid)
-          .where("read", "==", false)
-          .orderBy("timestamp", "desc")
-          .limit(5)
-          .get();
-
-        const notifications = [];
-        notificationsSnapshot.forEach(doc => {
-          notifications.push({
-            id: doc.id,
-            ...doc.data()
-          });
-        });
-
-        // Update notification badge
-        const badge = document.querySelector('.header-actions .badge');
-        if (badge) {
-          badge.textContent = notifications.length;
-        }
-
-        // Update dropdown content
-        const dropdownMenu = document.querySelector('.header-actions .dropdown-menu');
-        if (dropdownMenu) {
-          let dropdownHTML = `
-        <li><h6 class="dropdown-header">Notifications</h6></li>
-      `;
-
-          if (notifications.length === 0) {
-            dropdownHTML += `
-          <li><a class="dropdown-item text-muted" href="#">No new notifications</a></li>
-        `;
-          } else {
-            notifications.forEach(notification => {
-              dropdownHTML += `
-            <li>
-              <a class="dropdown-item" href="#" onclick="viewNotification('${notification.id}')">
-                <strong>${notification.title}</strong><br>
-                <small>${notification.message}</small>
-              </a>
-            </li>
-          `;
-            });
-          }
-
-          dropdownHTML += `
-        <li><hr class="dropdown-divider"></li>
-        <li><a class="dropdown-item" href="#" onclick="loadPageContent('notifications')">View all notifications</a></li>
-      `;
-
-          dropdownMenu.innerHTML = dropdownHTML;
-        }
-
-      } catch (error) {
-        console.error('Error loading header notifications:', error);
-      }
-    }
-
-    // Call this function after authentication
-    function initializeHeaderNotifications() {
-      loadHeaderNotifications();
-      // Refresh notifications every 30 seconds
-      setInterval(loadHeaderNotifications, 30000);
-    }
-    // Real-time notifications listener
-    let notificationsListener = null;
-
-    function initializeNotifications() {
-      // Remove existing listener if any
-      if (notificationsListener) {
-        notificationsListener();
-      }
-
-      // Get facility IDs for this admin
-      const facilityIds = adminFacilities.map(f => f.id);
-
-      if (facilityIds.length === 0) {
-        document.getElementById('notificationsContainer').innerHTML = `
-            <div class="alert alert-info">
-                <i class="fas fa-info-circle me-2"></i>
-                No facilities found. Notifications will appear here when you have facilities.
-            </div>
-        `;
-        return;
-      }
-
-      // Set up real-time listener for notifications
-      notificationsListener = db.collection("notifications")
-        .where("facilityId", "in", facilityIds)
-        .orderBy("createdAt", "desc")
-        .limit(50)
-        .onSnapshot(snapshot => {
-          const notifications = [];
-          snapshot.forEach(doc => {
-            notifications.push({
-              id: doc.id,
-              ...doc.data()
-            });
-          });
-
-          updateNotificationsUI(notifications);
-          updateNotificationStats(notifications);
-        }, error => {
-          console.error("Error listening to notifications:", error);
-          // If collection doesn't exist, show setup message
-          if (error.code === 'failed-precondition') {
-            document.getElementById('notificationsContainer').innerHTML = `
-                    <div class="alert alert-warning">
-                        <h5><i class="fas fa-exclamation-triangle me-2"></i>Notifications Setup Required</h5>
-                        <p>The notifications collection doesn't exist yet. Click the button below to create sample notifications and set up the system.</p>
-                        <button class="btn btn-primary mt-2" onclick="createSampleNotifications()">
-                            <i class="fas fa-plus me-1"></i> Create Sample Notifications
-                        </button>
-                    </div>
-                `;
-          }
-        });
-    }
-
-    // Update notifications UI
-    function updateNotificationsUI(notifications) {
-      const container = document.getElementById('notificationsContainer');
-
-      if (notifications.length === 0) {
-        container.innerHTML = `
-            <div class="text-center py-5">
-                <i class="fas fa-bell-slash fa-3x text-muted mb-3"></i>
-                <h5 class="text-muted">No Notifications</h5>
-                <p class="text-muted">You're all caught up! New notifications will appear here.</p>
-                <button class="btn btn-primary mt-2" onclick="createSampleNotifications()">
-                    <i class="fas fa-plus me-1"></i> Create Sample Notifications
-                </button>
-            </div>
-        `;
-        return;
-      }
-
-      let notificationsHTML = '<div class="list-group">';
-
-      notifications.forEach(notification => {
-        const timeAgo = getTimeAgo(notification.createdAt?.toDate());
-        const isUnread = !notification.read;
-
-        notificationsHTML += `
-            <div class="list-group-item list-group-item-action ${isUnread ? 'list-group-item-primary' : ''}" 
-                 onclick="viewNotification('${notification.id}')">
-                <div class="d-flex w-100 justify-content-between align-items-start">
-                    <div class="flex-grow-1">
-                        <div class="d-flex align-items-center mb-2">
-                            <span class="badge bg-${getNotificationBadgeColor(notification.type)} me-2">
-                                ${getNotificationTypeLabel(notification.type)}
-                            </span>
-                            ${isUnread ? '<span class="badge bg-danger me-2">NEW</span>' : ''}
-                            <small class="text-muted">${timeAgo}</small>
-                        </div>
-                        <h6 class="mb-1">${notification.title}</h6>
-                        <p class="mb-1">${notification.message}</p>
-                        ${notification.bookingId ? `
-                            <small class="text-muted">
-                                <i class="fas fa-link me-1"></i>
-                                Related to booking: ${notification.bookingId.substring(0, 8)}
-                            </small>
-                        ` : ''}
-                    </div>
-                    <div class="dropdown ms-3">
-                        <button class="btn btn-sm btn-outline-secondary dropdown-toggle" 
-                                type="button" 
-                                data-bs-toggle="dropdown"
-                                onclick="event.stopPropagation()">
-                            <i class="fas fa-ellipsis-v"></i>
-                        </button>
-                        <ul class="dropdown-menu">
-                            ${isUnread ? `
-                                <li>
-                                    <a class="dropdown-item" href="#" onclick="markAsRead('${notification.id}')">
-                                        <i class="fas fa-check me-2"></i>Mark as Read
-                                    </a>
-                                </li>
-                            ` : ''}
-                            <li>
-                                <a class="dropdown-item" href="#" onclick="deleteNotification('${notification.id}')">
-                                    <i class="fas fa-trash me-2"></i>Delete
-                                </a>
-                            </li>
-                        </ul>
-                    </div>
-                </div>
-            </div>
-        `;
-      });
-
-      notificationsHTML += '</div>';
-      container.innerHTML = notificationsHTML;
-    }
-
-    // Update notification statistics
-    function updateNotificationStats(notifications) {
-      const total = notifications.length;
-      const unread = notifications.filter(n => !n.read).length;
-      const bookingAlerts = notifications.filter(n => n.type === 'booking').length;
-      const paymentAlerts = notifications.filter(n => n.type === 'payment').length;
-
-      document.getElementById('totalNotifications').textContent = total;
-      document.getElementById('unreadNotifications').textContent = unread;
-      document.getElementById('bookingNotifications').textContent = bookingAlerts;
-      document.getElementById('paymentNotifications').textContent = paymentAlerts;
-
-      // Update notification badge in header
-      updateHeaderNotificationsDropdown(unread);
-    }
-
-    // Replace the static notifications dropdown in the header with this dynamic version
-    function updateHeaderNotificationsDropdown() {
-      const dropdownMenu = document.querySelector('.header-actions .dropdown-menu');
-      if (!dropdownMenu) return;
-
-      // Get recent unread notifications
-      const facilityIds = adminFacilities.map(f => f.id);
-      if (facilityIds.length === 0) return;
-
-      db.collection("notifications")
-        .where("facilityId", "in", facilityIds)
-        .where("read", "==", false)
-        .orderBy("createdAt", "desc")
-        .limit(5)
-        .get()
-        .then(snapshot => {
-          let dropdownHTML = `
-                <li><h6 class="dropdown-header">Recent Notifications</h6></li>
-            `;
-
-          if (snapshot.empty) {
-            dropdownHTML += `
-                    <li><a class="dropdown-item text-muted" href="#">No new notifications</a></li>
-                `;
-          } else {
-            snapshot.forEach(doc => {
-              const notification = doc.data();
-              const timeAgo = getTimeAgo(notification.createdAt?.toDate());
-
-              dropdownHTML += `
-                        <li>
-                            <a class="dropdown-item" href="#" onclick="viewNotification('${doc.id}')">
-                                <div class="d-flex w-100 justify-content-between">
-                                    <strong>${notification.title}</strong>
-                                    <small class="text-muted">${timeAgo}</small>
-                                </div>
-                                <small class="text-muted">${notification.message.substring(0, 50)}...</small>
-                            </a>
-                        </li>
-                    `;
-            });
-          }
-
-          dropdownHTML += `
-                <li><hr class="dropdown-divider"></li>
-                <li><a class="dropdown-item" href="#" onclick="navigateToPage('notifications')">View all notifications</a></li>
-            `;
-
-          dropdownMenu.innerHTML = dropdownHTML;
-        })
-        .catch(error => {
-          console.error('Error loading header notifications:', error);
-        });
-    }
-
-    // Helper functions for notifications
-    function getTimeAgo(date) {
-      if (!date) return 'Just now';
-
-      const now = new Date();
-      const diffInSeconds = Math.floor((now - date) / 1000);
-
-      if (diffInSeconds < 60) return 'Just now';
-      if (diffInSeconds < 3600) return `${Math.floor(diffInSeconds / 60)}m ago`;
-      if (diffInSeconds < 86400) return `${Math.floor(diffInSeconds / 3600)}h ago`;
-      if (diffInSeconds < 604800) return `${Math.floor(diffInSeconds / 86400)}d ago`;
-
-      return date.toLocaleDateString();
-    }
-
-    function getNotificationBadgeColor(type) {
-      const colors = {
-        'booking': 'primary',
-        'payment': 'success',
-        'system': 'warning',
-        'alert': 'danger',
-        'info': 'info'
-      };
-      return colors[type] || 'secondary';
-    }
-
-    function getNotificationTypeLabel(type) {
-      const labels = {
-        'booking': 'Booking',
-        'payment': 'Payment',
-        'system': 'System',
-        'alert': 'Alert',
-        'info': 'Info'
-      };
-      return labels[type] || 'Notification';
-    }
-
-    // Notification actions
-    async function markAsRead(notificationId) {
-      try {
-        await db.collection("notifications").doc(notificationId).update({
-          read: true,
-          readAt: firebase.firestore.FieldValue.serverTimestamp()
-        });
-        showToast('Notification marked as read', 'success');
-      } catch (error) {
-        console.error('Error marking notification as read:', error);
-        showToast('Error updating notification', 'danger');
-      }
-    }
-
-    async function markAllAsRead() {
-      try {
-        const facilityIds = adminFacilities.map(f => f.id);
-        const snapshot = await db.collection("notifications")
-          .where("facilityId", "in", facilityIds)
-          .where("read", "==", false)
-          .get();
-
-        const batch = db.batch();
-        snapshot.forEach(doc => {
-          batch.update(doc.ref, {
-            read: true,
-            readAt: firebase.firestore.FieldValue.serverTimestamp()
-          });
-        });
-
-        await batch.commit();
-        showToast('All notifications marked as read', 'success');
-      } catch (error) {
-        console.error('Error marking all notifications as read:', error);
-        showToast('Error updating notifications', 'danger');
-      }
-    }
-
-    async function deleteNotification(notificationId) {
-      if (!confirm('Are you sure you want to delete this notification?')) {
-        return;
-      }
-
-      try {
-        await db.collection("notifications").doc(notificationId).delete();
-        showToast('Notification deleted', 'success');
-      } catch (error) {
-        console.error('Error deleting notification:', error);
-        showToast('Error deleting notification', 'danger');
-      }
-    }
-
-    async function viewNotification(notificationId) {
-      try {
-        const doc = await db.collection("notifications").doc(notificationId).get();
-        if (!doc.exists) {
-          showToast('Notification not found', 'danger');
-          return;
-        }
-
-        const notification = doc.data();
-
-        // Mark as read when viewed
-        if (!notification.read) {
-          await markAsRead(notificationId);
-        }
-
-        // Show notification details
-        const modalContent = `
-            <div class="modal fade" id="notificationModal" tabindex="-1">
-                <div class="modal-dialog">
-                    <div class="modal-content">
-                        <div class="modal-header">
-                            <h5 class="modal-title">
-                                <span class="badge bg-${getNotificationBadgeColor(notification.type)} me-2">
-                                    ${getNotificationTypeLabel(notification.type)}
-                                </span>
-                                Notification Details
-                            </h5>
-                            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                        </div>
-                        <div class="modal-body">
-                            <h6>${notification.title}</h6>
-                            <p class="mb-3">${notification.message}</p>
-                            
-                            <div class="row text-muted small">
-                                <div class="col-6">
-                                    <strong>Created:</strong><br>
-                                    ${notification.createdAt?.toDate().toLocaleString() || 'N/A'}
-                                </div>
-                                ${notification.read ? `
-                                    <div class="col-6">
-                                        <strong>Read:</strong><br>
-                                        ${notification.readAt?.toDate().toLocaleString() || 'N/A'}
-                                    </div>
-                                ` : ''}
-                            </div>
-                            
-                            ${notification.bookingId ? `
-                                <div class="mt-3">
-                                    <strong>Related Booking:</strong><br>
-                                    ${notification.bookingId}
-                                </div>
-                            ` : ''}
-                        </div>
-                        <div class="modal-footer">
-                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                            ${notification.bookingId ? `
-                                <button type="button" class="btn btn-primary" onclick="viewBooking('${notification.bookingId}')">
-                                    <i class="fas fa-external-link-alt me-1"></i> View Booking
-                                </button>
-                            ` : ''}
-                        </div>
-                    </div>
-                </div>
-            </div>
-        `;
-
-        // Remove existing modal if any
-        const existingModal = document.getElementById('notificationModal');
-        if (existingModal) {
-          existingModal.remove();
-        }
-
-        document.body.insertAdjacentHTML('beforeend', modalContent);
-        const modal = new bootstrap.Modal(document.getElementById('notificationModal'));
-        modal.show();
-
-        // Remove modal when hidden
-        document.getElementById('notificationModal').addEventListener('hidden.bs.modal', function () {
-          this.remove();
-        });
-
-      } catch (error) {
-        console.error('Error viewing notification:', error);
-        showToast('Error loading notification details', 'danger');
-      }
-    }
-
-    // Filter notifications
-    function filterNotifications(filter) {
-      // Update active filter button
-      document.querySelectorAll('.btn-group .btn').forEach(btn => {
-        btn.classList.remove('active');
-      });
-      event.target.classList.add('active');
-
-      // This would filter the displayed notifications
-      // In a real implementation, you might want to modify the Firestore query
-      showToast(`Showing ${filter} notifications`, 'info');
-    }
-
-    // Function to create actual notifications (call this from other parts of your app)
-    async function createNotification(notificationData) {
-      try {
-        const notification = {
-          title: notificationData.title,
-          message: notificationData.message,
-          type: notificationData.type || 'info',
-          facilityId: notificationData.facilityId,
-          bookingId: notificationData.bookingId || null,
-          read: false,
-          createdAt: firebase.firestore.FieldValue.serverTimestamp()
-        };
-
-        await db.collection("notifications").add(notification);
-
-        // Show toast for important notifications
-        if (notificationData.type === 'alert' || notificationData.type === 'booking') {
-          showToast(`New notification: ${notificationData.title}`, 'info');
-        }
-
-      } catch (error) {
-        console.error('Error creating notification:', error);
-      }
     }
 
     // Update the initializePageFunctionality to handle notifications

@@ -17,8 +17,8 @@ def send_email():
         slot = data.get('slot')
 
         # Email setup
-        sender = "your_email@gmail.com"
-        password = "your_app_password"  # Use Gmail App Password
+        sender = "aibytatech@gmail.com"
+        password = "lhky eqtt jaow hfvo"  # Use Gmail App Password
         receiver = email
 
         subject = f"🎾 Booking Confirmed for {date}"
@@ -27,8 +27,8 @@ def send_email():
         <body>
             <h2>Hi {name},</h2>
             <p>✅ Your booking for <b>{slot}</b> on <b>{date}</b> is confirmed!</p>
-            <p>🏸 See you at the NSTE Court!</p>
-            <br><p style='color:gray;'>- NSTE Team</p>
+            <p>🏸 See you at the Court!</p>
+            <br><p style='color:gray;'>- SPORTOVA Team</p>
         </body>
         </html>
         """
