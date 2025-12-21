@@ -1536,8 +1536,8 @@
           }
 
           // Handle revenue calculation
-          if (booking.price) {
-            totalRevenue += parseFloat(booking.price);
+          if (booking.amount) {
+            totalRevenue += booking.amount-booking.amount*0.05;
           }
 
           // Prepare recent bookings data
@@ -1682,7 +1682,7 @@
         // Only process current year bookings and valid dates
         if (bookingDate && bookingDate.getFullYear && bookingDate.getFullYear() === currentYear) {
           const month = bookingDate.toLocaleString('default', { month: 'short' });
-          const price = parseFloat(booking.price) || 0;
+          const price = parseFloat(booking.amount) || 0;
           monthlyRevenue[month] += price;
         }
       });
@@ -2236,7 +2236,8 @@
               date: bookingData.date,
               slot: bookingData.time,
               status: bookingData.status,
-              price: bookingData.price
+              price: bookingData.price,
+              amount: bookingData.amount
             });
 
             bookings.push({
@@ -2341,7 +2342,7 @@
             <td>${booking.facilityName || 'Unknown Facility'}</td>
             <td>${displayDate}</td>
             <td>${displayTime}</td>
-            <td>RM${parseFloat(booking.price || 0).toFixed(2)}</td>
+            <td>RM${parseFloat(booking.amount || 0).toFixed(2)}</td>
             <td>
               <span class="badge badge-status ${statusBadgeClass}">
                 ${status.charAt(0).toUpperCase() + status.slice(1)}
@@ -2393,7 +2394,7 @@
         <div class="col-md-3">
           <div class="stats-card">
             <i class="fas fa-dollar-sign"></i>
-            <div class="number">RM${bookings.reduce((sum, booking) => sum + parseFloat(booking.price || 0), 0).toFixed(2)}</div>
+            <div class="number">RM${bookings.reduce((sum, booking) => sum + parseFloat(booking.amount-booking.amount*0.05 || 0), 0).toFixed(2)}</div>
             <div class="label">Total Revenue</div>
           </div>
         </div>
@@ -2557,7 +2558,12 @@
         <div class="col-md-3">
           <div class="stats-card">
             <i class="fas fa-dollar-sign"></i>
-            <div class="number">RM${users.reduce((sum, user) => sum + (user.totalSpent || 0), 0).toFixed(2)}</div>
+            <div class="number">RM${users.reduce((sum, user) => {
+              const spent = Number(user.totalSpent) || 0;
+              const net = spent * 0.95; // 5% commission deducted
+              return sum + net;
+            }, 0).toFixed(2)}
+            </div>
             <div class="label">Total Revenue</div>
           </div>
         </div>
@@ -2669,8 +2675,8 @@
         }
 
         userBookingsMap[userId].bookings.push(booking);
-        if (booking.price) {
-          userBookingsMap[userId].totalSpent += parseFloat(booking.price);
+        if (booking.amount) {
+          userBookingsMap[userId].totalSpent += parseFloat(booking.amount);
         }
       });
 
@@ -2739,7 +2745,7 @@
 
         // Calculate user statistics
         const totalBookings = userBookings.length;
-        const totalSpent = userBookings.reduce((sum, booking) => sum + parseFloat(booking.price || 0), 0);
+        const totalSpent = userBookings.reduce((sum, booking) => sum + parseFloat(booking.amount || 0), 0);
 
         // Sort bookings by date (newest first)
         const sortedBookings = userBookings.sort((a, b) => {
@@ -2874,7 +2880,7 @@
                                                         <td>${booking.facilityName || 'N/A'}</td>
                                                         <td>${formatBookingDate(booking)}</td>
                                                         <td>${booking.time || booking.timeSlot || 'N/A'}</td>
-                                                        <td>RM${parseFloat(booking.price || 0).toFixed(2)}</td>
+                                                        <td>RM${parseFloat(booking.amount || 0).toFixed(2)}</td>
                                                         <td>
                                                             <span class="badge badge-status badge-${booking.status || 'pending'}">
                                                                 ${(booking.status || 'pending').charAt(0).toUpperCase() + (booking.status || 'pending').slice(1)}
@@ -3032,18 +3038,18 @@
               'User Name': booking.userName || 'Unknown',
               'User Email': booking.userEmail || 'Unknown',
               'Facility Name': booking.facilityName || 'Unknown',
-              'Date': booking.date || 'N/A',
-              'Time Slot': booking.slot || 'N/A',
-              'Price': `RM${booking.price || '0'}`,
+              'Booking Created At': booking.createdAt.toDate().toLocaleString() || 'N/A',
+              'Time Slot': booking.time || 'N/A',
+              'Price': `RM${booking.amount || '0'}`,
               'Status': booking.status || 'pending',
               'Payment Method': booking.paymentMethod || 'Online',
-              'Booking Date': booking.timestamp ? booking.timestamp.toDate().toLocaleString() : 'N/A',
+              'Booking Date': booking.date ? booking.date.toDate().toLocaleString() : 'N/A',
               'Duration': booking.duration || '1 hour'
             });
           });
         }
 
-        const headers = ['Booking ID', 'User Name', 'User Email', 'Facility Name', 'Date', 'Time Slot', 'Price', 'Status', 'Payment Method', 'Booking Date', 'Duration'];
+        const headers = ['Booking ID', 'User Name', 'User Email', 'Facility Name', 'Booking Created At', 'Time Slot', 'Price', 'Status', 'Payment Method', 'Booking Date', 'Duration'];
         exportToCSV(bookings, `bookings_export_${new Date().toISOString().split('T')[0]}.csv`, headers);
 
       } catch (error) {
@@ -3084,8 +3090,8 @@
                 };
               }
               userBookingsMap[userId].totalBookings++;
-              if (booking.price) {
-                userBookingsMap[userId].totalSpent += parseFloat(booking.price);
+              if (booking.amount) {
+                userBookingsMap[userId].totalSpent += parseFloat(booking.amount);
               }
               if (booking.timestamp) {
                 const bookingDate = booking.timestamp.toDate();
@@ -3138,26 +3144,26 @@
 
           bookingsSnapshot.forEach(doc => {
             const booking = doc.data();
-            const commission = booking.price * 0.05;
-            if (booking.price) {
+            const commission = booking.amount * 0.05;
+            if (booking.amount) {
               payments.push({
                 'Payment ID': doc.id,
                 'User Name': booking.userName || 'Unknown',
                 'Facility Name': booking.facilityName || 'Unknown',
-                'Date': booking.date || 'N/A',
-                'Time': booking.slot || 'N/A',
-                'Amount': `RM${parseFloat(booking.price).toFixed(2)}`,
+                'Date': booking.date.toDate().toLocaleString() || 'N/A',
+                'Time': booking.time || 'N/A',
+                'Amount': `RM${parseFloat(booking.amount).toFixed(2)}`,
                 'Status': booking.status || 'approved',
                 'Commission': commission || 0,
                 'Payment Method': booking.paymentMethod || 'Online',
-                'Transaction Date': booking.timestamp ? booking.timestamp.toDate().toLocaleString() : 'N/A',
+                'Transaction Date': booking.createdAt ? booking.createdAt.toDate().toLocaleString() : 'N/A',
                 'Duration': booking.duration || '1 hour'
               });
             }
           });
         }
 
-        const headers = ['Payment ID', 'User Name', 'Facility Name', 'Date', 'Time', 'Amount', 'Status', 'Payment Method', 'Transaction Date', 'Duration'];
+        const headers = ['Payment ID', 'User Name', 'Facility Name', 'Date', 'Time', 'Amount', 'Status', 'Commission', 'Payment Method', 'Transaction Date', 'Duration'];
         exportToCSV(payments, `payments_export_${new Date().toISOString().split('T')[0]}.csv`, headers);
 
       } catch (error) {
@@ -3213,13 +3219,13 @@
 
             // Monthly data
             if (booking.timestamp) {
-              const month = booking.timestamp.toDate().toLocaleString('default', { month: 'short', year: 'numeric' });
+              const month = booking.date.toDate().toLocaleString('default', { month: 'short', year: 'numeric' });
               if (!monthlyData[month]) {
                 monthlyData[month] = { bookings: 0, revenue: 0 };
               }
               monthlyData[month].bookings++;
-              if (booking.price) {
-                monthlyData[month].revenue += parseFloat(booking.price);
+              if (booking.amount) {
+                monthlyData[month].revenue += booking.amount-booking.amount*0.05;
               }
             }
 
@@ -3229,8 +3235,8 @@
               facilityStats[facilityName] = { bookings: 0, revenue: 0 };
             }
             facilityStats[facilityName].bookings++;
-            if (booking.price) {
-              facilityStats[facilityName].revenue += parseFloat(booking.price);
+            if (booking.amount) {
+              facilityStats[facilityName].revenue += booking.amount-booking.amount*0.05;
             }
 
             // Status count
@@ -3303,7 +3309,7 @@
           bookingsSnapshot.forEach(doc => {
             const booking = doc.data();
             if (booking.userId) customerIds.add(booking.userId);
-            if (booking.price) totalRevenue += parseFloat(booking.price);
+            if (booking.amount) totalRevenue += parseFloat(booking.amount);
           });
 
           dashboardData.push({
@@ -3641,9 +3647,9 @@
 
         bookingsSnapshot.forEach(doc => {
           const booking = doc.data();
-          const commission = booking.price * 0.05;
-          const netamount = booking.price - commission;
-          if (booking.price) {
+          const commission = booking.amount * 0.05;
+          const netamount = booking.amount - commission;
+          if (booking.amount) {
             totalRevenue += parseFloat(netamount);
             payments.push({
               id: doc.id,
@@ -3669,7 +3675,7 @@
               <td>${payment.userName || 'Unknown User'}</td>
               <td>${payment.facilityName || 'Unknown Facility'}</td>
               <td>${date}</td>
-              <td>RM${payment.price || '0'}</td>
+              <td>RM${payment.amount || '0'}</td>
               <td>RM${payment.commission || '0'}</td>
               <td>RM${payment.netamount || '0'}</td>
               <td>${payment.paymentMethod || 'Online'}</td>
@@ -5226,17 +5232,17 @@
 
           bookingsSnapshot.forEach(doc => {
             const booking = doc.data();
-            const commission = booking.price * 0.05;
+            const commission = booking.amount * 0.05;
             bookings.push({ id: doc.id, ...booking });
 
             // Calculate total revenue
-            if (booking.price) {
-              totalRevenue += (parseFloat(booking.price) - (commission || 0));
+            if (booking.amount) {
+              totalRevenue += (parseFloat(booking.amount) - (commission || 0));
             }
 
             // Track peak hours
-            if (booking.slot) {
-              const timeSlot = booking.slot.split('-')[0];
+            if (booking.time) {
+              const timeSlot = booking.time.split('-')[0];
               const hour = timeSlot.includes(':') ? timeSlot.split(':')[0] : timeSlot;
               peakHours[hour] = (peakHours[hour] || 0) + 1;
             }
@@ -5247,10 +5253,11 @@
             }
 
             // Calculate monthly revenue
-            if (booking.timestamp) {
-              const month = booking.timestamp.toDate().toLocaleString('default', { month: 'short', year: 'numeric' });
-              const price = parseFloat(booking.price) || 0;
-              monthlyRevenue[month] = (monthlyRevenue[month] || 0) + price;
+            if (booking.createdAt && booking.createdAt.toDate) {
+              const month = booking.createdAt.toDate()
+                .toLocaleString('default', { month: 'short', year: 'numeric' });
+              const price = parseFloat(booking.amount) || 0;
+              monthlyRevenue[month] = (monthlyRevenue[month] || 0) + (price-price*0.05);
             }
 
             // Track facility performance
@@ -5262,20 +5269,31 @@
                 };
               }
               facilityPerformance[booking.facilityName].bookings++;
-              facilityPerformance[booking.facilityName].revenue += parseFloat(booking.price) || 0;
+              facilityPerformance[booking.facilityName].revenue += parseFloat(totalRevenue) || 0;
             }
 
             // Track booking trends (last 30 days)
-            if (booking.timestamp) {
-              const bookingDate = booking.timestamp.toDate();
+            if (booking.date) {
+              let bookingDate = null;
+              if (booking.date?.toDate) {
+                bookingDate = booking.date.toDate();
+              } else if (typeof booking.date === "string") {
+                bookingDate = new Date(booking.date);
+              }
+
+              if (!bookingDate) return;
+
               const today = new Date();
               const thirtyDaysAgo = new Date(today.getTime() - 30 * 24 * 60 * 60 * 1000);
 
               if (bookingDate >= thirtyDaysAgo) {
-                const day = bookingDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+                const day = bookingDate.toLocaleDateString('en-US', {
+                  month: 'short',
+                  day: 'numeric'
+                });
                 bookingTrends[day] = (bookingTrends[day] || 0) + 1;
               }
-            }
+           }
 
             // Track status distribution
             const status = booking.status || 'pending';
@@ -5403,7 +5421,7 @@
                     <th>Facility</th>
                     <th>Bookings</th>
                     <th>Revenue</th>
-                    <th>Avg. Value</th>
+                    <th>Avg. Revenue</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -5411,8 +5429,8 @@
                     <tr>
                       <td>${facility.name}</td>
                       <td>${facility.bookings}</td>
-                      <td>RM${facility.revenue.toFixed(2)}</td>
-                      <td>RM${(facility.revenue / facility.bookings).toFixed(2)}</td>
+                      <td>RM${totalRevenue}</td>
+                      <td>RM${avgBookingValue}</td>
                     </tr>
                   `).join('') : `
                     <tr>
@@ -6613,8 +6631,8 @@
             const booking = doc.data();
 
             // Total revenue
-            if (booking.price) {
-              reportsData.totalRevenue += parseFloat(booking.price);
+            if (booking.amount) {
+              reportsData.totalRevenue += booking.amount-booking.amount*0.05;
             }
 
             // Unique customers
@@ -6623,14 +6641,14 @@
             }
 
             // Monthly stats
-            if (booking.timestamp) {
-              const month = booking.timestamp.toDate().toLocaleString('default', { month: 'short', year: 'numeric' });
+            if (booking.createdAt && booking.createdAt.toDate) {
+              const month = booking.createdAt.toDate().toLocaleString('default', { month: 'short', year: 'numeric' });
               if (!monthlyStats[month]) {
                 monthlyStats[month] = { bookings: 0, revenue: 0 };
               }
               monthlyStats[month].bookings++;
-              if (booking.price) {
-                monthlyStats[month].revenue += parseFloat(booking.price);
+              if (booking.amount) {
+                monthlyStats[month].revenue += booking.amount-booking.amount*0.05;
               }
             }
 
@@ -6640,8 +6658,8 @@
               facilityStats[facilityName] = { bookings: 0, revenue: 0 };
             }
             facilityStats[facilityName].bookings++;
-            if (booking.price) {
-              facilityStats[facilityName].revenue += parseFloat(booking.price);
+            if (booking.amount) {
+              facilityStats[facilityName].revenue += booking.amount-booking.amount*0.05;
             }
 
             // Status distribution
@@ -8514,44 +8532,6 @@ async function saveProduct() {
               </div>
             </div>
           </div>
-          <div class="col-md-6">
-            <div class="form-card">
-              <h5>Notification Settings</h5>
-              <div class="form-check form-switch mb-3">
-                <input class="form-check-input" type="checkbox" id="emailNotifications" checked>
-                <label class="form-check-label" for="emailNotifications">Email Notifications</label>
-              </div>
-              <div class="form-check form-switch mb-3">
-                <input class="form-check-input" type="checkbox" id="smsNotifications">
-                <label class="form-check-label" for="smsNotifications">SMS Notifications</label>
-              </div>
-              <div class="form-check form-switch mb-3">
-                <input class="form-check-input" type="checkbox" id="bookingAlerts" checked>
-                <label class="form-check-label" for="bookingAlerts">New Booking Alerts</label>
-              </div>
-              <div class="form-check form-switch">
-                <input class="form-check-input" type="checkbox" id="paymentAlerts" checked>
-                <label class="form-check-label" for="paymentAlerts">Payment Alerts</label>
-              </div>
-            </div>
-            
-            <div class="form-card mt-4">
-              <h5>Security</h5>
-              <div class="form-group">
-                <label class="form-label">Current Password</label>
-                <input type="password" class="form-control" id="currentPassword">
-              </div>
-              <div class="form-group">
-                <label class="form-label">New Password</label>
-                <input type="password" class="form-control" id="newPassword">
-              </div>
-              <div class="form-group">
-                <label class="form-label">Confirm New Password</label>
-                <input type="password" class="form-control" id="confirmPassword">
-              </div>
-              <button class="btn btn-warning" onclick="changePassword()">Change Password</button>
-            </div>
-          </div>
         </div>
       `;
     }
@@ -10359,7 +10339,7 @@ async function handlePDFEdit() {
                 </div>
                 <div class="col-md-6">
                   <h6>Payment & Status</h6>
-                  <p><strong>Amount:</strong> RM${parseFloat(booking.price || 0).toFixed(2)}</p>
+                  <p><strong>Amount:</strong> RM${parseFloat(booking.amount || 0).toFixed(2)}</p>
                   <p><strong>Status:</strong> <span class="badge badge-status badge-${booking.status || 'pending'}">${booking.status || 'pending'}</span></p>
                   <p><strong>Payment Method:</strong> ${booking.paymentMethod || 'Online'}</p>
                 </div>
@@ -10685,7 +10665,7 @@ async function saveBookingDate(bookingId) {
                     <h3>PAYMENT SUMMARY</h3>
                     <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 15px; text-align: center;">
                         <div>
-                            <div style="font-size: 20px; font-weight: bold;">RM${parseFloat(booking.price || 0).toFixed(2)}</div>
+                            <div style="font-size: 20px; font-weight: bold;">RM${parseFloat(booking.amount || 0).toFixed(2)}</div>
                             <div>Total Amount</div>
                         </div>
                         <div>
