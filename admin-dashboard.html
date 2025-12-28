@@ -1254,6 +1254,14 @@
   <script src="https://cdn.jsdelivr.net/npm/moment@2.29.4/moment.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/pikaday/pikaday.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+  <!-- EmailJS SDK -->
+  <script src="https://cdn.jsdelivr.net/npm/emailjs-com@3/dist/email.min.js"></script>
+
+  <script>
+    (function () {
+      emailjs.init("xyWs0sJY-xyTCFDAo"); // 👈 from EmailJS dashboard
+    })();
+  </script>
   <script>
   let createPicker, editPicker;
     
@@ -1306,6 +1314,7 @@
     const auth = firebase.auth();
     const db = firebase.firestore();
     const storage = firebase.storage();
+    window.currentBookingForStaff = {};
 
     // Global variables
     let currentCalendarDate = new Date();
@@ -1329,6 +1338,9 @@
     let editAmenities = [];
     let editFoods = [];
     let editPDFUrl = "";
+    let currentBooking = null;
+    let oldBookingDate = "";
+    let oldBookingSlot = "";
     let editingFacilityId = "";
     let currentPage = 'dashboard'; // Track current page
     // Add these with other global variables
@@ -1345,6 +1357,13 @@
     const adminName = document.getElementById('adminName');
     const adminEmail = document.getElementById('adminEmail');
     const adminAvatar = document.getElementById('adminAvatar');
+    const MALAYSIA_LOCATIONS = {
+      "Selangor": ["Petaling", "Hulu Langat", "Gombak", "Klang", "Sepang"],
+      "Kuala Lumpur": ["Bukit Bintang", "Cheras", "Setapak", "Kepong"],
+      "Johor": ["Johor Bahru", "Batu Pahat", "Muar", "Kluang"],
+      "Penang": ["George Town", "Butterworth", "Bukit Mertajam"],
+      "Perak": ["Ipoh", "Taiping", "Manjung"]
+    };
 
     // Authentication state listener
     auth.onAuthStateChanged(user => {
@@ -1891,7 +1910,7 @@
             <tr>
               <td>${facility.name || 'N/A'}</td>
               <td>${facility.type || 'N/A'}</td>
-              <td>${facility.location || 'N/A'}</td>
+              <td>${facility.location || ''},${facility.state || ''}, ${facility.district || ''}</td>
               <td>RM${facility.price || '0'}</td>
               <td>${facility.status || 'Active'}</td>
               <td>
@@ -1978,9 +1997,25 @@
                   
                   <div class="row">
                     <div class="col-md-6">
-                      <div class="form-group">
-                        <label class="form-label">Location</label>
-                        <input type="text" class="form-control" name="location" required>
+                      <div class="row">
+                        <div class="col-md-6">
+                          <label class="form-label">Location</label>
+                          <input type="text" class="form-control" name="location" required>
+                        </div>
+
+                        <div class="col-md-6">
+                          <label class="form-label">State</label>
+                          <select class="form-select" id="facilityState" required>
+                            <option value="">Select State</option>
+                          </select>
+                        </div>
+                      
+                        <div class="col-md-6">
+                          <label class="form-label">District</label>
+                          <select class="form-select" id="facilityDistrict" required disabled>
+                            <option value="">Select District</option>
+                          </select>
+                        </div>
                       </div>
                     </div>
                     <div class="mb-3">
@@ -2092,6 +2127,29 @@
       const cloudName = "dagqzn57w";
       const uploadPreset = "ml_default";
     }
+    function initFacilityLocationDropdowns() {
+      const stateEl = document.getElementById("facilityState");
+      const districtEl = document.getElementById("facilityDistrict");
+
+      Object.keys(MALAYSIA_LOCATIONS).forEach(state => {
+        stateEl.innerHTML += `<option value="${state}">${state}</option>`;
+      });
+    
+      stateEl.onchange = () => {
+        districtEl.disabled = false;
+        districtEl.innerHTML = `<option value="">Select District</option>`;
+      
+        MALAYSIA_LOCATIONS[stateEl.value].forEach(d => {
+          districtEl.innerHTML += `<option value="${d}">${d}</option>`;
+        });
+      };
+    }
+    document.addEventListener("shown.bs.modal", function (e) {
+  if (e.target.id === "addFacilityModal") {
+    initFacilityLocationDropdowns();
+  }
+});
+
 
     async function uploadPDFToCloudinary(pdfFile) {
       const CLOUD_NAME = "dagqzn57w";  
@@ -3632,6 +3690,18 @@
         `;
       }
     }
+    function formatDate1(date) {
+  if (!date) return new Date().toLocaleDateString();
+
+  // Firestore Timestamp
+  if (date.toDate) return date.toDate().toLocaleDateString();
+
+  // JS Date
+  if (date instanceof Date) return date.toLocaleDateString();
+
+  // String or number
+  return new Date(date).toLocaleDateString();
+}
 
     async function loadPaymentFinancePage() {
       // Fetch payments for admin's facilities
@@ -3656,7 +3726,7 @@
               ...booking,
               commission: commission,
               netamount: netamount,
-              paymentDate: booking.date ? booking.date.toDate() : new Date()
+              paymentDate: formatDate1(booking.date)
             });
           }
         });
@@ -3668,7 +3738,7 @@
         paymentsHTML = '<tr><td colspan="6" class="text-center py-4">No payments found</td></tr>';
       } else {
         payments.forEach(payment => {
-          const date = payment.paymentDate ? payment.paymentDate.toLocaleDateString() : 'N/A';
+          const date = formatDate1(payment.paymentDate);
 
           paymentsHTML += `
             <tr>
@@ -5907,10 +5977,17 @@
 
         return `
             <div class="d-flex justify-content-between align-items-center mb-4">
-                <h3>Promo & Vouchers Management</h3>
+              <h3>Promo & Vouchers Management</h3>
+
+              <div class="d-flex gap-2">
                 <button class="btn btn-primary" onclick="showPromoModal()">
-                    <i class="fas fa-plus me-1"></i> Add New Promo
+                  <i class="fas fa-plus me-1"></i> Add New Promo
                 </button>
+              
+                <button class="btn btn-primary" onclick="sendPromoEmailToAllUsers()">
+                  <i class="fas fa-envelope me-1"></i> Send Promo Email to All Users
+                </button>
+              </div>
             </div>
             
             <div class="row mb-4">
@@ -5984,7 +6061,80 @@
         `;
       }
     }
+    async function getActivePromo() {
+      const now = new Date();
 
+      const snap = await db.collection("promos")
+        .where("status", "==", "active")
+        .get();
+
+      if (snap.empty) return null;
+
+      // Pick first valid promo
+      for (const doc of snap.docs) {
+        const p = doc.data();
+      
+        const from = p.validFrom?.toDate();
+        const to = p.validTo?.toDate();
+      
+        if (from && to && now >= from && now <= to) {
+          return { id: doc.id, ...p };
+        }
+      }
+    
+      return null;
+    }
+    async function sendPromoEmailToAllUsers() {
+      try {
+        const promo = await getActivePromo();
+      
+        if (!promo) {
+          showToast("No active promo found", "warning");
+          return;
+        }
+      
+        const usersSnap = await db.collection("users").get();
+      
+        let sentCount = 0;
+      
+        for (const doc of usersSnap.docs) {
+          const user = doc.data();
+          if (!user.email) continue;
+        
+          await sendPromoEmail(user.email, promo);
+          sentCount++;
+        
+          // ⏳ prevent EmailJS rate limit
+          await new Promise(res => setTimeout(res, 900));
+        }
+      
+        showToast(`Promo email sent to ${sentCount} users 🎉`, "success");
+      
+      } catch (err) {
+        console.error(err);
+      }
+    }
+    function sendPromoEmail(toEmail, promo) {
+      const discountText =
+        promo.type === "percentage"
+          ? `${promo.discountValue}% OFF`
+          : `RM ${promo.discountValue} OFF`;
+
+      return emailjs.send(
+        "YOUR_SERVICE_ID",
+        "YOUR_TEMPLATE_ID",
+        {
+          to_email: toEmail,
+          promo_code: promo.code,
+          promo_description: promo.description,
+          discount: discountText,
+          min_purchase: promo.minPurchase || 0,
+          valid_from: promo.validFrom.toDate().toLocaleDateString(),
+          valid_to: promo.validTo.toDate().toLocaleDateString(),
+          promo_type: promo.type
+        }
+      );
+    }
     // Fixed showPromoModal function
     function showPromoModal(promoId = null, promoData = null) {
       const modalContent = `
@@ -7026,7 +7176,7 @@
           </table>
         </div>
       </div>
-    `;
+    `;await loadFacilitiesForEvents();
       } catch (error) {
         console.error("Error loading events page:", error);
         return `
@@ -7040,7 +7190,12 @@
     `;
       }
     }
+let allFacilities = [];
 
+async function loadFacilitiesForEvents() {
+  const snap = await db.collection("facilities").get();
+  allFacilities = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+}
     // Show Event Modal Function
     function showEventModal(eventId = null, eventData = null) {
       console.log('Showing event modal for:', eventId ? 'edit' : 'create');
@@ -7099,16 +7254,26 @@
                   </div>
                 </div>
                 <div class="col-md-6">
-                  <div class="form-group mb-3">
-                    <label class="form-label">Facility</label>
-                    <select class="form-select" id="eventFacility">
-                      <option value="">Select Facility (Optional)</option>
-                      ${adminFacilities.map(facility =>
-        `<option value="${facility.id}" ${eventData?.facilityId === facility.id ? 'selected' : ''}>
-                          ${facility.name} (${facility.type})
-                        </option>`
-      ).join('')}
-                    </select>
+                  <div class="row">
+                    <div class="col-md-4">
+                      <label class="form-label">State *</label>
+                      <select class="form-select" id="eventState">
+                        <option value="">Select State</option>
+                      </select>
+                    </div>
+                  
+                    <div class="col-md-4">
+                      <label class="form-label">District *</label>
+                      <select class="form-select" id="eventDistrict" disabled>
+                        <option value="">Select District</option>
+                      </select>
+                    </div>
+                  
+                    <div class="col-md-4">
+                      <label class="form-label">Facility</label>
+                      <input class="form-control" id="eventFacility" value="${eventData?.location ? eventData.location : ''}" 
+                             placeholder="Facility Name" readonly>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -7288,6 +7453,10 @@
       const eventModal = new bootstrap.Modal(document.getElementById('eventModal'));
       eventModal.show();
 
+      setTimeout(() => {
+        initEventModalLocation(eventData);
+      }, 0);
+
       // Remove modal when hidden
       document.getElementById('eventModal').addEventListener('hidden.bs.modal', function () {
         this.remove();
@@ -7302,6 +7471,53 @@
           preview.style.display = "block";
         }
       });
+    }
+    function initEventModalLocation(eventData = null) {
+      const stateEl = document.getElementById("eventState");
+      const districtEl = document.getElementById("eventDistrict");
+
+      if (!stateEl || !districtEl) return;
+
+      // Reset
+      stateEl.innerHTML = `<option value="">Select State</option>`;
+      districtEl.innerHTML = `<option value="">Select District</option>`;
+      districtEl.disabled = true;
+
+      // Load states
+      Object.keys(MALAYSIA_LOCATIONS).forEach(state => {
+        stateEl.innerHTML += `
+          <option value="${state}" ${eventData?.state === state ? 'selected' : ''}>
+            ${state}
+          </option>`;
+      });
+    
+      // Load districts helper
+      function loadDistricts(state) {
+        districtEl.innerHTML = `<option value="">Select District</option>`;
+        districtEl.disabled = false;
+      
+        MALAYSIA_LOCATIONS[state].forEach(d => {
+          districtEl.innerHTML += `
+            <option value="${d}" ${eventData?.district === d ? 'selected' : ''}>
+              ${d}
+            </option>`;
+        });
+      }
+    
+      // Preload when editing
+      if (eventData?.state) {
+        loadDistricts(eventData.state);
+      }
+    
+      // Change handler
+      stateEl.onchange = () => {
+        if (!stateEl.value) {
+          districtEl.disabled = true;
+          districtEl.innerHTML = `<option value="">Select District</option>`;
+          return;
+        }
+        loadDistricts(stateEl.value);
+      };
     }
 
     // Save Event Function
@@ -7333,6 +7549,8 @@
         const eventContact = document.getElementById('eventContact').value;
         const eventPublic = document.getElementById('eventPublic').checked;
         const eventActive = document.getElementById('eventActive').checked;
+        const eventState = document.getElementById("eventState").value;
+        const eventDistrict = document.getElementById("eventDistrict").value;
 
         // Validation
         if (!eventName || !eventType || !eventSport || !eventStartDate || !eventEndDate || !eventStartTime || !eventEndTime) {
@@ -7350,7 +7568,9 @@
           name: eventName,
           type: eventType,
           sport: eventSport,
-          facilityId: eventFacility || null,
+          state: eventState,
+          district: eventDistrict,
+          location: eventFacility || null,
           startDate: eventStartDate,
           endDate: eventEndDate,
           startTime: eventStartTime,
@@ -7897,609 +8117,244 @@
 
 
     async function loadMarketplacePage() {
-      try {
-        // Fetch products from Firestore
-        let productsSnapshot;
-        let products = [];
+  try {
+    const user = auth.currentUser;
 
-        try {
-          productsSnapshot = await db.collection("products").get();
-        } catch (error) {
-          console.log("No products collection found");
-          productsSnapshot = { empty: true, forEach: () => { } };
-        }
+  if (!user) {
+    alert("Please login first");
+    return;
+  }
+    const snapshot = await db
+      .collection("marketplace")
+      .where("sellerId", "==", user.uid)
+      .orderBy("createdAt", "desc")
+      .get();
 
-        if (productsSnapshot && !productsSnapshot.empty) {
-          productsSnapshot.forEach(doc => {
-            const productData = doc.data();
-            products.push({
-              id: doc.id,
-              ...productData,
-              // Ensure proper date formatting
-              createdAt: productData.createdAt ? productData.createdAt.toDate() : null,
-              updatedAt: productData.updatedAt ? productData.updatedAt.toDate() : null
-            });
-          });
-        }
+    let rows = "";
 
-        let productsHTML = '';
-
-        if (products.length === 0) {
-          productsHTML = `
+    if (snapshot.empty) {
+      rows = `
         <tr>
-          <td colspan="8" class="text-center py-4">
-            <div class="text-muted">
-              <i class="fas fa-store fa-2x mb-3"></i>
-              <p>No products found in marketplace</p>
-              <small>Add your first product to get started</small>
-            </div>
+          <td colspan="7" class="text-center text-muted py-4">
+            No admin products found
           </td>
         </tr>
       `;
-        } else {
-          products.forEach(product => {
-            const createdAt = product.createdAt ? product.createdAt.toLocaleDateString() : 'N/A';
-            const price = product.price ? `RM${parseFloat(product.price).toFixed(2)}` : 'N/A';
-            const stock = product.stock || 0;
-            const status = product.status || 'active';
+    } else {
+      snapshot.forEach(doc => {
+        const p = doc.data();
 
-            // Determine stock status
-            let stockStatus = 'In Stock';
-            let stockClass = 'bg-success';
+        const created = p.createdAt?.toDate
+          ? p.createdAt.toDate().toLocaleDateString()
+          : "-";
 
-            if (stock === 0) {
-              stockStatus = 'Out of Stock';
-              stockClass = 'bg-danger';
-            } else if (stock < 10) {
-              stockStatus = 'Low Stock';
-              stockClass = 'bg-warning';
-            }
+        const img = p.images?.[0] || "https://via.placeholder.com/60";
 
-            productsHTML += `
+        rows += `
           <tr>
             <td>
               <div class="d-flex align-items-center">
-                <img src="${product.imageUrl || 'https://via.placeholder.com/50x50?text=No+Image'}" 
-                     class="rounded me-3" width="50" height="50" 
-                     alt="${product.name}" 
-                     style="object-fit: cover;"
-                     onerror="this.src='https://via.placeholder.com/50x50?text=No+Image'">
+                <img src="${img}" width="60" height="60"
+                     class="rounded me-2"
+                     style="object-fit:cover">
                 <div>
-                  <div class="fw-semibold">${product.name || 'Unnamed Product'}</div>
-                  <small class="text-muted">${product.category || 'Uncategorized'}</small>
+                  <strong>${p.name}</strong><br>
+                  <small class="text-muted">${p.category}</small>
                 </div>
               </div>
             </td>
-            <td>${product.category || 'N/A'}</td>
-            <td>${product.brand || 'N/A'}</td>
-            <td>${price}</td>
+
+            <td>₹${p.price}</td>
+            <td>${p.condition}</td>
+
             <td>
-              <span class="badge ${stockClass}">${stockStatus}</span>
-              <small class="text-muted d-block">${stock} units</small>
-            </td>
-            <td>${createdAt}</td>
-            <td>
-              <span class="badge ${status === 'active' ? 'bg-success' : status === 'inactive' ? 'bg-secondary' : 'bg-warning'}">
-                ${status.charAt(0).toUpperCase() + status.slice(1)}
+              <span class="badge ${p.status === "available" ? "bg-success" : "bg-secondary"}">
+                ${p.status}
               </span>
             </td>
+
+            <td>${created}</td>
+
             <td>
-              <div class="btn-group" role="group">
-                <button class="btn btn-sm btn-primary me-1" onclick="viewProduct('${product.id}')" title="View Details">
-                  <i class="fas fa-eye"></i>
-                </button>
-                <button class="btn btn-sm btn-warning me-1" onclick="editProduct('${product.id}')" title="Edit Product">
-                  <i class="fas fa-edit"></i>
-                </button>
-                <button class="btn btn-sm btn-danger" onclick="deleteProduct('${product.id}')" title="Delete Product">
-                  <i class="fas fa-trash"></i>
-                </button>
-              </div>
+              <button class="btn btn-sm btn-warning"
+                onclick="openAdminProductModal('${doc.id}')">
+                <i class="fas fa-edit"></i>
+              </button>
+
+              <button class="btn btn-sm btn-danger"
+                onclick="deleteAdminProduct('${doc.id}')">
+                <i class="fas fa-trash"></i>
+              </button>
             </td>
           </tr>
         `;
-          });
-        }
-
-        return `
-      <div class="d-flex justify-content-between align-items-center mb-4">
-        <h3>Marketplace Management</h3>
-        <button class="btn btn-primary" onclick="showProductModal()">
-          <i class="fas fa-plus me-1"></i> Add New Product
-        </button>
-      </div>
-      
-      <div class="row mb-4">
-        <div class="col-md-3">
-          <div class="stats-card">
-            <i class="fas fa-cube"></i>
-            <div class="number">${products.length}</div>
-            <div class="label">Total Products</div>
-          </div>
-        </div>
-        <div class="col-md-3">
-          <div class="stats-card">
-            <i class="fas fa-check-circle"></i>
-            <div class="number">${products.filter(p => p.status === 'active').length}</div>
-            <div class="label">Active Products</div>
-          </div>
-        </div>
-        <div class="col-md-3">
-          <div class="stats-card">
-            <i class="fas fa-box-open"></i>
-            <div class="number">${products.filter(p => (p.stock || 0) === 0).length}</div>
-            <div class="label">Out of Stock</div>
-          </div>
-        </div>
-        <div class="col-md-3">
-          <div class="stats-card">
-            <i class="fas fa-tags"></i>
-            <div class="number">${new Set(products.map(p => p.category)).size}</div>
-            <div class="label">Categories</div>
-          </div>
-        </div>
-      </div>
-      
-      <div class="table-card">
-        <div class="table-responsive">
-          <table class="table table-hover">
-            <thead>
-              <tr>
-                <th>Product</th>
-                <th>Category</th>
-                <th>Brand</th>
-                <th>Price</th>
-                <th>Stock</th>
-                <th>Added</th>
-                <th>Status</th>
-                <th>Actions</th>
-              </tr>
-            </thead>
-            <tbody id="productsTableBody">
-              ${productsHTML}
-            </tbody>
-          </table>
-        </div>
-      </div>
-    `;
-      } catch (error) {
-        console.error("Error loading marketplace page:", error);
-        return `
-      <div class="alert alert-danger">
-        <h4>Error Loading Products</h4>
-        <p>There was an error loading marketplace data. Please try again.</p>
-        <button class="btn btn-primary mt-2" onclick="loadPageContent('marketplace')">
-          <i class="fas fa-redo me-1"></i> Retry
-        </button>
-      </div>
-    `;
-      }
-    }
-
-    // Show Product Modal Function
-    function showProductModal(productId = null, productData = null) {
-      console.log('Showing product modal for:', productId ? 'edit' : 'create');
-
-      const modalContent = `
-    <div class="modal fade" id="productModal" tabindex="-1" aria-labelledby="productModalLabel" aria-hidden="true">
-      <div class="modal-dialog modal-lg">
-        <div class="modal-content">
-          <div class="modal-header">
-            <h5 class="modal-title" id="productModalLabel">${productId ? 'Edit Product' : 'Add New Product'}</h5>
-            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-          </div>
-          <div class="modal-body">
-            <form id="productForm">
-              <input type="hidden" id="productId" value="${productId || ''}">
-              
-              <div class="row">
-                <div class="col-md-6">
-                  <div class="form-group mb-3">
-                    <label class="form-label">Product Name *</label>
-                    <input type="text" class="form-control" id="productName" 
-                           value="${productData?.name || ''}" 
-                           placeholder="e.g., Professional Basketball" required>
-                  </div>
-                </div>
-                <div class="col-md-6">
-                  <div class="form-group mb-3">
-                    <label class="form-label">Brand</label>
-                    <input type="text" class="form-control" id="productBrand" 
-                           value="${productData?.brand || ''}" 
-                           placeholder="e.g., Nike, Adidas">
-                  </div>
-                </div>
-              </div>
-              
-              <div class="row">
-                <div class="col-md-6">
-                  <div class="form-group mb-3">
-                    <label class="form-label">Category *</label>
-                    <select class="form-select" id="productCategory" required>
-                      <option value="">Select Category</option>
-                      <option value="Sports Equipment" ${productData?.category === 'Sports Equipment' ? 'selected' : ''}>Sports Equipment</option>
-                      <option value="Apparel" ${productData?.category === 'Apparel' ? 'selected' : ''}>Apparel</option>
-                      <option value="Footwear" ${productData?.category === 'Footwear' ? 'selected' : ''}>Footwear</option>
-                      <option value="Accessories" ${productData?.category === 'Accessories' ? 'selected' : ''}>Accessories</option>
-                      <option value="Nutrition" ${productData?.category === 'Nutrition' ? 'selected' : ''}>Nutrition & Supplements</option>
-                      <option value="Recovery" ${productData?.category === 'Recovery' ? 'selected' : ''}>Recovery Equipment</option>
-                      <option value="Other" ${productData?.category === 'Other' ? 'selected' : ''}>Other</option>
-                    </select>
-                  </div>
-                </div>
-                <div class="col-md-6">
-                  <div class="form-group mb-3">
-                    <label class="form-label">SKU (Stock Keeping Unit)</label>
-                    <input type="text" class="form-control" id="productSKU" 
-                           value="${productData?.sku || ''}" 
-                           placeholder="e.g., PRO-BBALL-001">
-                  </div>
-                </div>
-              </div>
-              
-              <div class="row">
-                <div class="col-md-6">
-                  <div class="form-group mb-3">
-                    <label class="form-label">Price (RM) *</label>
-                    <input type="number" class="form-control" id="productPrice" 
-                           value="${productData?.price || ''}" 
-                           min="0" step="0.01" placeholder="0.00" required>
-                  </div>
-                </div>
-                <div class="col-md-6">
-                  <div class="form-group mb-3">
-                    <label class="form-label">Stock Quantity *</label>
-                    <input type="number" class="form-control" id="productStock" 
-                           value="${productData?.stock || ''}" 
-                           min="0" placeholder="0" required>
-                  </div>
-                </div>
-              </div>
-              
-              <div class="row">
-                <div class="col-md-6">
-                  <div class="form-group mb-3">
-                    <label class="form-label">Cost Price (RM)</label>
-                    <input type="number" class="form-control" id="productCost" 
-                           value="${productData?.costPrice || ''}" 
-                           min="0" step="0.01" placeholder="Cost price for profit calculation">
-                  </div>
-                </div>
-                <div class="col-md-6">
-                  <div class="form-group mb-3">
-                    <label class="form-label">Weight (kg)</label>
-                    <input type="number" class="form-control" id="productWeight" 
-                           value="${productData?.weight || ''}" 
-                           min="0" step="0.01" placeholder="For shipping calculation">
-                  </div>
-                </div>
-              </div>
-              
-              <div class="form-group mb-3">
-  <label class="form-label">Product Image *</label>
-  <input type="file" class="form-control" id="productImageFile" accept="image/*">
-
-  <div class="mt-2">
-    <img id="imagePreview" 
-         src="${productData?.imageUrl || ''}" 
-         style="width:120px;height:120px;object-fit:cover;border-radius:8px;display:${productData?.imageUrl ? 'block' : 'none'};">
-  </div>
-</div>
-              
-              <div class="form-group mb-3">
-                <label class="form-label">Description</label>
-                <textarea class="form-control" id="productDescription" rows="3" 
-                          placeholder="Describe the product features, specifications...">${productData?.description || ''}</textarea>
-              </div>
-              
-              <div class="form-group mb-3">
-                <label class="form-label">Features/Benefits</label>
-                <textarea class="form-control" id="productFeatures" rows="3" 
-                          placeholder="List key features and benefits...">${productData?.features || ''}</textarea>
-                <small class="form-text text-muted">Separate features with new lines</small>
-              </div>
-              
-              <div class="row">
-                <div class="col-md-6">
-                  <div class="form-check mb-3">
-                    <input class="form-check-input" type="checkbox" id="productFeatured" ${productData?.featured ? 'checked' : ''}>
-                    <label class="form-check-label" for="productFeatured">
-                      Featured Product
-                    </label>
-                  </div>
-                </div>
-                <div class="col-md-6">
-                  <div class="form-check mb-3">
-                    <input class="form-check-input" type="checkbox" id="productActive" ${productData?.status !== 'inactive' ? 'checked' : ''}>
-                    <label class="form-check-label" for="productActive">
-                      Active Product
-                    </label>
-                  </div>
-                </div>
-              </div>
-            </form>
-          </div>
-          <div class="modal-footer">
-            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-            ${productId ? `
-              <button type="button" class="btn btn-danger" onclick="deleteProduct('${productId}')">Delete Product</button>
-            ` : ''}
-            <button type="button" class="btn btn-primary" onclick="saveProduct()">${productId ? 'Update' : 'Create'} Product</button>
-          </div>
-        </div>
-      </div>
-    </div>
-  `;
-document.getElementById("productImageFile")?.addEventListener("change", function(e) {
-  const file = e.target.files[0];
-  if (!file) return;
-
-  const preview = document.getElementById("imagePreview");
-  preview.src = URL.createObjectURL(file);
-  preview.style.display = "block";
-});
-      // Remove existing modal if any
-      const existingModal = document.getElementById('productModal');
-      if (existingModal) {
-        existingModal.remove();
-      }
-
-      // Add modal to page
-      document.body.insertAdjacentHTML('beforeend', modalContent);
-
-      // Show modal
-      const productModal = new bootstrap.Modal(document.getElementById('productModal'));
-      productModal.show();
-
-      // Remove modal when hidden
-      document.getElementById('productModal').addEventListener('hidden.bs.modal', function () {
-        this.remove();
       });
     }
 
-    // Save Product Function
-async function saveProduct() {
+    return `
+      <div class="d-flex justify-content-between mb-3">
+        <h3>Admin Marketplace</h3>
+        <button class="btn btn-primary" onclick="openAdminProductModal()">
+          <i class="fas fa-plus"></i> Add Product
+        </button>
+      </div>
+
+      <div class="table-responsive">
+        <table class="table table-hover">
+          <thead>
+            <tr>
+              <th>Product</th>
+              <th>Price</th>
+              <th>Condition</th>
+              <th>Status</th>
+              <th>Added</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>${rows}</tbody>
+        </table>
+      </div>
+    `;
+
+  } catch (err) {
+    console.error(err);
+    return `<div class="alert alert-danger">Failed to load admin marketplace</div>`;
+  }
+}
+
+    async function openAdminProductModal(id = null) {
+  let data = {
+    images: []
+  };
+
+  if (id) {
+    const doc = await db.collection("marketplace").doc(id).get();
+    if (!doc.exists) return;
+    data = doc.data();
+  }
+
+  document.getElementById("adminProductModal")?.remove();
+
+  document.body.insertAdjacentHTML("beforeend", `
+  <div class="modal fade" id="adminProductModal">
+    <div class="modal-dialog modal-lg">
+      <div class="modal-content">
+
+        <div class="modal-header">
+          <h5>${id ? "Edit Product" : "Add Product"}</h5>
+          <button class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+
+        <div class="modal-body">
+          <input type="hidden" id="pId" value="${id || ""}">
+
+          <input class="form-control mb-2" id="pName" placeholder="Product name" value="${data.name || ""}">
+          <input type="tel" class="form-control" id="contactNumber" placeholder="+6012-345-6789" value="${data.sellerContact || ""}">
+          <input class="form-control mb-2" id="pCategory" placeholder="Category" value="${data.category || ""}">
+          <input class="form-control mb-2" id="pCondition" placeholder="Condition" value="${data.condition || "new"}">
+          <input type="number" class="form-control mb-2" id="pPrice" placeholder="Price" value="${data.price || ""}">
+
+          <input type="file" class="form-control mb-2" id="pImages" multiple>
+
+          <div id="imagePreview" class="d-flex gap-2 flex-wrap">
+            ${(data.images || []).map(img =>
+              `<img src="${img}" width="80" class="rounded">`
+            ).join("")}
+          </div>
+
+          <textarea class="form-control mt-2" id="pDesc"
+            placeholder="Description">${data.description || ""}</textarea>
+
+          <select class="form-select mt-2" id="pStatus">
+            <option value="available" ${data.status === "available" ? "selected" : ""}>Available</option>
+            <option value="sold" ${data.status === "sold" ? "selected" : ""}>Sold</option>
+          </select>
+        </div>
+
+        <div class="modal-footer">
+          <button class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+          <button class="btn btn-primary" onclick="saveAdminProduct()">Save</button>
+        </div>
+
+      </div>
+    </div>
+  </div>
+  `);
+
+  new bootstrap.Modal(adminProductModal).show();
+}
+
+
+    async function saveAdminProduct() {
   try {
-    // Get form values
-    const productId = document.getElementById('productId').value;
-    const productName = document.getElementById('productName').value;
-    const productBrand = document.getElementById('productBrand').value;
-    const productCategory = document.getElementById('productCategory').value;
-    const productSKU = document.getElementById('productSKU').value;
-    const productPrice = document.getElementById('productPrice').value;
-    const productStock = document.getElementById('productStock').value;
-    const productCost = document.getElementById('productCost').value;
-    const productWeight = document.getElementById('productWeight').value;
+    const user = auth.currentUser;
 
-    // --- FIXED IMAGE HANDLING ---
-    let productImageUrl = null;
+  if (!user) {
+    alert("Please login first");
+    return;
+  }
+    const userDoc = await db.collection("users").doc(user.uid).get();
+    const userData = userDoc.data();
 
-    // If editing -> load existing preview image
-    if (productId) {
-      const previewEl = document.getElementById("imagePreview");
-      if (previewEl && previewEl.src && !previewEl.src.includes("blank")) {
-        productImageUrl = previewEl.src;
+    const id = pId.value;
+    const files = pImages.files;
+
+    let imageUrls = [];
+
+    if (files.length > 0) {
+      for (const file of files) {
+        const url = await uploadToCloudinary(file);
+        imageUrls.push(url);
       }
+    } else {
+      imageUrls = [...document.querySelectorAll("#imagePreview img")].map(i => i.src);
     }
 
-    // If admin uploads a new file -> upload to Cloudinary
-    const imageFile = document.getElementById("productImageFile").files[0];
-    if (imageFile) {
-      productImageUrl = await uploadToCloudinary(imageFile);
-    }
+    const payload = {
+      name: pName.value,
+      category: pCategory.value,
+      condition: pCondition.value,
+      price: Number(pPrice.value),
+      description: pDesc.value,
+      images: imageUrls,
 
-    const productDescription = document.getElementById('productDescription').value;
-    const productFeatures = document.getElementById('productFeatures').value;
-    const productFeatured = document.getElementById('productFeatured').checked;
-    const productActive = document.getElementById('productActive').checked;
+      sellerId: user.uid,
+      sellerName: userData.name,
+      sellerContact: contactNumber.value,
 
-    // Validation
-    if (!productName || !productCategory || !productPrice || !productStock) {
-      showToast('Please fill in all required fields', 'warning');
-      return;
-    }
-
-    if (parseFloat(productPrice) < 0) {
-      showToast('Price cannot be negative', 'warning');
-      return;
-    }
-
-    if (parseInt(productStock) < 0) {
-      showToast('Stock quantity cannot be negative', 'warning');
-      return;
-    }
-
-    // Prepare product data
-    const productData = {
-      name: productName,
-      brand: productBrand || null,
-      category: productCategory,
-      sku: productSKU || null,
-      price: parseFloat(productPrice),
-      stock: parseInt(productStock),
-      description: productDescription || null,
-      features: productFeatures || null,
-      featured: productFeatured,
-      status: productActive ? 'active' : 'inactive',
+      status: pStatus.value,
       updatedAt: firebase.firestore.FieldValue.serverTimestamp()
     };
 
-    // Add optional fields if provided
-    if (productCost) {
-      productData.costPrice = parseFloat(productCost);
-    }
-    if (productWeight) {
-      productData.weight = parseFloat(productWeight);
+    if (pStatus.value === "sold") {
+      payload.soldAt = firebase.firestore.FieldValue.serverTimestamp();
     }
 
-    // ⬅️ Add Image URL here
-    if (productImageUrl) {
-      productData.imageUrl = productImageUrl;
-    }
-
-    // Add createdBy for new products
-    if (!productId) {
-      productData.creatorId = currentUser.uid;
-      productData.createdAt = firebase.firestore.FieldValue.serverTimestamp();
-      productData.sold = 0;
-      productData.views = 0;
-    }
-
-    // Save to Firestore
-    if (productId) {
-      await db.collection("products").doc(productId).update(productData);
-      showToast('Product updated successfully', 'success');
+    if (id) {
+      await db.collection("marketplace").doc(id).update(payload);
     } else {
-      await db.collection("products").add(productData);
-      showToast('Product created successfully', 'success');
+      payload.createdAt = firebase.firestore.FieldValue.serverTimestamp();
+      payload.buyerId = "";
+      payload.buyerName = "";
+      payload.buyerContact = "";
+      await db.collection("marketplace").add(payload);
     }
 
-    // Close modal and refresh page
-    const modal = bootstrap.Modal.getInstance(document.getElementById('productModal'));
-    modal.hide();
-    loadPageContent('marketplace');
+    bootstrap.Modal.getInstance(adminProductModal).hide();
+    loadPageContent("marketplace");
 
-  } catch (error) {
-    console.error('Error saving product:', error);
-    showToast('Error saving product: ' + error.message, 'danger');
+  } catch (err) {
+    console.error(err);
+    showToast("Failed to save product", "danger");
   }
 }
 
 
-    // View Product Function
-    async function viewProduct(productId) {
-      try {
-        const productDoc = await db.collection("products").doc(productId).get();
-        if (!productDoc.exists) {
-          showToast('Product not found', 'danger');
-          return;
-        }
-
-        const product = productDoc.data();
-
-        // Show product details in a modal
-        const modalContent = `
-      <div class="modal fade" id="viewProductModal" tabindex="-1">
-        <div class="modal-dialog modal-lg">
-          <div class="modal-content">
-            <div class="modal-header">
-              <h5 class="modal-title">Product Details: ${product.name || 'Unnamed Product'}</h5>
-              <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-            </div>
-            <div class="modal-body">
-              <div class="row">
-                <div class="col-md-4">
-                  <img src="${product.imageUrl || 'https://via.placeholder.com/300x300?text=No+Image'}" 
-                       class="img-fluid rounded mb-3" 
-                       alt="${product.name}"
-                       onerror="this.src='https://via.placeholder.com/300x300?text=No+Image'">
-                </div>
-                <div class="col-md-8">
-                  <h4>${product.name}</h4>
-                  <p class="text-muted">${product.brand ? 'Brand: ' + product.brand : ''}</p>
-                  <h5 class="text-primary">RM${parseFloat(product.price || 0).toFixed(2)}</h5>
-                  
-                  <div class="mb-3">
-                    <span class="badge ${product.stock > 0 ? 'bg-success' : 'bg-danger'}">
-                      ${product.stock > 0 ? 'In Stock' : 'Out of Stock'}
-                    </span>
-                    <span class="badge ${product.status === 'active' ? 'bg-success' : 'bg-secondary'} ms-2">
-                      ${product.status || 'active'}
-                    </span>
-                    ${product.featured ? '<span class="badge bg-warning ms-2">Featured</span>' : ''}
-                  </div>
-                  
-                  <p><strong>Category:</strong> ${product.category || 'N/A'}</p>
-                  <p><strong>SKU:</strong> ${product.sku || 'N/A'}</p>
-                  <p><strong>Stock:</strong> ${product.stock || 0} units</p>
-                  ${product.costPrice ? `<p><strong>Cost Price:</strong> RM${parseFloat(product.costPrice).toFixed(2)}</p>` : ''}
-                  ${product.weight ? `<p><strong>Weight:</strong> ${product.weight} kg</p>` : ''}
-                </div>
-              </div>
-              
-              ${product.description ? `
-                <div class="mt-4">
-                  <h6>Description</h6>
-                  <p>${product.description}</p>
-                </div>
-              ` : ''}
-              
-              ${product.features ? `
-                <div class="mt-3">
-                  <h6>Features</h6>
-                  <p>${product.features.replace(/\n/g, '<br>')}</p>
-                </div>
-              ` : ''}
-            </div>
-            <div class="modal-footer">
-              <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-              <button type="button" class="btn btn-warning" onclick="editProduct('${productId}')">
-                <i class="fas fa-edit me-1"></i> Edit Product
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
-    `;
-
-        // Remove existing modal if any
-        const existingModal = document.getElementById('viewProductModal');
-        if (existingModal) {
-          existingModal.remove();
-        }
-
-        // Add modal to page
-        document.body.insertAdjacentHTML('beforeend', modalContent);
-
-        // Show modal
-        const modal = new bootstrap.Modal(document.getElementById('viewProductModal'));
-        modal.show();
-
-        // Remove modal when hidden
-        document.getElementById('viewProductModal').addEventListener('hidden.bs.modal', function () {
-          this.remove();
-        });
-
-      } catch (error) {
-        console.error('Error viewing product:', error);
-        showToast('Error loading product details', 'danger');
-      }
-    }
-
-    // Edit Product Function
-    async function editProduct(productId) {
-      try {
-        const productDoc = await db.collection("products").doc(productId).get();
-        if (!productDoc.exists) {
-          showToast('Product not found', 'danger');
-          return;
-        }
-
-        const productData = productDoc.data();
-        showProductModal(productId, productData);
-      } catch (error) {
-        console.error('Error editing product:', error);
-        showToast('Error loading product for editing', 'danger');
-      }
-    }
-
-    // Delete Product Function
-    async function deleteProduct(productId) {
-      try {
-        if (!confirm('Are you sure you want to delete this product? This action cannot be undone.')) {
-          return;
-        }
-
-        await db.collection("products").doc(productId).delete();
-        showToast('Product deleted successfully', 'success');
-
-        // Refresh marketplace page
-        loadPageContent('marketplace');
-      } catch (error) {
-        console.error('Error deleting product:', error);
-        showToast('Error deleting product', 'danger');
-      }
-    }
+    async function deleteAdminProduct(id) {
+  if (!confirm("Delete this product?")) return;
+  await db.collection("marketplace").doc(id).delete();
+  loadPageContent("marketplace");
+}
 
     async function loadSettingsPage() {
       return `
@@ -8817,6 +8672,8 @@ async function saveProduct() {
           name: formData.get("name"),
           type: formData.get("type"),
           location: formData.get("location"),
+          state: document.getElementById("facilityState").value,
+          district: document.getElementById("facilityDistrict").value,
           locationLink: formData.get("locationLink"),
           price: parseFloat(formData.get("price")),
           capacity: parseInt(formData.get("capacity")),
@@ -9727,6 +9584,17 @@ async function saveProduct() {
                           <div class="form-group">
                             <label class="form-label">Location</label>
                             <input type="text" class="form-control" name="location" value="${facility.location || ''}" required>
+                            <div class="row">
+                              <div class="col-md-6">
+                                <label class="form-label">State</label>
+                                <select class="form-select" id="editFacilityState" required></select>
+                              </div>
+                            
+                              <div class="col-md-6">
+                                <label class="form-label">District</label>
+                                <select class="form-select" id="editFacilityDistrict" required></select>
+                              </div>
+                            </div>
                           </div>
                         </div>
                       
@@ -9917,7 +9785,15 @@ async function saveProduct() {
         // Show modal
         const editModal = new bootstrap.Modal(document.getElementById('editFacilityModal'));
         editModal.show();
-
+        setTimeout(() => {
+          initEditFacilityLocation(facility);
+        }, 0);
+        setTimeout(() => {
+      const dateInput = document.getElementById("multiDateEdit");
+      if (dateInput) {
+        dateInput.value = (facility.availableDates || []).join(", ");
+      }
+      }, 50);
         // Remove modal from DOM when hidden
         document.getElementById('editFacilityModal').addEventListener('hidden.bs.modal', function () {
           this.remove();
@@ -9927,6 +9803,45 @@ async function saveProduct() {
         console.error('Error opening edit facility modal:', error);
         showToast('Error loading facility data', 'danger');
       }
+    }
+    function initEditFacilityLocation(facility) {
+      const stateEl = document.getElementById("editFacilityState");
+      const districtEl = document.getElementById("editFacilityDistrict");
+
+      if (!stateEl || !districtEl) return;
+
+      // Load states
+      stateEl.innerHTML = `<option value="">Select State</option>`;
+      Object.keys(MALAYSIA_LOCATIONS).forEach(state => {
+        stateEl.innerHTML += `
+          <option value="${state}" ${state === facility.state ? 'selected' : ''}>
+            ${state}
+          </option>`;
+      });
+    
+      // Function to load districts
+      function loadDistricts(state) {
+        districtEl.innerHTML = `<option value="">Select District</option>`;
+      
+        if (!MALAYSIA_LOCATIONS[state]) return;
+      
+        MALAYSIA_LOCATIONS[state].forEach(d => {
+          districtEl.innerHTML += `
+            <option value="${d}" ${d === facility.district ? 'selected' : ''}>
+              ${d}
+            </option>`;
+        });
+      }
+    
+      // 🔥 IMPORTANT: load districts immediately
+      if (facility.state) {
+        loadDistricts(facility.state);
+      }
+    
+      // Change handler
+      stateEl.onchange = () => {
+        loadDistricts(stateEl.value);
+      };
     }
 
     function renderEditAmenities() {
@@ -10034,6 +9949,8 @@ async function handlePDFEdit() {
           name: formData.get('name'),
           type: formData.get('type'),
           location: formData.get('location'),
+          state: document.getElementById("editFacilityState").value,
+          district: document.getElementById("editFacilityDistrict").value,
           locationLink: formData.get('locationLink'),
           price: parseFloat(formData.get('price')),
           capacity: parseInt(formData.get('capacity')),
@@ -10212,6 +10129,14 @@ async function handlePDFEdit() {
           showToast('Facility not found', 'danger');
           return;
         }
+        const amenitiesHtml = Array.isArray(facility.amenities)
+             ? facility.amenities.map(a => `
+                 <span class="badge bg-secondary me-1 mb-1">
+                   ${a.amenity}
+                   ${a.amenityPrice && a.amenityPrice !== "0" ? `(RM${a.amenityPrice})` : ''}
+                 </span>
+               `).join('')
+             : '';
 
         const modalContent = `
       <div class="modal fade" id="viewFacilityModal" tabindex="-1">
@@ -10231,7 +10156,7 @@ async function handlePDFEdit() {
                 <div class="col-md-6">
                   <h6>Basic Information</h6>
                   <p><strong>Type:</strong> ${facility.type || 'N/A'}</p>
-                  <p><strong>Location:</strong> ${facility.location || 'N/A'}</p>
+                  <p><strong>Location:</strong> ${facility.location || 'N/A'},${facility.state || 'N/A'},${facility.district || ''}</p>
                   <p><strong>Price:</strong> RM${facility.price || '0'}</p>
                   <p><strong>Capacity:</strong> ${facility.capacity || 'N/A'} people</p>
                   <p><strong>Status:</strong> <span class="badge ${facility.status === 'Active' ? 'bg-success' : facility.status === 'Maintenance' ? 'bg-warning' : 'bg-secondary'}">${facility.status || 'Active'}</span></p>
@@ -10245,14 +10170,10 @@ async function handlePDFEdit() {
                 </div>
               ` : ''}
               
-              ${facility.amenities && facility.amenities.length > 0 ? `
+              ${amenitiesHtml ? `
                 <div class="mt-3">
                   <h6>Amenities</h6>
-                  <div class="d-flex flex-wrap gap-2">
-                    ${facility.amenities.map(amenity =>
-          `<span class="badge bg-primary">${amenity}</span>`
-        ).join('')}
-                  </div>
+                  <div>${amenitiesHtml}</div>
                 </div>
               ` : ''}
             </div>
@@ -10305,6 +10226,7 @@ async function handlePDFEdit() {
           alert('Error loading facility location');
         });
     }
+    let currentBookingForStaff = {};
 
     async function viewBooking(bookingId) {
       try {
@@ -10315,6 +10237,42 @@ async function handlePDFEdit() {
         }
 
         const booking = bookingDoc.data();
+        // ---------- Amenities ----------
+let amenitiesHTML = '<p class="text-muted mb-0">No amenities selected</p>';
+
+if (booking.amenities && booking.amenities.length > 0) {
+  amenitiesHTML = booking.amenities.map(a => `
+    <div class="d-flex align-items-center mb-2">
+      <img src="${a.amenityImage}" 
+           width="40" height="40" 
+           class="rounded me-2"
+           alt="${a.amenity}">
+      <div>
+        <div class="fw-semibold">${a.amenity}</div>
+        <small class="text-muted">RM ${a.amenityPrice}</small>
+      </div>
+    </div>
+  `).join('');
+}
+
+// ---------- Snacks ----------
+let snacksHTML = '<p class="text-muted mb-0">No snacks selected</p>';
+
+if (booking.snacks && booking.snacks.length > 0) {
+  snacksHTML = booking.snacks.map(s => `
+    <div class="d-flex align-items-center mb-2">
+      <img src="${s.image}" 
+           width="40" height="40" 
+           class="rounded me-2"
+           alt="${s.name}">
+      <div>
+        <div class="fw-semibold">${s.name}</div>
+        <small class="text-muted">RM ${s.price}</small>
+      </div>
+    </div>
+  `).join('');
+}
+
         const date = booking.date ?
           (booking.date.toDate ? booking.date.toDate().toLocaleDateString() :
             new Date(booking.date).toLocaleDateString()) : 'N/A';
@@ -10351,12 +10309,71 @@ async function handlePDFEdit() {
                   <p>${booking.notes}</p>
                 </div>
               ` : ''}
+              <hr>
+
+<div class="row mt-3">
+  <div class="col-md-6">
+    <h6 class="mb-2">🅿 Amenities</h6>
+    ${amenitiesHTML}
+  </div>
+
+  <div class="col-md-6">
+    <h6 class="mb-2">🍫 Snacks</h6>
+    ${snacksHTML}
+  </div>
+</div>
             </div>
             <div class="modal-footer">
               <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+
+              <button type="button" class="btn btn-success"
+                onclick="openAssignStaffModal(
+                  '${bookingId}',
+                  '${booking.facilityName || ''}',
+                  '${date}',
+                  '${booking.time || booking.Time || ''}',
+                  '${booking.duration || '1 hour'}',
+                  '${booking.userName}'
+                )">
+                <i class="fab fa-whatsapp me-1"></i> Assign Staff
+              </button>
+            
               <button type="button" class="btn btn-warning" onclick="editBooking('${bookingId}')">
                 <i class="fas fa-edit me-1"></i> Edit Booking
               </button>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="modal fade" id="assignStaffModal" tabindex="-1">
+        <div class="modal-dialog">
+          <div class="modal-content">
+            <div class="modal-header">
+              <h5 class="modal-title">Assign Staff</h5>
+              <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+          
+            <div class="modal-body">
+              <div class="mb-3">
+                <label class="form-label">Staff WhatsApp Number</label>
+                <input type="text" id="staffWhatsapp" class="form-control"
+                  placeholder="Ex: 919876543210">
+              </div>
+            
+              <div class="mb-3">
+                <label class="form-label">Responsibility</label>
+                <select id="staffResponsibility" class="form-select">
+                  <option value="Open the gate">Open the gate</option>
+                  <option value="Assist players">Assist players</option>
+                  <option value="Open gate & Assist players">Open gate & Assist players</option>
+                  <option value="Court supervision">Court supervision</option>
+                </select>
+              </div>
+            </div>
+          
+            <div class="modal-footer">
+              <button class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+              <button class="btn btn-success" onclick="sendStaffWhatsapp()">Assign & Notify</button>
             </div>
           </div>
         </div>
@@ -10376,6 +10393,56 @@ async function handlePDFEdit() {
         showToast('Error loading booking details', 'danger');
       }
     }
+
+    function openAssignStaffModal(id, facility, date, time, duration, name) {
+      window.currentBookingForStaff = { id, facility, date, time, duration, name };
+
+      document.getElementById('staffWhatsapp').value = '';
+      document.getElementById('staffResponsibility').value = 'Open the gate';
+
+      new bootstrap.Modal(document.getElementById('assignStaffModal')).show();
+    }
+
+    function sendStaffWhatsapp() {
+      const phone = document.getElementById('staffWhatsapp').value.trim();
+      const duty = document.getElementById('staffResponsibility').value;
+
+      if (!phone) {
+        alert('Please enter staff WhatsApp number');
+        return;
+      }
+    
+      const b = window.currentBookingForStaff;
+      const cleanPhone = phone.replace(/\D/g, '');
+    
+      const message = `
+    Hello 👋
+    
+    You have been *assigned for a booking duty*.
+    
+    📍 Facility: ${b.facility}
+    📅 Date: ${b.date}
+    ⏰ Time: ${b.time}
+    ⏳ Duration: ${b.duration}
+    👤 Booked by: ${b.name}
+    
+    🔑 Responsibility:
+    • ${duty}
+    
+    Booking ID: ${b.id}
+    
+    Thank you.
+    `.trim();
+    
+      const url = `whatsapp://send?phone=${cleanPhone}&text=${encodeURIComponent(message)}`;
+    
+      window.location.href = url;
+    
+      bootstrap.Modal.getInstance(
+        document.getElementById('assignStaffModal')
+      ).hide();
+    }
+
     async function editBooking(bookingId) {
   try {
     // Close view modal
@@ -10398,82 +10465,231 @@ async function handlePDFEdit() {
     showToast("Failed to open edit booking", "danger");
   }
 }
+async function loadAvailableSlots(facilityId, bookingId) {
+  const dateInput = document.getElementById("editBookingDate").value;
+  const slotSelect = document.getElementById("editBookingSlot");
+
+  if (!dateInput || !slotSelect) return;
+
+  slotSelect.innerHTML = `<option>Loading available slots...</option>`;
+
+  try {
+    /* ===============================
+       1️⃣ Fetch ALL slots from facility
+       =============================== */
+    const facilitySnap = await db
+      .collection("facilities")
+      .doc(facilityId)
+      .get();
+
+    if (!facilitySnap.exists) {
+      slotSelect.innerHTML = `<option>No facility found</option>`;
+      return;
+    }
+
+    const allSlots = facilitySnap.data().slots || [];
+
+    /* ===============================
+       2️⃣ Get booked times for selected date
+       =============================== */
+    const start = new Date(dateInput);
+    start.setHours(0, 0, 0, 0);
+
+    const end = new Date(dateInput);
+    end.setHours(23, 59, 59, 999);
+
+    const bookingsSnap = await db
+      .collection("bookings")
+      .where("facilityId", "==", facilityId)
+      .where("date", ">=", firebase.firestore.Timestamp.fromDate(start))
+      .where("date", "<=", firebase.firestore.Timestamp.fromDate(end))
+      .get();
+
+    const bookedTimes = [];
+
+    bookingsSnap.forEach(doc => {
+      // Exclude the booking being edited
+      if (doc.id !== bookingId) {
+        const data = doc.data();
+        if (data.time) {
+          bookedTimes.push(data.time);
+        }
+      }
+    });
+
+    /* ===============================
+       3️⃣ Filter available slots
+       =============================== */
+    const availableSlots = allSlots.filter(
+      slot => !bookedTimes.includes(slot)
+    );
+
+    /* ===============================
+       4️⃣ Render dropdown
+       =============================== */
+    slotSelect.innerHTML = "";
+
+    if (availableSlots.length === 0) {
+      slotSelect.innerHTML = `<option>No slots available</option>`;
+      return;
+    }
+
+    availableSlots.forEach(slot => {
+      const option = document.createElement("option");
+      option.value = slot;
+      option.textContent = slot;
+      slotSelect.appendChild(option);
+    });
+
+  } catch (error) {
+    console.error("Error loading available slots:", error);
+    slotSelect.innerHTML = `<option>Error loading slots</option>`;
+  }
+}
 function openEditBookingModal(bookingId, booking) {
   document.getElementById("editBookingModal")?.remove();
+currentBooking = booking;
 
-  // Convert Firestore Timestamp → yyyy-mm-dd
+oldBookingDate = booking.date.toDate
+  ? booking.date.toDate().toISOString().split("T")[0]
+  : new Date(booking.date).toISOString().split("T")[0];
+
+oldBookingSlot = booking.time;
+
   let editDate = "";
   if (booking.date) {
-    editDate = booking.date.toDate
-      ? booking.date.toDate().toISOString().split("T")[0]
-      : new Date(booking.date).toISOString().split("T")[0];
+    editDate = booking.date.toDate().toISOString().split("T")[0];
   }
 
   const modalHTML = `
   <div class="modal fade" id="editBookingModal" tabindex="-1">
     <div class="modal-dialog">
       <div class="modal-content">
+
         <div class="modal-header">
-          <h5 class="modal-title">Edit Booking Date</h5>
-          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+          <h5 class="modal-title">Edit Booking</h5>
+          <button class="btn-close" data-bs-dismiss="modal"></button>
         </div>
 
         <div class="modal-body">
+
           <div class="mb-3">
-            <label class="form-label">Booking Date</label>
-            <input
-              type="date"
+            <label>Booking Date</label>
+            <input type="date" class="form-control"
               id="editBookingDate"
-              class="form-control"
               value="${editDate}"
-            >
+              onchange="loadAvailableSlots('${booking.facilityId}', '${bookingId}')">
           </div>
+
+          <div class="mb-3">
+            <label>Available Slots</label>
+            <select class="form-select" id="editBookingSlot">
+              <option>Loading slots...</option>
+            </select>
+          </div>
+
         </div>
 
         <div class="modal-footer">
           <button class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
           <button class="btn btn-success"
-            onclick="saveBookingDate('${bookingId}')">
-            Save Date
+            onclick="saveBookingChanges('${bookingId}', '${booking.userEmail}')">
+            Save Changes
           </button>
         </div>
+
       </div>
     </div>
   </div>
   `;
 
   document.body.insertAdjacentHTML("beforeend", modalHTML);
+  new bootstrap.Modal(document.getElementById("editBookingModal")).show();
 
-  new bootstrap.Modal(
-    document.getElementById("editBookingModal")
-  ).show();
+  // Initial load
+  loadAvailableSlots(booking.facilityId, bookingId);
 }
-async function saveBookingDate(bookingId) {
-  const newDate = document.getElementById("editBookingDate").value;
+function sendSlotChangeEmail(
+  userEmail,
+  userName,
+  facilityName,
+  facilityImage,
+  oldDate,
+  oldTime,
+  newDate,
+  newTime
+) {
+  emailjs.send(
+    "service_n0uxxcp",
+    "template_0ui5hmm",
+    {
+      email: userEmail,
+      user_name: userName,
+      facility_name: facilityName,
+      facility_image: facilityImage,
+      old_date: oldDate,
+      old_time: oldTime,
+      new_date: newDate,
+      new_time: newTime,
+      year: new Date().getFullYear()
+    }
+  ).then(
+    () => {
+      console.log("📧 Slot change email sent successfully");
+    },
+    (error) => {
+      console.error("❌ Slot change email failed:", error);
+    }
+  );
+}
+async function saveBookingChanges(bookingId, userEmail) {
+  const date = document.getElementById("editBookingDate").value;
+  const slot = document.getElementById("editBookingSlot").value;
 
-  if (!newDate) {
-    showToast("Please select a date", "warning");
+  if (!date || !slot) {
+    showToast("Please select date and slot", "warning");
+    return;
+  }
+
+  // 🔒 No-change protection
+  if (date === oldBookingDate && slot === oldBookingSlot) {
+    showToast("No changes made", "info");
     return;
   }
 
   try {
     await db.collection("bookings").doc(bookingId).update({
-      date: firebase.firestore.Timestamp.fromDate(
-        new Date(newDate)
-      ),
+      date: firebase.firestore.Timestamp.fromDate(new Date(date)),
+      time: slot,
       updatedAt: firebase.firestore.FieldValue.serverTimestamp()
     });
 
-    showToast("Booking date updated", "success");
+    showToast("Booking updated successfully", "success");
+
+    // 📧 Send email
+    sendSlotChangeEmail(
+      userEmail,
+      currentBooking.userName,
+      currentBooking.facilityName,
+      currentBooking.imageUrl, // must be public HTTPS URL
+      oldBookingDate,
+      oldBookingSlot,
+      date,
+      slot
+    );
+
+    // ✅ Accessibility fix
+    document.activeElement?.blur();
 
     bootstrap.Modal.getInstance(
       document.getElementById("editBookingModal")
     ).hide();
 
-    loadDashboardData(); // refresh table
+    loadDashboardData();
+
   } catch (err) {
     console.error(err);
-    showToast("Failed to update date", "danger");
+    showToast("Failed to update booking", "danger");
   }
 }    
     /// Print Booking Details Function

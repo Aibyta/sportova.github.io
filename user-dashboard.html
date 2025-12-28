@@ -1652,6 +1652,15 @@
     let selectedFacilityData = null;   // global
     let selectedFileUrl = null;
     let selectedAmenities = [];
+    const MALAYSIA_LOCATIONS = {
+      "Selangor": ["Petaling", "Hulu Langat", "Gombak", "Klang"],
+      "Kuala Lumpur": ["Bukit Bintang", "Cheras", "Setapak"],
+      "Johor": ["Johor Bahru", "Batu Pahat", "Muar"],
+      "Penang": ["George Town", "Bayan Lepas"],
+      "Perak": ["Ipoh", "Taiping"],
+      "Negeri Sembilan": ["Seremban"],
+      "Melaka": ["Melaka Tengah"]
+    };
 
     // Authentication state observer
     auth.onAuthStateChanged((user) => {
@@ -7939,11 +7948,19 @@ function loadEventsPage() {
                       >
                     </div>
                   </div>
-                  <div class="col-md-6">
-                    <div class="form-group">
-                      <label class="form-label">Location</label>
-                      <input type="text" class="form-control" id="eventLocation" required placeholder="e.g. Sportova Tennis Court">
-                    </div>
+                  <div class="col-md-4">
+                    <label class="form-label">State</label>
+                    <select class="form-select" id="eventState" required></select>
+                  </div>
+
+                  <div class="col-md-4">
+                    <label class="form-label">District</label>
+                    <select class="form-select" id="eventDistrict" required disabled></select>
+                  </div>
+
+                  <div class="col-md-4">
+                    <label class="form-label">Venue Name</label>
+                    <input type="text" class="form-control" id="eventLocation" placeholder="Court / Stadium name">
                   </div>
                   <div class="col-md-6">
                     <div class="form-group">
@@ -8050,6 +8067,21 @@ function loadEventsPage() {
                 </div>
               </div>
               <div class="row mt-3">
+                <div class="col-md-3">
+                  <label class="form-label">State</label>
+                  <select class="form-select" id="filterEventState">
+                    <option value="all">All States</option>
+                  </select>
+                </div>
+              
+                <div class="col-md-3">
+                  <label class="form-label">District</label>
+                  <select class="form-select" id="filterEventDistrict" disabled>
+                    <option value="all">All Districts</option>
+                  </select>
+                </div>
+              </div>
+              <div class="row mt-3">
                 <div class="col-md-12">
                   <div class="d-flex justify-content-between">
                     <button class="btn btn-primary" id="filterEventsBtn">
@@ -8083,6 +8115,47 @@ function loadEventsPage() {
         }
       });
     }
+    function initEventCreateLocation() {
+  const stateEl = document.getElementById("eventState");
+  const districtEl = document.getElementById("eventDistrict");
+
+  if (!stateEl || !districtEl) return;
+
+  stateEl.innerHTML = `<option value="">Select State</option>`;
+  districtEl.innerHTML = `<option value="">Select District</option>`;
+
+  Object.keys(MALAYSIA_LOCATIONS).forEach(state => {
+    stateEl.innerHTML += `<option value="${state}">${state}</option>`;
+  });
+
+  stateEl.onchange = () => {
+    districtEl.disabled = false;
+    districtEl.innerHTML = `<option value="">Select District</option>`;
+
+    MALAYSIA_LOCATIONS[stateEl.value].forEach(d => {
+      districtEl.innerHTML += `<option value="${d}">${d}</option>`;
+    });
+  };
+}
+function initEventFilterLocation() {
+  const stateEl = document.getElementById("filterEventState");
+  const districtEl = document.getElementById("filterEventDistrict");
+
+  Object.keys(MALAYSIA_LOCATIONS).forEach(state => {
+    stateEl.innerHTML += `<option value="${state}">${state}</option>`;
+  });
+
+  stateEl.onchange = () => {
+    districtEl.disabled = stateEl.value === "all";
+    districtEl.innerHTML = `<option value="all">All Districts</option>`;
+
+    if (stateEl.value !== "all") {
+      MALAYSIA_LOCATIONS[stateEl.value].forEach(d => {
+        districtEl.innerHTML += `<option value="${d}">${d}</option>`;
+      });
+    }
+  };
+}
 async function initializeEventsPage() {
   // Image preview
   document.getElementById('eventImageFile')?.addEventListener('change', (e) => {
@@ -8111,6 +8184,8 @@ async function initializeEventsPage() {
 
   // Load all events initially
   await loadEvents();
+  initEventCreateLocation();
+  initEventFilterLocation();
 }
 // Clear event form
 function clearEventForm() {
@@ -8130,6 +8205,8 @@ async function createEvent() {
       endDate: document.getElementById('eventEndDate').value || document.getElementById('eventStartDate').value,
       startTime: document.getElementById('eventStartTime').value,
       endTime: document.getElementById('eventEndTime').value,
+      state: document.getElementById("eventState").value,
+      district: document.getElementById("eventDistrict").value,
       location: document.getElementById('eventLocation').value.trim(),
       maxParticipants: document.getElementById('eventMaxParticipants').value ? parseInt(document.getElementById('eventMaxParticipants').value) : null,
       description: document.getElementById('eventDescription').value.trim(),
@@ -8237,6 +8314,13 @@ async function loadEvents(filters = {}) {
         const eventDate = new Date(event.startDate);
         return eventDate >= today && eventDate <= nextMonth;
       });
+    }
+    if (filters.state && filters.state !== "all") {
+      events = events.filter(e => e.state === filters.state);
+    }
+
+    if (filters.district && filters.district !== "all") {
+      events = events.filter(e => e.district === filters.district);
     }
 
     renderEvents(events);
@@ -8360,7 +8444,7 @@ async function renderEvents(events) {
             </p>
             <p class="mb-1">
               <i class="fas fa-map-marker-alt me-2"></i>
-              ${locationText}
+              ${event.location || ''},${event.district || ''}, ${event.state || ''}
             </p>
             <p class="mb-1">
               <i class="fas fa-users me-2"></i>
@@ -8541,7 +8625,7 @@ async function viewEventDetails(eventId) {
                     ${formattedEndDate ? `<p><strong>End Date:</strong> ${formattedEndDate}</p>` : ''}
                     ${event.startTime ? `<p><strong>Time:</strong> ${event.startTime}` : ''} - 
                     ${event.endTime ? `${event.endTime}</p>` : ''}
-                    <p><strong>Location:</strong> ${locationText}</p>
+                    <p><strong>Location:</strong> ${event.location},${event.district},${event.state}</p>
                     ${event.contactInfo ? `<p><strong>Contact:</strong> ${event.contactInfo}</p>` : ''}
                   </div>
                 </div>
@@ -8693,7 +8777,9 @@ function filterEvents() {
     sport: document.getElementById('filterEventSport').value,
     eventType: document.getElementById('filterEventType').value,
     dateRange: document.getElementById('filterEventDate').value,
-    show: document.getElementById('filterEventShow').value
+    show: document.getElementById('filterEventShow').value,
+    state: document.getElementById('filterEventState').value,
+    district: document.getElementById('filterEventDistrict').value
   };
 
   loadEvents(filters);
