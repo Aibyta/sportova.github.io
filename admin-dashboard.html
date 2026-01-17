@@ -19,7 +19,7 @@
       --danger-color: #f94144;
       --light-color: #f8f9fa;
       --dark-color: #212529;
-      --sidebar-width: 250px;
+      --sidebar-width: 300px;
       --header-height: 70px;
     }
 
@@ -49,7 +49,7 @@
     }
 
     .sidebar.collapsed {
-      width: 70px;
+      width: 80px;
     }
 
     .sidebar.collapsed .sidebar-text {
@@ -71,10 +71,17 @@
       margin-right: 10px;
     }
 
+    .sidebar.collapsed .sidebar-logo {
+      display: none;
+    }
+
     .sidebar-title {
       font-weight: 700;
       font-size: 1.2rem;
       margin-bottom: 0;
+    }
+    .sidebar.collapsed .sidebar-title {
+      display: none;
     }
 
     .sidebar-menu {
@@ -116,6 +123,9 @@
       border-top: 1px solid #495057;
     }
 
+    .sidebar.collapsed .sidebar-footer img{
+      display: none;
+    }
     /* Main Content Styles */
     .main-content {
       margin-left: var(--sidebar-width);
@@ -3825,144 +3835,863 @@
     }
 
     async function loadCalendarSchedulingPage() {
-      try {
-        console.log('Loading calendar scheduling page...');
+  try {
+    console.log('Loading calendar scheduling page...');
 
-        // Fetch bookings for admin's facilities
-        const facilityIds = adminFacilities.map(f => f.id);
-        let bookings = [];
+    // Fetch bookings for admin's facilities
+    const facilityIds = adminFacilities.map(f => f.id);
+    let bookings = [];
 
-        if (facilityIds.length > 0) {
-          console.log(`Fetching bookings for ${facilityIds.length} facilities`);
+    if (facilityIds.length > 0) {
+      console.log(`Fetching bookings for ${facilityIds.length} facilities`);
 
-          const bookingsSnapshot = await db.collection("bookings")
-            .where("facilityId", "in", facilityIds)
-            .get();
+      const bookingsSnapshot = await db.collection("bookings")
+        .where("facilityId", "in", facilityIds)
+        .get();
 
-          allBookings = []; // Reset allBookings
-          bookingsSnapshot.forEach(doc => {
-            const bookingData = doc.data();
-
-            // Keep the original date format, we'll handle conversion in filtering
-            let bookingDate = bookingData.date;
-
-            // Ensure we have a proper date format
-            if (bookingData.date && typeof bookingData.date.toDate === 'function') {
-              // If date is a Firestore Timestamp, convert to string
-              const dateFromTimestamp = bookingData.date.toDate();
-              const month = (dateFromTimestamp.getMonth() + 1).toString().padStart(2, '0');
-              const day = dateFromTimestamp.getDate().toString().padStart(2, '0');
-              const year = dateFromTimestamp.getFullYear();
-              bookingDate = `${month}/${day}/${year}`;
-            } else if (!bookingData.date && bookingData.timestamp) {
-              // Use timestamp as fallback
-              const dateFromTimestamp = bookingData.timestamp.toDate();
-              const month = (dateFromTimestamp.getMonth() + 1).toString().padStart(2, '0');
-              const day = dateFromTimestamp.getDate().toString().padStart(2, '0');
-              const year = dateFromTimestamp.getFullYear();
-              bookingDate = `${month}/${day}/${year}`;
-            }
-
-            // If date is in YYYY-MM-DD format, convert to MM/DD/YYYY for consistency
-            if (bookingDate && bookingDate.includes('-')) {
-              const [year, month, day] = bookingDate.split('-');
-              bookingDate = `${month}/${day}/${year}`;
-            }
-
-            allBookings.push({
-              id: doc.id,
-              ...bookingData,
-              date: bookingDate, // Store in MM/DD/YYYY format
-              timestamp: bookingData.timestamp || null
-            });
-          });
-
-          console.log(`Loaded ${allBookings.length} bookings for calendar`);
-
-          // Debug: Log first few bookings to verify data
-          if (allBookings.length > 0) {
-            console.log('Sample bookings:', allBookings.slice(0, 3).map(b => ({
-              id: b.id,
-              date: b.date,
-              slot: b.slot,
-              facilityName: b.facilityName,
-              status: b.status,
-              facilityId: b.facilityId
-            })));
+      allBookings = []; // Reset allBookings
+      bookingsSnapshot.forEach(doc => {
+        const bookingData = doc.data();
+        
+        // IMPORTANT: Store date as Date object for consistent comparison
+        let bookingDate = null;
+        
+        // Handle Firestore Timestamp conversion
+        if (bookingData.date) {
+          if (typeof bookingData.date.toDate === 'function') {
+            bookingDate = bookingData.date.toDate();
+          } else if (bookingData.date.seconds) {
+            bookingDate = new Date(bookingData.date.seconds * 1000);
+          } 
+        }
+        
+        // Fallback to timestamp field if date is not available
+        if (!bookingDate && bookingData.timestamp) {
+          if (typeof bookingData.timestamp.toDate === 'function') {
+            bookingDate = bookingData.timestamp.toDate();
+          } else if (bookingData.timestamp.seconds) {
+            bookingDate = new Date(bookingData.timestamp.seconds * 1000);
           }
-        } else {
-          console.log('No facilities found for this admin');
-          allBookings = [];
         }
+        
+        // Store the booking with date as Date object
+        allBookings.push({
+          id: doc.id,
+          ...bookingData,
+          date: bookingDate, // Store as Date object for easy comparison
+          slot: bookingData.slot || bookingData.time || '',
+          timestamp: bookingData.timestamp || null
+        });
+      });
 
-        // Generate calendar based on current view
-        let calendarHTML = generateCalendarHeader();
-        calendarHTML += generateCalendarViewControls();
-        calendarHTML += generateCalendarFilterControls();
+      console.log(`Loaded ${allBookings.length} bookings for calendar`);
+      
+      // Debug: Check data structure
+      if (allBookings.length > 0) {
+        console.log('Sample bookings data structure:');
+        allBookings.slice(0, 3).forEach((booking, idx) => {
+          console.log(`Booking ${idx + 1}:`, {
+            id: booking.id,
+            date: booking.date,
+            dateType: typeof booking.date,
+            isDateObject: booking.date instanceof Date,
+            slot: booking.slot,
+            facilityName: booking.facilityName,
+            status: booking.status,
+            facilityId: booking.facilityId
+          });
+        });
+      }
+    } else {
+      console.log('No facilities found for this admin');
+      allBookings = [];
+    }
 
-        // Add a debug info panel
-        calendarHTML += `
-            <div class="alert alert-info mb-4">
-                <h6><i class="fas fa-info-circle me-2"></i>Calendar Information</h6>
-                <div class="row">
-                    <div class="col-md-4">
-                        <small><strong>Total Bookings:</strong> ${allBookings.length}</small>
-                    </div>
-                    <div class="col-md-4">
-                        <small><strong>Current Month:</strong> ${currentCalendarDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}</small>
-                    </div>
-                    <div class="col-md-4">
-                        <small><strong>View:</strong> ${calendarView}</small>
-                    </div>
+    // Generate calendar based on current view
+    let calendarHTML = generateCalendarHeader();
+    calendarHTML += generateCalendarViewControls();
+    calendarHTML += generateCalendarFilterControls();
+
+    // Add a debug info panel
+    calendarHTML += `
+        <div class="alert alert-info mb-4">
+            <h6><i class="fas fa-info-circle me-2"></i>Calendar Information</h6>
+            <div class="row">
+                <div class="col-md-4">
+                    <small><strong>Total Bookings:</strong> ${allBookings.length}</small>
+                </div>
+                <div class="col-md-4">
+                    <small><strong>Current Month:</strong> ${currentCalendarDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}</small>
+                </div>
+                <div class="col-md-4">
+                    <small><strong>View:</strong> ${calendarView}</small>
                 </div>
             </div>
-        `;
-
-        switch (calendarView) {
-          case 'day':
-            calendarHTML += await generateDayView();
-            break;
-          case 'week':
-            calendarHTML += await generateWeekView();
-            break;
-          case 'month':
-          default:
-            calendarHTML += await generateMonthView();
-            break;
-        }
-
-        // Add debug button for testing
-        calendarHTML += `
-            <div class="row mt-4">
+            ${allBookings.length > 0 ? `
+            <div class="row mt-2">
                 <div class="col-12">
-                    <button class="btn btn-outline-secondary btn-sm ms-2" onclick="refreshCalendar()">
-                        <i class="fas fa-sync-alt me-1"></i> Refresh Calendar
-                    </button>
+                    <small><strong>Date Format:</strong> ${allBookings[0].date instanceof Date ? 'Date Object' : typeof allBookings[0].date}</small>
                 </div>
             </div>
-        `;
+            ` : ''}
+        </div>
+    `;
 
-        // Initialize drag and drop
-        setTimeout(() => {
-          initializeCalendarDragDrop();
-        }, 100);
+    switch (calendarView) {
+      case 'day':
+        calendarHTML += await generateDayView();
+        break;
+      case 'week':
+        calendarHTML += await generateWeekView();
+        break;
+      case 'month':
+      default:
+        calendarHTML += await generateMonthView();
+        break;
+    }
 
-        return calendarHTML;
-
-      } catch (error) {
-        console.error('Error loading calendar page:', error);
-        return `
-            <div class="alert alert-danger">
-                <h4>Error Loading Calendar</h4>
-                <p>There was an error loading the calendar. Please try again.</p>
-                <p><small>Error: ${error.message}</small></p>
-                <button class="btn btn-primary mt-2" onclick="loadCalendarSchedulingPage()">
-                    <i class="fas fa-redo me-1"></i> Retry
+    // Add debug button for testing
+    calendarHTML += `
+        <div class="row mt-4">
+            <div class="col-12">
+                <button class="btn btn-outline-secondary btn-sm ms-2" onclick="refreshCalendar()">
+                    <i class="fas fa-sync-alt me-1"></i> Refresh Calendar
+                </button>
+                <button class="btn btn-outline-info btn-sm ms-2" onclick="debugBookings()">
+                    <i class="fas fa-bug me-1"></i> Debug Data
                 </button>
             </div>
-        `;
+        </div>
+    `;
+
+    // Initialize drag and drop
+    setTimeout(() => {
+      initializeCalendarDragDrop();
+    }, 100);
+
+    return calendarHTML;
+
+  } catch (error) {
+    console.error('Error loading calendar page:', error);
+    return `
+        <div class="alert alert-danger">
+            <h4>Error Loading Calendar</h4>
+            <p>There was an error loading the calendar. Please try again.</p>
+            <p><small>Error: ${error.message}</small></p>
+            <button class="btn btn-primary mt-2" onclick="loadCalendarSchedulingPage()">
+                <i class="fas fa-redo me-1"></i> Retry
+            </button>
+        </div>
+    `;
+  }
+}
+
+// UPDATED getFilteredBookingsForDate function - Fixed for Date object comparison
+function getFilteredBookingsForDate(dateStr) {
+  console.log(`🔍 Filtering bookings for date: ${dateStr}`);
+  
+  // Create target date in local timezone
+  const [year, month, day] = dateStr.split('-').map(Number);
+  const targetDate = new Date(year, month - 1, day);
+  targetDate.setHours(12, 0, 0, 0); // Set to noon to avoid timezone edge cases
+  
+  const targetYear = targetDate.getFullYear();
+  const targetMonth = targetDate.getMonth();
+  const targetDay = targetDate.getDate();
+  
+  console.log(`Looking for bookings on: ${targetYear}-${targetMonth + 1}-${targetDay}`);
+
+  let filteredBookings = allBookings.filter(booking => {
+    if (!booking.date) {
+      console.log(`⚠️ Booking ${booking.id} has no date`);
+      return false;
+    }
+
+    let bookingDate = booking.date;
+    
+    // If booking.date is already a Date object, use it
+    if (!(bookingDate instanceof Date)) {
+      // Try to convert to Date object
+      if (typeof bookingDate.toDate === 'function') {
+        bookingDate = bookingDate.toDate();
+      } else if (bookingDate.seconds) {
+        bookingDate = new Date(bookingDate.seconds * 1000);
+      } else if (typeof bookingDate === 'string') {
+        if (bookingDate.includes('-')) {
+          const [bYear, bMonth, bDay] = bookingDate.split('-').map(Number);
+          bookingDate = new Date(bYear, bMonth - 1, bDay);
+        } else if (bookingDate.includes('/')) {
+          const [bMonth, bDay, bYear] = bookingDate.split('/').map(Number);
+          bookingDate = new Date(bYear, bMonth - 1, bDay);
+        }
       }
     }
+    
+    if (!bookingDate || !(bookingDate instanceof Date) || isNaN(bookingDate.getTime())) {
+      console.log(`❌ Invalid date for booking ${booking.id}:`, booking.date);
+      return false;
+    }
+    
+    // Set to noon for consistent comparison
+    const normalizedBookingDate = new Date(bookingDate);
+    normalizedBookingDate.setHours(12, 0, 0, 0);
+    
+    // Compare year, month, and day
+    const bookingYear = normalizedBookingDate.getFullYear();
+    const bookingMonth = normalizedBookingDate.getMonth();
+    const bookingDay = normalizedBookingDate.getDate();
+    
+    const matches = bookingYear === targetYear && 
+                   bookingMonth === targetMonth && 
+                   bookingDay === targetDay;
+    
+    if (matches) {
+      console.log(`✅ Booking ${booking.id} matches date:`, {
+        bookingDate: normalizedBookingDate.toDateString(),
+        targetDate: targetDate.toDateString(),
+        facility: booking.facilityName,
+        slot: booking.slot || booking.time,
+        status: booking.status
+      });
+    }
+    
+    return matches;
+  });
+  
+  // Apply filters...
+  return filteredBookings;
+}
+
+// UPDATED convertTo24Hour function to handle the booking data structure
+function convertTo24Hour(time12h) {
+  if (!time12h) {
+    console.log('convertTo24Hour: No time provided');
+    return null;
+  }
+
+  // Remove spaces and convert to uppercase for consistent parsing
+  const time = time12h.replace(/\s/g, '').toUpperCase();
+
+  // Handle formats like "5-6PM", "7-8PM", "5-6 PM"
+  if (time.includes('PM') || time.includes('AM')) {
+    const [timePart, period] = time.split(/(?=[AP]M)/);
+    const [startTime, endTime] = timePart.split('-');
+
+    // Convert start time
+    let [startHour, startMinute = '00'] = startTime.split(':');
+    startHour = parseInt(startHour);
+    if (period === 'PM' && startHour < 12) startHour += 12;
+    if (period === 'AM' && startHour === 12) startHour = 0;
+
+    // Convert end time  
+    let [endHour, endMinute = '00'] = endTime.split(':');
+    endHour = parseInt(endHour);
+    if (period === 'PM' && endHour < 12) endHour += 12;
+    if (period === 'AM' && endHour === 12) endHour = 0;
+
+    return {
+      start24: `${startHour.toString().padStart(2, '0')}:${startMinute}`,
+      end24: `${endHour.toString().padStart(2, '0')}:${endMinute}`,
+      slot24: `${startHour.toString().padStart(2, '0')}:${startMinute}-${endHour.toString().padStart(2, '0')}:${endMinute}`
+    };
+  }
+
+  // If already in 24-hour format (like "07:00-08:00"), return as is
+  if (time.includes('-') && time.includes(':')) {
+    const [start, end] = time.split('-');
+    return {
+      start24: start,
+      end24: end,
+      slot24: time
+    };
+  }
+
+  console.log(`convertTo24Hour: Could not parse time format: ${time12h}`);
+  return null;
+}
+
+// UPDATED getBookingsForTimeSlot function
+function getBookingsForTimeSlot(dateStr, timeSlot) {
+  console.log(`🔍 Getting ALL bookings for: ${dateStr} at ${timeSlot}`);
+
+  const dayBookings = getFilteredBookingsForDate(dateStr);
+  const slotBookings = [];
+
+  dayBookings.forEach(booking => {
+    // Check both slot and time fields
+    const bookingTimeSlot = booking.slot || booking.time;
+    if (!bookingTimeSlot) {
+      console.log(`   ❌ Booking ${booking.id} has no slot/time field`);
+      return;
+    }
+
+    const convertedSlot = convertTo24Hour(bookingTimeSlot);
+    if (!convertedSlot) {
+      console.log(`   ❌ Could not convert slot/time: ${bookingTimeSlot}`);
+      return;
+    }
+
+    const [targetHour, targetMinute] = timeSlot.split(':').map(Number);
+    const [startHour, startMinute] = convertedSlot.start24.split(':').map(Number);
+    const [endHour, endMinute] = convertedSlot.end24.split(':').map(Number);
+
+    // Check if booking occurs during this time slot
+    const targetTime = targetHour * 60 + targetMinute;
+    const startTime = startHour * 60 + startMinute;
+    const endTime = endHour * 60 + endMinute;
+
+    const occursDuringSlot = targetTime >= startTime && targetTime < endTime;
+
+    if (occursDuringSlot) {
+      console.log(`   ✅ Booking ${booking.id} occurs during ${timeSlot}:`, {
+        originalSlot: bookingTimeSlot,
+        convertedSlot: convertedSlot.slot24,
+        timeRange: `${startTime}-${endTime}`,
+        targetTime: targetTime
+      });
+      slotBookings.push({
+        ...booking,
+        // Ensure slot field exists for display
+        slot: bookingTimeSlot
+      });
+    }
+  });
+
+  console.log(`📊 Bookings occurring during ${timeSlot}: ${slotBookings.length}`);
+  return slotBookings;
+}
+
+// Also update the display functions to use booking.slot or booking.time
+function getTimeDisplayForBooking(booking) {
+  return booking.slot || booking.time || '';
+}
+
+// UPDATED normalizeDateForComparison function
+function normalizeDateForComparison(dateStr) {
+  // Convert any date format to YYYY-MM-DD for consistent comparison
+  const date = new Date(dateStr);
+  if (isNaN(date.getTime())) {
+    console.error(`Invalid date in normalizeDateForComparison: ${dateStr}`);
+    return dateStr;
+  }
+  
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  
+  return `${year}-${month}-${day}`;
+}
+
+// UPDATED month view generation - fix date formatting
+async function generateMonthView() {
+  try {
+    const year = currentCalendarDate.getFullYear();
+    const month = currentCalendarDate.getMonth();
+    const firstDay = new Date(year, month, 1);
+    const lastDay = new Date(year, month + 1, 0);
+    const daysInMonth = lastDay.getDate();
+    const startingDay = firstDay.getDay(); // 0 = Sunday, 1 = Monday, etc.
+
+    console.log(`Generating month view for ${year}-${month + 1}, starting day: ${startingDay}, days in month: ${daysInMonth}`);
+
+    let calendarHTML = '<div class="calendar">';
+    const daysOfWeek = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+
+    // Day headers
+    daysOfWeek.forEach(day => {
+      calendarHTML += `<div class="calendar-header">${day}</div>`;
+    });
+
+    // Empty cells for days before the first day of the month
+    for (let i = 0; i < startingDay; i++) {
+      calendarHTML += `<div class="calendar-day empty"></div>`;
+    }
+
+    // Days of the month
+    const today = new Date();
+    const isCurrentMonth = today.getMonth() === month && today.getFullYear() === year;
+
+    let totalBookingsInMonth = 0;
+    let daysWithBookings = 0;
+
+    for (let day = 1; day <= daysInMonth; day++) {
+      // Format date as YYYY-MM-DD for consistent comparison
+      const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+      const dayBookings = getFilteredBookingsForDate(dateStr);
+      const isToday = isCurrentMonth && today.getDate() === day;
+      const hasBooking = dayBookings.length > 0;
+
+      if (hasBooking) {
+        totalBookingsInMonth += dayBookings.length;
+        daysWithBookings++;
+      }
+
+      console.log(`📅 Date: ${dateStr}, Bookings: ${dayBookings.length}`);
+
+      calendarHTML += `
+            <div class="calendar-day ${isToday ? 'today' : ''} ${hasBooking ? 'has-booking' : ''}" 
+                 data-date="${dateStr}" 
+                 ondragover="allowDrop(event)" 
+                 ondrop="dropBooking(event, '${dateStr}')"
+                 ondragleave="handleDragLeave(event)">
+                <div class="d-flex justify-content-between align-items-start mb-2">
+                    <span class="day-number ${isToday ? 'fw-bold text-primary' : ''}">${day}</span>
+                    ${hasBooking ? `<span class="badge bg-primary">${dayBookings.length}</span>` : ''}
+                </div>
+                <div class="booking-events">
+        `;
+
+      // Display up to 3 bookings for this day
+      if (dayBookings.length > 0) {
+        dayBookings.slice(0, 3).forEach(booking => {
+          const timeDisplay = booking.slot ? booking.slot.split('-')[0] : (booking.time ? booking.time.split('-')[0] : '');
+          const status = booking.status || 'pending';
+          const facilityName = booking.facilityName || 'Unknown Facility';
+          const userName = booking.userName || 'Unknown User';
+
+          // Truncate long facility names
+          const displayFacilityName = facilityName.length > 12 ?
+            facilityName.substring(0, 12) + '...' : facilityName;
+
+          calendarHTML += `
+                    <div class="calendar-event ${getBookingColorClass(booking)} draggable-booking" 
+                         draggable="true" 
+                         ondragstart="dragBooking(event, '${booking.id}')"
+                         ondragend="handleDragEnd(event)"
+                         data-booking-id="${booking.id}"
+                         data-booking-facility="${booking.facilityId}"
+                         data-booking-duration="${booking.duration || 1}"
+                         onclick="showBookingDetails('${booking.id}', event)"
+                         title="${facilityName} - ${userName} (${timeDisplay}) - ${status}">
+                        <div class="d-flex justify-content-between align-items-start">
+                            <small class="event-time">${timeDisplay}</small>
+                            <small class="event-status">${status}</small>
+                        </div>
+                        <div class="event-title">${displayFacilityName}</div>
+                        <small class="event-user">${userName.split('@')[0]}</small>
+                    </div>
+                `;
+        });
+
+        // Show "+X more" if there are more than 3 bookings
+        if (dayBookings.length > 3) {
+          calendarHTML += `<small class="text-muted d-block mt-1">+${dayBookings.length - 3} more</small>`;
+        }
+      } else {
+        // Empty state for days with no bookings
+        calendarHTML += `<small class="text-muted">No bookings</small>`;
+      }
+
+      calendarHTML += `
+                </div>
+            </div>
+        `;
+    }
+
+    // Fill remaining cells to complete the calendar grid
+    const totalCells = 42; // 6 rows × 7 days
+    const filledCells = startingDay + daysInMonth;
+    const remainingCells = totalCells - filledCells;
+
+    for (let i = 0; i < remainingCells; i++) {
+      calendarHTML += `<div class="calendar-day empty"></div>`;
+    }
+
+    calendarHTML += `</div>`;
+
+    console.log(`✅ Month view generated successfully. Total bookings in month: ${totalBookingsInMonth} across ${daysWithBookings} days`);
+    return calendarHTML;
+
+  } catch (error) {
+    console.error('Error generating month view:', error);
+    return `
+        <div class="alert alert-danger">
+            <h4>Error Generating Calendar</h4>
+            <p>There was an error generating the month view. Please try refreshing.</p>
+            <p><small>Error: ${error.message}</small></p>
+        </div>
+    `;
+  }
+}
+
+// UPDATED week view generation - CORRECTED
+// UPDATED week view generation - FIXED day shift issue
+async function generateWeekView() {
+  try {
+    const startOfWeek = getStartOfWeek(currentCalendarDate);
+    let calendarHTML = '<div class="calendar-week">';
+
+    // Time slots header
+    calendarHTML += '<div class="calendar-time-header">Time</div>';
+
+    // Day headers - FIXED: Ensure we're using the correct date
+    for (let i = 0; i < 7; i++) {
+      const currentDay = new Date(startOfWeek);
+      currentDay.setDate(startOfWeek.getDate() + i);
+      
+      // Get date in YYYY-MM-DD format for filtering
+      const year = currentDay.getFullYear();
+      const month = currentDay.getMonth() + 1;
+      const dateNum = currentDay.getDate();
+      const dateStr = `${year}-${String(month).padStart(2, '0')}-${String(dateNum).padStart(2, '0')}`;
+      
+      const dayName = currentDay.toLocaleDateString('en-US', { weekday: 'short' });
+      
+      console.log(`Week day ${i}: ${dateStr} (${dayName})`);
+
+      // Get bookings for this day
+      const dayBookings = getFilteredBookingsForDate(dateStr);
+
+      calendarHTML += `
+            <div class="calendar-day-header">
+                <div>${dayName}</div>
+                <div class="date-number">${dateNum}</div>
+                <small class="text-light opacity-75">${month}/${dateNum}</small>
+                ${dayBookings.length > 0 ? `<small class="badge bg-warning mt-1">${dayBookings.length}</small>` : ''}
+            </div>
+        `;
+    }
+
+    // Time slots (7 AM to 10 PM) - in 24-hour format
+    for (let hour = 7; hour <= 22; hour++) {
+      const timeLabel = `${hour}:00`; // Show hour in 24-hour format
+      const timeSlot24 = `${hour.toString().padStart(2, '0')}:00`;
+
+      calendarHTML += `<div class="calendar-time-slot">${timeLabel}</div>`;
+
+      for (let i = 0; i < 7; i++) {
+        const currentDay = new Date(startOfWeek);
+        currentDay.setDate(startOfWeek.getDate() + i);
+        
+        // Get date in YYYY-MM-DD format
+        const year = currentDay.getFullYear();
+        const month = currentDay.getMonth() + 1;
+        const dateNum = currentDay.getDate();
+        const dateStr = `${year}-${String(month).padStart(2, '0')}-${String(dateNum).padStart(2, '0')}`;
+
+        // Get bookings that occur during this time slot
+        const slotBookings = getBookingsForTimeSlot(dateStr, timeSlot24);
+
+        console.log(`📅 Week View - ${dateStr} ${timeSlot24}: ${slotBookings.length} bookings`);
+
+        calendarHTML += `
+                <div class="calendar-week-slot ${slotBookings.length > 0 ? 'has-booking' : ''}"
+                     ondragover="allowDrop(event)"
+                     ondrop="dropBookingToSlot(event, '${dateStr}', '${timeSlot24}')"
+                     ondragleave="handleDragLeave(event)">
+            `;
+
+        if (slotBookings.length > 0) {
+          slotBookings.forEach(booking => {
+            // Use booking.slot or booking.time
+            const bookingTimeSlot = booking.slot || booking.time;
+            const convertedSlot = convertTo24Hour(bookingTimeSlot);
+
+            // Truncate long names for better display
+            const shortFacilityName = booking.facilityName.length > 12 ?
+              booking.facilityName.substring(0, 12) + '...' : booking.facilityName;
+            const shortUserName = booking.userName ? booking.userName.split('@')[0] : 'User';
+
+            calendarHTML += `
+                        <div class="week-booking ${getBookingColorClass(booking)} mb-1"
+                             draggable="true"
+                             ondragstart="dragBooking(event, '${booking.id}')"
+                             ondragend="handleDragEnd(event)"
+                             onclick="showBookingDetails('${booking.id}', event)"
+                             title="${booking.facilityName} - ${booking.userName} (${bookingTimeSlot}) - ${booking.status}">
+                            <div class="d-flex justify-content-between align-items-start">
+                                <strong class="booking-facility">${shortFacilityName}</strong>
+                                <span class="badge badge-status badge-${booking.status}">${booking.status.charAt(0)}</span>
+                            </div>
+                            <small class="booking-user d-block">${shortUserName}</small>
+                            <small class="booking-time text-muted d-block">${convertedSlot ? convertedSlot.slot24 : bookingTimeSlot}</small>
+                        </div>
+                    `;
+          });
+        } else {
+          calendarHTML += `
+                    <div class="text-center text-muted py-2">
+                        <small>Available</small>
+                    </div>
+                `;
+        }
+
+        calendarHTML += `</div>`;
+      }
+    }
+
+    calendarHTML += '</div>';
+
+    // Add week summary with correct dates
+    const weekBookings = getWeekBookings(startOfWeek);
+    const endOfWeek = new Date(startOfWeek);
+    endOfWeek.setDate(startOfWeek.getDate() + 6);
+    
+    calendarHTML += `
+        <div class="alert alert-info mt-3">
+            <h6><i class="fas fa-calendar-week me-2"></i>Week Summary</h6>
+            <div class="row">
+                <div class="col-md-6">
+                    <small><strong>Total Bookings This Week:</strong> ${weekBookings.length}</small>
+                </div>
+                <div class="col-md-6">
+                    <small><strong>Week Period:</strong> ${startOfWeek.toLocaleDateString()} - ${endOfWeek.toLocaleDateString()}</small>
+                </div>
+            </div>
+            ${weekBookings.length > 0 ? `
+                <div class="mt-2">
+                    <small><strong>Bookings by Day:</strong></small>
+                    <div class="d-flex flex-wrap gap-2 mt-1">
+                        ${Array.from({ length: 7 }).map((_, i) => {
+                          const day = new Date(startOfWeek);
+                          day.setDate(startOfWeek.getDate() + i);
+                          const dateStr = day.toISOString().split('T')[0];
+                          const dayBookings = getFilteredBookingsForDate(dateStr);
+                          return `<span class="badge bg-primary">${day.toLocaleDateString('en-US', { weekday: 'short' })}: ${dayBookings.length}</span>`;
+                        }).join('')}
+                    </div>
+                </div>
+            ` : ''}
+        </div>
+    `;
+
+    // Debug info
+    console.log(`Week view generated: Start=${startOfWeek.toDateString()}, End=${endOfWeek.toDateString()}`);
+    
+    return calendarHTML;
+
+  } catch (error) {
+    console.error('Error generating week view:', error);
+    return `
+        <div class="alert alert-danger">
+            <h4>Error Generating Week View</h4>
+            <p>There was an error generating the week view. Please try refreshing.</p>
+            <p><small>Error: ${error.message}</small></p>
+        </div>
+    `;
+  }
+}
+
+// Also update the getWeekBookings function to use the same date format
+function getWeekBookings(startOfWeek) {
+  const weekBookings = [];
+  
+  // Generate all dates in the week
+  for (let i = 0; i < 7; i++) {
+    const currentDay = new Date(startOfWeek);
+    currentDay.setDate(startOfWeek.getDate() + i);
+    
+    // Format as YYYY-MM-DD
+    const year = currentDay.getFullYear();
+    const month = currentDay.getMonth() + 1;
+    const dateNum = currentDay.getDate();
+    const dateStr = `${year}-${String(month).padStart(2, '0')}-${String(dateNum).padStart(2, '0')}`;
+    
+    const dayBookings = getFilteredBookingsForDate(dateStr);
+    weekBookings.push(...dayBookings);
+  }
+  
+  return weekBookings;
+}
+
+// Helper function to get time display for booking
+function getTimeDisplayForBooking(booking) {
+  if (!booking) return '';
+  return booking.slot || booking.time || '';
+}
+
+// UPDATED day view generation
+async function generateDayView() {
+  try {
+    // Get date in local timezone, not UTC
+    const year = currentCalendarDate.getFullYear();
+    const month = currentCalendarDate.getMonth() + 1;
+    const day = currentCalendarDate.getDate();
+    
+    // Use local date string (YYYY-MM-DD) to avoid timezone issues
+    const dateStr = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+    
+    const dayBookings = getFilteredBookingsForDate(dateStr);
+
+    console.log(`Generating day view for ${dateStr}, found ${dayBookings.length} bookings`);
+
+    let calendarHTML = `
+        <div class="calendar-day-view">
+            <div class="day-view-header bg-primary text-white p-3 rounded-top">
+                <h4 class="mb-0">
+                    <i class="fas fa-calendar-day me-2"></i>
+                    ${currentCalendarDate.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
+                </h4>
+                <small>${dayBookings.length} booking(s) scheduled</small>
+            </div>
+            <div class="day-view-time-slots">
+    `;
+
+    // If no bookings, show empty state
+    if (dayBookings.length === 0) {
+      calendarHTML += `
+            <div class="text-center py-5" style="grid-column: 1 / -1;">
+                <i class="fas fa-calendar-times fa-3x text-muted mb-3"></i>
+                <h5 class="text-muted">No Bookings Scheduled</h5>
+                <p class="text-muted">There are no bookings scheduled for this day.</p>
+            </div>
+        `;
+    } else {
+      // Group bookings by hour for better display
+      const bookingsByHour = {};
+
+      // Initialize hours from 7 AM to 10 PM in 24-hour format
+      for (let hour = 7; hour <= 22; hour++) {
+        const timeSlot = `${hour.toString().padStart(2, '0')}:00`;
+        bookingsByHour[timeSlot] = [];
+      }
+
+      // Assign bookings to hours
+      dayBookings.forEach(booking => {
+        const bookingTimeSlot = booking.slot || booking.time;
+        if (!bookingTimeSlot) {
+          console.log(`⚠️ Booking ${booking.id} has no time slot`);
+          return;
+        }
+
+        const convertedSlot = convertTo24Hour(bookingTimeSlot);
+        if (!convertedSlot) {
+          console.log(`❌ Could not convert time slot for booking ${booking.id}: ${bookingTimeSlot}`);
+          return;
+        }
+
+        const [startHour, startMinute] = convertedSlot.start24.split(':').map(Number);
+        const [endHour, endMinute] = convertedSlot.end24.split(':').map(Number);
+
+        console.log(`📅 Assigning booking ${booking.id}: ${convertedSlot.slot24}`);
+
+        // Add booking to all hours it spans
+        for (let hour = startHour; hour < endHour; hour++) {
+          const timeSlot = `${hour.toString().padStart(2, '0')}:00`;
+          if (hour >= 7 && hour <= 22) {
+            if (!bookingsByHour[timeSlot]) {
+              bookingsByHour[timeSlot] = [];
+            }
+            if (!bookingsByHour[timeSlot].find(b => b.id === booking.id)) {
+              bookingsByHour[timeSlot].push(booking);
+            }
+          }
+        }
+      });
+
+      // Display time slots
+      for (let hour = 7; hour <= 22; hour++) {
+        const timeSlot = `${hour.toString().padStart(2, '0')}:00`;
+        const hourBookings = bookingsByHour[timeSlot] || [];
+
+        console.log(`⏰ Time slot ${timeSlot}: ${hourBookings.length} bookings`);
+
+        calendarHTML += `
+                <div class="day-time-slot">
+                    <div class="time-label bg-light fw-bold border-end">
+                        ${hour}:00
+                        ${hourBookings.length > 0 ? `<br><small class="badge bg-success">${hourBookings.length}</small>` : ''}
+                    </div>
+                    <div class="time-slot-content ${hourBookings.length > 0 ? 'has-booking' : ''}"
+                         ondragover="allowDrop(event)"
+                         ondrop="dropBookingToSlot(event, '${dateStr}', '${timeSlot}')"
+                         ondragleave="handleDragLeave(event)">
+            `;
+
+        if (hourBookings.length > 0) {
+          // Show unique bookings for this hour
+          const uniqueBookings = Array.from(new Set(hourBookings.map(b => b.id)))
+            .map(id => hourBookings.find(b => b.id === id));
+
+          uniqueBookings.forEach(booking => {
+            const bookingTimeSlot = booking.slot || booking.time;
+            const convertedSlot = convertTo24Hour(bookingTimeSlot);
+            const duration = booking.duration || 1;
+
+            calendarHTML += `
+                        <div class="day-booking ${getBookingColorClass(booking)} mb-2"
+                             draggable="true"
+                             ondragstart="dragBooking(event, '${booking.id}')"
+                             ondragend="handleDragEnd(event)"
+                             onclick="showBookingDetails('${booking.id}', event)"
+                             title="${booking.facilityName} - ${booking.userName} - ${booking.status}">
+                            <div class="d-flex justify-content-between align-items-start">
+                                <strong class="booking-facility">${booking.facilityName}</strong>
+                                <span class="badge badge-status badge-${booking.status}">${booking.status}</span>
+                            </div>
+                            <div class="booking-user small">
+                                <i class="fas fa-user me-1"></i>${booking.userName || 'Unknown User'}
+                            </div>
+                            <div class="booking-time small text-muted">
+                                <i class="fas fa-clock me-1"></i>
+                                ${convertedSlot ? convertedSlot.slot24 : bookingTimeSlot}
+                                ${duration > 1 ? `(${duration}h)` : ''}
+                            </div>
+                            ${booking.notes ? `
+                                <div class="booking-notes small text-muted mt-1">
+                                    <i class="fas fa-sticky-note me-1"></i>
+                                    ${booking.notes}
+                                </div>
+                            ` : ''}
+                        </div>
+                    `;
+          });
+        } else {
+          calendarHTML += `
+                    <div class="text-center text-muted py-4">
+                        <i class="fas fa-calendar-plus fa-2x mb-2"></i>
+                        <div>No bookings</div>
+                        <small>Drag and drop to schedule</small>
+                    </div>
+                `;
+        }
+
+        calendarHTML += `
+                    </div>
+                </div>
+            `;
+      }
+    }
+
+    calendarHTML += `
+            </div>
+        </div>
+    `;
+
+    // Add day summary
+    calendarHTML += `
+        <div class="alert alert-success mt-3">
+            <h6><i class="fas fa-calendar-day me-2"></i>Day Summary - ${currentCalendarDate.toLocaleDateString()}</h6>
+            <div class="row">
+                <div class="col-md-3">
+                    <small><strong>Total Bookings:</strong> ${dayBookings.length}</small>
+                </div>
+                <div class="col-md-3">
+                    <small><strong>Confirmed:</strong> ${dayBookings.filter(b => b.status === 'confirmed' || b.status === 'approved').length}</small>
+                </div>
+                <div class="col-md-3">
+                    <small><strong>Pending:</strong> ${dayBookings.filter(b => b.status === 'pending').length}</small>
+                </div>
+                <div class="col-md-3">
+                    <small><strong>Facilities:</strong> ${new Set(dayBookings.map(b => b.facilityName)).size}</small>
+                </div>
+            </div>
+        </div>
+    `;
+
+    return calendarHTML;
+
+  } catch (error) {
+    console.error('Error generating day view:', error);
+    return `
+        <div class="alert alert-danger">
+            <h4>Error Generating Day View</h4>
+            <p>There was an error generating the day view. Please try refreshing.</p>
+            <p><small>Error: ${error.message}</small></p>
+        </div>
+    `;
+  }
+}
     // Calendar Header with Navigation
     function generateCalendarHeader() {
       return `
@@ -4120,232 +4849,10 @@
       }
     }
 
-    async function generateMonthView() {
-      try {
-        const year = currentCalendarDate.getFullYear();
-        const month = currentCalendarDate.getMonth();
-        const firstDay = new Date(year, month, 1);
-        const lastDay = new Date(year, month + 1, 0);
-        const daysInMonth = lastDay.getDate();
-        const startingDay = firstDay.getDay(); // 0 = Sunday, 1 = Monday, etc.
-
-        console.log(`Generating month view for ${year}-${month + 1}, starting day: ${startingDay}, days in month: ${daysInMonth}`);
-
-        let calendarHTML = '<div class="calendar">';
-        const daysOfWeek = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-
-        // Day headers
-        daysOfWeek.forEach(day => {
-          calendarHTML += `<div class="calendar-header">${day}</div>`;
-        });
-
-        // Empty cells for days before the first day of the month
-        for (let i = 0; i < startingDay; i++) {
-          calendarHTML += `<div class="calendar-day empty"></div>`;
-        }
-
-        // Days of the month
-        const today = new Date();
-        const isCurrentMonth = today.getMonth() === month && today.getFullYear() === year;
-
-        let totalBookingsInMonth = 0;
-        let daysWithBookings = 0;
-
-        for (let day = 1; day <= daysInMonth; day++) {
-          // Format date as YYYY-MM-DD for the calendar grid
-          const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-          const dayBookings = getFilteredBookingsForDate(dateStr);
-          const isToday = isCurrentMonth && today.getDate() === day;
-          const hasBooking = dayBookings.length > 0;
-
-          if (hasBooking) {
-            totalBookingsInMonth += dayBookings.length;
-            daysWithBookings++;
-          }
-
-          console.log(`Date: ${dateStr}, Bookings: ${dayBookings.length}`);
-
-          calendarHTML += `
-                <div class="calendar-day ${isToday ? 'today' : ''} ${hasBooking ? 'has-booking' : ''}" 
-                     data-date="${dateStr}" 
-                     ondragover="allowDrop(event)" 
-                     ondrop="dropBooking(event, '${dateStr}')"
-                     ondragleave="handleDragLeave(event)">
-                    <div class="d-flex justify-content-between align-items-start mb-2">
-                        <span class="day-number ${isToday ? 'fw-bold text-primary' : ''}">${day}</span>
-                        ${hasBooking ? `<span class="badge bg-primary">${dayBookings.length}</span>` : ''}
-                    </div>
-                    <div class="booking-events">
-            `;
-
-          // Display up to 3 bookings for this day
-          if (dayBookings.length > 0) {
-            dayBookings.slice(0, 3).forEach(booking => {
-              const timeDisplay = booking.slot ? booking.slot.split('-')[0] : '';
-              const status = booking.status || 'pending';
-              const facilityName = booking.facilityName || 'Unknown Facility';
-              const userName = booking.userName || 'Unknown User';
-
-              // Truncate long facility names
-              const displayFacilityName = facilityName.length > 12 ?
-                facilityName.substring(0, 12) + '...' : facilityName;
-
-              calendarHTML += `
-                        <div class="calendar-event ${getBookingColorClass(booking)} draggable-booking" 
-                             draggable="true" 
-                             ondragstart="dragBooking(event, '${booking.id}')"
-                             ondragend="handleDragEnd(event)"
-                             data-booking-id="${booking.id}"
-                             data-booking-facility="${booking.facilityId}"
-                             data-booking-duration="${booking.duration || 1}"
-                             onclick="showBookingDetails('${booking.id}', event)"
-                             title="${facilityName} - ${userName} (${timeDisplay}) - ${status}">
-                            <div class="d-flex justify-content-between align-items-start">
-                                <small class="event-time">${timeDisplay}</small>
-                                <small class="event-status">${status}</small>
-                            </div>
-                            <div class="event-title">${displayFacilityName}</div>
-                            <small class="event-user">${userName.split('@')[0]}</small>
-                        </div>
-                    `;
-            });
-
-            // Show "+X more" if there are more than 3 bookings
-            if (dayBookings.length > 3) {
-              calendarHTML += `<small class="text-muted d-block mt-1">+${dayBookings.length - 3} more</small>`;
-            }
-          } else {
-            // Empty state for days with no bookings
-            calendarHTML += `<small class="text-muted">No bookings</small>`;
-          }
-
-          calendarHTML += `
-                    </div>
-                </div>
-            `;
-        }
-
-        // Fill remaining cells to complete the calendar grid (6 rows × 7 days = 42 cells total)
-        const totalCells = 42; // 6 rows × 7 days
-        const filledCells = startingDay + daysInMonth;
-        const remainingCells = totalCells - filledCells;
-
-        for (let i = 0; i < remainingCells; i++) {
-          calendarHTML += `<div class="calendar-day empty"></div>`;
-        }
-
-        calendarHTML += `</div>`;
-
-        console.log(`Month view generated successfully. Total bookings in month: ${totalBookingsInMonth} across ${daysWithBookings} days`);
-        return calendarHTML;
-
-      } catch (error) {
-        console.error('Error generating month view:', error);
-        return `
-            <div class="alert alert-danger">
-                <h4>Error Generating Calendar</h4>
-                <p>There was an error generating the month view. Please try refreshing.</p>
-                <p><small>Error: ${error.message}</small></p>
-            </div>
-        `;
-      }
-    }
-
     // Refresh calendar function
     function refreshCalendar() {
       console.log('Refreshing calendar...');
       loadPageContent('calendar-scheduling');
-    }
-
-    // Enhanced date matching function for all views
-    function normalizeDateForComparison(dateStr) {
-      // Convert YYYY-MM-DD to MM/DD/YYYY for comparison with booking dates
-      if (dateStr.includes('-')) {
-        const [year, month, day] = dateStr.split('-');
-        return `${month}/${day}/${year}`;
-      }
-      return dateStr;
-    }
-
-    // Enhanced getFilteredBookingsForDate function - FIXED VERSION
-    function getFilteredBookingsForDate(dateStr) {
-      console.log(`Filtering bookings for date: ${dateStr}`);
-
-      // Normalize the target date for comparison
-      const targetDateFormatted = normalizeDateForComparison(dateStr);
-
-      console.log(`Looking for bookings with date: ${targetDateFormatted}`);
-
-      let filteredBookings = allBookings.filter(booking => {
-        if (!booking.date) {
-          console.log('Booking has no date:', booking.id);
-          return false;
-        }
-
-        // Handle different date formats
-        let bookingDateFormatted = booking.date;
-
-        // If booking.date is a Firestore Timestamp
-        if (booking.date && typeof booking.date.toDate === 'function') {
-          const dateFromTimestamp = booking.date.toDate();
-          const month = (dateFromTimestamp.getMonth() + 1).toString().padStart(2, '0');
-          const day = dateFromTimestamp.getDate().toString().padStart(2, '0');
-          const year = dateFromTimestamp.getFullYear();
-          bookingDateFormatted = `${month}/${day}/${year}`;
-        }
-        // If booking date is in YYYY-MM-DD format, convert to MM/DD/YYYY
-        else if (typeof bookingDateFormatted === 'string' && bookingDateFormatted.includes('-')) {
-          const [year, month, day] = bookingDateFormatted.split('-');
-          bookingDateFormatted = `${month}/${day}/${year}`;
-        }
-        // If booking date is already in MM/DD/YYYY format, use as is
-        else if (typeof bookingDateFormatted === 'string') {
-          // Already in correct format
-        }
-        // If we have a timestamp field as fallback
-        else if (booking.timestamp && typeof booking.timestamp.toDate === 'function') {
-          const dateFromTimestamp = booking.timestamp.toDate();
-          const month = (dateFromTimestamp.getMonth() + 1).toString().padStart(2, '0');
-          const day = dateFromTimestamp.getDate().toString().padStart(2, '0');
-          const year = dateFromTimestamp.getFullYear();
-          bookingDateFormatted = `${month}/${day}/${year}`;
-        }
-        else {
-          console.log('Unsupported date format for booking:', booking.id, booking.date);
-          return false;
-        }
-
-        const matches = bookingDateFormatted === targetDateFormatted;
-
-        if (matches) {
-          console.log(`✅ Booking ${booking.id} matches date:`, {
-            originalDate: booking.date,
-            formattedDate: bookingDateFormatted,
-            targetDate: targetDateFormatted,
-            facility: booking.facilityName,
-            slot: booking.slot
-          });
-        }
-
-        return matches;
-      });
-
-      // Apply facility filter
-      if (selectedFacilityFilter && selectedFacilityFilter !== 'all') {
-        const beforeCount = filteredBookings.length;
-        filteredBookings = filteredBookings.filter(booking => booking.facilityId === selectedFacilityFilter);
-        console.log(`Facility filter: ${beforeCount} -> ${filteredBookings.length} bookings`);
-      }
-
-      // Apply status filter
-      if (window.statusFilter && window.statusFilter !== 'all') {
-        const beforeCount = filteredBookings.length;
-        filteredBookings = filteredBookings.filter(booking => booking.status === window.statusFilter);
-        console.log(`Status filter: ${beforeCount} -> ${filteredBookings.length} bookings`);
-      }
-
-      console.log(`Final filtered bookings for ${dateStr}: ${filteredBookings.length}`);
-      return filteredBookings;
     }
     // Convert 12-hour format to 24-hour format
     function convertTo24Hour(time12h) {
@@ -4432,45 +4939,6 @@
       return filteredBookings;
     }
 
-    // Enhanced function to get all bookings for a time slot (including spanning bookings)
-    function getBookingsForTimeSlot(dateStr, timeSlot) {
-      console.log(`🔍 Getting ALL bookings for: ${dateStr} at ${timeSlot}`);
-
-      const dayBookings = getFilteredBookingsForDate(dateStr);
-      const slotBookings = [];
-
-      dayBookings.forEach(booking => {
-        if (!booking.slot) return;
-
-        const convertedSlot = convertTo24Hour(booking.slot);
-        if (!convertedSlot) return;
-
-        const [targetHour, targetMinute] = timeSlot.split(':').map(Number);
-        const [startHour, startMinute] = convertedSlot.start24.split(':').map(Number);
-        const [endHour, endMinute] = convertedSlot.end24.split(':').map(Number);
-
-        // Check if booking occurs during this time slot
-        const targetTime = targetHour * 60 + targetMinute;
-        const startTime = startHour * 60 + startMinute;
-        const endTime = endHour * 60 + endMinute;
-
-        const occursDuringSlot = targetTime >= startTime && targetTime < endTime;
-
-        if (occursDuringSlot) {
-          console.log(`   ✅ Booking ${booking.id} occurs during ${timeSlot}:`, {
-            originalSlot: booking.slot,
-            convertedSlot: convertedSlot.slot24,
-            timeRange: `${startTime}-${endTime}`,
-            targetTime: targetTime
-          });
-          slotBookings.push(booking);
-        }
-      });
-
-      console.log(`📊 Bookings occurring during ${timeSlot}: ${slotBookings.length}`);
-      return slotBookings;
-    }
-
     // Enhanced drag and drop handlers
     function handleDragLeave(event) {
       // Only remove class if not dragging over a child element
@@ -4533,323 +5001,6 @@
           }
         });
       });
-    }
-
-    async function generateWeekView() {
-      try {
-        const startOfWeek = getStartOfWeek(currentCalendarDate);
-        let calendarHTML = '<div class="calendar-week">';
-
-        // Time slots header
-        calendarHTML += '<div class="calendar-time-header">Time</div>';
-
-        // Day headers
-        for (let i = 0; i < 7; i++) {
-          const currentDay = new Date(startOfWeek);
-          currentDay.setDate(startOfWeek.getDate() + i);
-          const dayName = currentDay.toLocaleDateString('en-US', { weekday: 'short' });
-          const dateNum = currentDay.getDate();
-          const month = currentDay.getMonth() + 1;
-          const year = currentDay.getFullYear();
-          const dateStr = `${year}-${String(month).padStart(2, '0')}-${String(dateNum).padStart(2, '0')}`;
-
-          // Get bookings for this day to show count
-          const dayBookings = getFilteredBookingsForDate(dateStr);
-
-          calendarHTML += `
-                <div class="calendar-day-header">
-                    <div>${dayName}</div>
-                    <div class="date-number">${dateNum}</div>
-                    <small class="text-light opacity-75">${month}/${dateNum}</small>
-                    ${dayBookings.length > 0 ? `<small class="badge bg-warning mt-1">${dayBookings.length}</small>` : ''}
-                </div>
-            `;
-        }
-
-        // Time slots (7 AM to 10 PM) - in 24-hour format
-        for (let hour = 7; hour <= 22; hour++) {
-          const timeLabel = `${hour}:00`; // 24-hour format
-          const timeSlot24 = `${hour.toString().padStart(2, '0')}:00`;
-
-          calendarHTML += `<div class="calendar-time-slot">${timeLabel}</div>`;
-
-          for (let i = 0; i < 7; i++) {
-            const currentDay = new Date(startOfWeek);
-            currentDay.setDate(startOfWeek.getDate() + i);
-            const dateStr = currentDay.toISOString().split('T')[0];
-
-            // Get bookings that occur during this time slot
-            const slotBookings = getBookingsForTimeSlot(dateStr, timeSlot24);
-
-            console.log(`📅 Week View - ${dateStr} ${timeSlot24}: ${slotBookings.length} bookings`);
-
-            calendarHTML += `
-                    <div class="calendar-week-slot ${slotBookings.length > 0 ? 'has-booking' : ''}"
-                         ondragover="allowDrop(event)"
-                         ondrop="dropBookingToSlot(event, '${dateStr}', '${timeSlot24}')"
-                         ondragleave="handleDragLeave(event)">
-                `;
-
-            if (slotBookings.length > 0) {
-              slotBookings.forEach(booking => {
-                const convertedSlot = convertTo24Hour(booking.slot);
-
-                // Truncate long names for better display
-                const shortFacilityName = booking.facilityName.length > 12 ?
-                  booking.facilityName.substring(0, 12) + '...' : booking.facilityName;
-                const shortUserName = booking.userName.split('@')[0];
-
-                calendarHTML += `
-                            <div class="week-booking ${getBookingColorClass(booking)} mb-1"
-                                 draggable="true"
-                                 ondragstart="dragBooking(event, '${booking.id}')"
-                                 ondragend="handleDragEnd(event)"
-                                 onclick="showBookingDetails('${booking.id}', event)"
-                                 title="${booking.facilityName} - ${booking.userName} (${booking.slot}) - ${booking.status}">
-                                <div class="d-flex justify-content-between align-items-start">
-                                    <strong class="booking-facility">${shortFacilityName}</strong>
-                                    <span class="badge badge-status badge-${booking.status}">${booking.status.charAt(0)}</span>
-                                </div>
-                                <small class="booking-user d-block">${shortUserName}</small>
-                                <small class="booking-time text-muted d-block">${convertedSlot ? convertedSlot.slot24 : booking.slot}</small>
-                            </div>
-                        `;
-              });
-            } else {
-              calendarHTML += `
-                        <div class="text-center text-muted py-2">
-                            <small>Available</small>
-                        </div>
-                    `;
-            }
-
-            calendarHTML += `</div>`;
-          }
-        }
-
-        calendarHTML += '</div>';
-
-        // Add week summary
-        const weekBookings = getWeekBookings(startOfWeek);
-        calendarHTML += `
-            <div class="alert alert-info mt-3">
-                <h6><i class="fas fa-calendar-week me-2"></i>Week Summary</h6>
-                <div class="row">
-                    <div class="col-md-6">
-                        <small><strong>Total Bookings This Week:</strong> ${weekBookings.length}</small>
-                    </div>
-                    <div class="col-md-6">
-                        <small><strong>Week Period:</strong> ${startOfWeek.toLocaleDateString()} - ${new Date(startOfWeek.getTime() + 6 * 24 * 60 * 60 * 1000).toLocaleDateString()}</small>
-                    </div>
-                </div>
-                ${weekBookings.length > 0 ? `
-                    <div class="mt-2">
-                        <small><strong>Bookings by Day:</strong></small>
-                        <div class="d-flex flex-wrap gap-2 mt-1">
-                            ${Array.from({ length: 7 }).map((_, i) => {
-          const day = new Date(startOfWeek);
-          day.setDate(startOfWeek.getDate() + i);
-          const dateStr = day.toISOString().split('T')[0];
-          const dayBookings = getFilteredBookingsForDate(dateStr);
-          return `<span class="badge bg-primary">${day.toLocaleDateString('en-US', { weekday: 'short' })}: ${dayBookings.length}</span>`;
-        }).join('')}
-                        </div>
-                    </div>
-                ` : ''}
-            </div>
-        `;
-
-        return calendarHTML;
-
-      } catch (error) {
-        console.error('Error generating week view:', error);
-        return `
-            <div class="alert alert-danger">
-                <h4>Error Generating Week View</h4>
-                <p>There was an error generating the week view. Please try refreshing.</p>
-                <p><small>Error: ${error.message}</small></p>
-            </div>
-        `;
-      }
-    }
-
-    async function generateDayView() {
-      try {
-        const dateStr = currentCalendarDate.toISOString().split('T')[0];
-        const dayBookings = getFilteredBookingsForDate(dateStr);
-
-        console.log(`Generating day view for ${dateStr}, found ${dayBookings.length} bookings`);
-
-        let calendarHTML = `
-            <div class="calendar-day-view">
-                <div class="day-view-header bg-primary text-white p-3 rounded-top">
-                    <h4 class="mb-0">
-                        <i class="fas fa-calendar-day me-2"></i>
-                        ${currentCalendarDate.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
-                    </h4>
-                    <small>${dayBookings.length} booking(s) scheduled</small>
-                </div>
-                <div class="day-view-time-slots">
-        `;
-
-        // If no bookings, show empty state
-        if (dayBookings.length === 0) {
-          calendarHTML += `
-                <div class="text-center py-5" style="grid-column: 1 / -1;">
-                    <i class="fas fa-calendar-times fa-3x text-muted mb-3"></i>
-                    <h5 class="text-muted">No Bookings Scheduled</h5>
-                    <p class="text-muted">There are no bookings scheduled for this day.</p>
-                </div>
-            `;
-        } else {
-          // Group bookings by hour for better display
-          const bookingsByHour = {};
-
-          // Initialize hours from 7 AM to 10 PM in 24-hour format
-          for (let hour = 7; hour <= 22; hour++) {
-            const timeSlot = `${hour.toString().padStart(2, '0')}:00`;
-            bookingsByHour[timeSlot] = [];
-          }
-
-          // Assign bookings to hours
-          dayBookings.forEach(booking => {
-            if (!booking.slot) return;
-
-            const convertedSlot = convertTo24Hour(booking.slot);
-            if (!convertedSlot) return;
-
-            const [startHour, startMinute] = convertedSlot.start24.split(':').map(Number);
-            const [endHour, endMinute] = convertedSlot.end24.split(':').map(Number);
-
-            console.log(`📅 Assigning booking ${booking.id}: ${convertedSlot.slot24} (${startHour}:${startMinute} to ${endHour}:${endMinute})`);
-
-            // Add booking to all hours it spans
-            for (let hour = startHour; hour < endHour; hour++) {
-              const timeSlot = `${hour.toString().padStart(2, '0')}:00`;
-              if (hour >= 7 && hour <= 22) {
-                if (!bookingsByHour[timeSlot]) {
-                  bookingsByHour[timeSlot] = [];
-                }
-                // Only add if not already in the array
-                if (!bookingsByHour[timeSlot].find(b => b.id === booking.id)) {
-                  bookingsByHour[timeSlot].push(booking);
-                  console.log(`   ✅ Added to ${timeSlot}`);
-                }
-              }
-            }
-          });
-
-          // Display time slots
-          for (let hour = 7; hour <= 22; hour++) {
-            const timeSlot = `${hour.toString().padStart(2, '0')}:00`;
-            const hourBookings = bookingsByHour[timeSlot] || [];
-
-            console.log(`⏰ Time slot ${timeSlot}: ${hourBookings.length} bookings`);
-
-            calendarHTML += `
-                    <div class="day-time-slot">
-                        <div class="time-label bg-light fw-bold border-end">
-                            ${hour}:00
-                            ${hourBookings.length > 0 ? `<br><small class="badge bg-success">${hourBookings.length}</small>` : ''}
-                        </div>
-                        <div class="time-slot-content ${hourBookings.length > 0 ? 'has-booking' : ''}"
-                             ondragover="allowDrop(event)"
-                             ondrop="dropBookingToSlot(event, '${dateStr}', '${timeSlot}')"
-                             ondragleave="handleDragLeave(event)">
-                `;
-
-            if (hourBookings.length > 0) {
-              // Show unique bookings for this hour
-              const uniqueBookings = Array.from(new Set(hourBookings.map(b => b.id)))
-                .map(id => hourBookings.find(b => b.id === id));
-
-              uniqueBookings.forEach(booking => {
-                const convertedSlot = convertTo24Hour(booking.slot);
-                const duration = booking.duration || 1;
-
-                calendarHTML += `
-                            <div class="day-booking ${getBookingColorClass(booking)} mb-2"
-                                 draggable="true"
-                                 ondragstart="dragBooking(event, '${booking.id}')"
-                                 ondragend="handleDragEnd(event)"
-                                 onclick="showBookingDetails('${booking.id}', event)"
-                                 title="${booking.facilityName} - ${booking.userName} - ${booking.status}">
-                                <div class="d-flex justify-content-between align-items-start">
-                                    <strong class="booking-facility">${booking.facilityName}</strong>
-                                    <span class="badge badge-status badge-${booking.status}">${booking.status}</span>
-                                </div>
-                                <div class="booking-user small">
-                                    <i class="fas fa-user me-1"></i>${booking.userName}
-                                </div>
-                                <div class="booking-time small text-muted">
-                                    <i class="fas fa-clock me-1"></i>
-                                    ${convertedSlot ? convertedSlot.slot24 : booking.slot}
-                                    ${duration > 1 ? `(${duration}h)` : ''}
-                                </div>
-                                ${booking.notes ? `
-                                    <div class="booking-notes small text-muted mt-1">
-                                        <i class="fas fa-sticky-note me-1"></i>
-                                        ${booking.notes}
-                                    </div>
-                                ` : ''}
-                            </div>
-                        `;
-              });
-            } else {
-              calendarHTML += `
-                        <div class="text-center text-muted py-4">
-                            <i class="fas fa-calendar-plus fa-2x mb-2"></i>
-                            <div>No bookings</div>
-                            <small>Drag and drop to schedule</small>
-                        </div>
-                    `;
-            }
-
-            calendarHTML += `
-                        </div>
-                    </div>
-                `;
-          }
-        }
-
-        calendarHTML += `
-                </div>
-            </div>
-        `;
-
-        // Add day summary
-        calendarHTML += `
-            <div class="alert alert-success mt-3">
-                <h6><i class="fas fa-calendar-day me-2"></i>Day Summary - ${currentCalendarDate.toLocaleDateString()}</h6>
-                <div class="row">
-                    <div class="col-md-3">
-                        <small><strong>Total Bookings:</strong> ${dayBookings.length}</small>
-                    </div>
-                    <div class="col-md-3">
-                        <small><strong>Confirmed:</strong> ${dayBookings.filter(b => b.status === 'confirmed' || b.status === 'approved').length}</small>
-                    </div>
-                    <div class="col-md-3">
-                        <small><strong>Pending:</strong> ${dayBookings.filter(b => b.status === 'pending').length}</small>
-                    </div>
-                    <div class="col-md-3">
-                        <small><strong>Facilities:</strong> ${new Set(dayBookings.map(b => b.facilityName)).size}</small>
-                    </div>
-                </div>
-            </div>
-        `;
-
-        return calendarHTML;
-
-      } catch (error) {
-        console.error('Error generating day view:', error);
-        return `
-            <div class="alert alert-danger">
-                <h4>Error Generating Day View</h4>
-                <p>There was an error generating the day view. Please try refreshing.</p>
-                <p><small>Error: ${error.message}</small></p>
-            </div>
-        `;
-      }
     }
     // Calendar Navigation Functions
     function getCalendarTitle() {
@@ -8250,8 +8401,23 @@ async function loadFacilitiesForEvents() {
 
           <input class="form-control mb-2" id="pName" placeholder="Product name" value="${data.name || ""}">
           <input type="tel" class="form-control" id="contactNumber" placeholder="+6012-345-6789" value="${data.sellerContact || ""}">
-          <input class="form-control mb-2" id="pCategory" placeholder="Category" value="${data.category || ""}">
-          <input class="form-control mb-2" id="pCondition" placeholder="Condition" value="${data.condition || "new"}">
+          <label class="form-label">Category</label>
+          <select class="form-select mb-2" id="pCategory">
+            <option value="">Select Category</option>
+            <option value="tennis">Tennis</option>
+            <option value="badminton">Badminton</option>
+            <option value="basketball">Basketball</option>
+            <option value="football">Football</option>
+            <option value="fitness">Fitness</option>
+            <option value="other">Other</option>
+          </select>
+          <label class="form-label">Condition</label>
+          <select class="form-select mb-2" id="pCondition">
+            <option value="new">New</option>
+            <option value="excellent">Excellent</option>
+            <option value="good">Good</option>
+            <option value="fair">Fair</option>
+          </select>
           <input type="number" class="form-control mb-2" id="pPrice" placeholder="Price" value="${data.price || ""}">
 
           <input type="file" class="form-control mb-2" id="pImages" multiple>
@@ -8279,7 +8445,13 @@ async function loadFacilitiesForEvents() {
       </div>
     </div>
   </div>
-  `);
+  `)
+  // Normalize to lowercase to avoid case mismatch
+document.getElementById("pCategory").value =
+  (data.category || "").toLowerCase();
+
+document.getElementById("pCondition").value =
+  (data.condition || "new").toLowerCase();
 
   new bootstrap.Modal(adminProductModal).show();
 }
