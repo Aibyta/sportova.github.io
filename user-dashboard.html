@@ -418,18 +418,18 @@
 
     /* Promo Badge */
     .promo-badge {
-      position: absolute;
-      top: 10px;
-      right: 10px;
-      background-color: #ff6b6b;
-      color: white;
-      padding: 5px 10px;
-      border-radius: 15px;
-      font-size: 0.8rem;
-      font-weight: bold;
-      z-index: 10;
-      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
-    }
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  background-color: #ff6b6b;
+  color: white;
+  padding: 5px 10px;
+  border-radius: 15px;
+  font-size: 0.8rem;
+  font-weight: bold;
+  z-index: 10;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+}
 
     /* Responsive */
     @media (max-width: 768px) {
@@ -660,6 +660,69 @@
     .step:not(.active):not(.completed) {
       opacity: 0.4;
       pointer-events: auto;
+    }
+
+    /* Court Layout Image Popup Zoom */
+    .court-layout-option img {
+      cursor: zoom-in;
+      transition: filter 0.3s ease-in-out;
+    }
+
+    .court-layout-option img:hover {
+      filter: brightness(1.1);
+    }
+
+    .court-layout-zoom-popup {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background-color: rgba(0, 0, 0, 0.7);
+      z-index: 10000;
+      justify-content: center;
+      align-items: center;
+    }
+
+    .court-layout-zoom-popup.show {
+      display: flex;
+    }
+
+    .court-layout-zoom-content {
+      position: relative;
+      max-width: 90vw;
+      max-height: 90vh;
+    }
+
+    .court-layout-zoom-content img {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      border-radius: 10px;
+      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+    }
+
+    .court-layout-close-btn {
+      position: absolute;
+      top: -40px;
+      right: 0;
+      background-color: white;
+      border: none;
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      cursor: pointer;
+      font-size: 24px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+      transition: background-color 0.3s;
+    }
+
+    .court-layout-close-btn:hover {
+      background-color: #f0f0f0;
     }
 
 #timeSlots {
@@ -1517,6 +1580,7 @@
     transform: translateX(-100%);
   }
 }
+
 /* Custom carousel controls */
 #productCarousel .carousel-control-prev,
 #productCarousel .carousel-control-next {
@@ -1818,6 +1882,7 @@
     let selectedFacility = null;
     let selectedDate = null;
     let selectedTimeSlot = null;
+    let selectedCourtLayout = null;
     let selectedCoach = null;
     let selectedSnacks = [];
     let availableCoaches = [];
@@ -1997,7 +2062,15 @@ function startNotificationListener() {
 
           showToast(
             `💬 ${notif.title}: ${notif.message}`,
-            "info"
+            "info",
+            () => {
+              // Handle notification click - open chat
+              if (notif.data && notif.data.chatId) {
+                const chatId = notif.data.chatId;
+                markNotificationAsRead(chatId);
+                openChat(chatId, notif.data.senderId);
+              }
+            }
           );
         }
       });
@@ -2008,8 +2081,11 @@ function showIncomingMessageNotification(notification) {
     `💬 ${notification.title}: ${notification.message}`,
     "info",
     () => {
-      if (notification.data?.chatId) {
-        openChat(notification.data.chatId); // 🧠 mark happens inside openChat
+      if (notification.data && notification.data.chatId) {
+        const chatId = notification.data.chatId;
+
+        // Generate receiver from chat participants
+        openChat(chatId);
       }
     }
   );
@@ -2857,7 +2933,7 @@ async function registerForEvent(eventId) {
     });
 
     // Toast notification function
-    function showToast(message, type = 'info') {
+    function showToast(message, type = 'info', callback = null) {
       const toast = document.createElement('div');
       toast.className = `toast align-items-center text-white bg-${type} border-0`;
       toast.setAttribute('role', 'alert');
@@ -2866,7 +2942,7 @@ async function registerForEvent(eventId) {
 
       toast.innerHTML = `
         <div class="d-flex">
-          <div class="toast-body">
+          <div class="toast-body" style="cursor: ${callback ? 'pointer' : 'auto'};">
             <i class="fas fa-${type === 'success' ? 'check-circle' : type === 'warning' ? 'exclamation-triangle' : type === 'danger' ? 'exclamation-circle' : 'info-circle'} me-2"></i>
             ${message}
           </div>
@@ -2875,6 +2951,16 @@ async function registerForEvent(eventId) {
       `;
 
       document.getElementById('toastContainer').appendChild(toast);
+
+      // Add click handler if callback provided
+      if (callback) {
+        const toastBody = toast.querySelector('.toast-body');
+        toastBody.addEventListener('click', () => {
+          callback();
+          const bsToast = bootstrap.Toast.getInstance(toast);
+          if (bsToast) bsToast.hide();
+        });
+      }
 
       const bsToast = new bootstrap.Toast(toast);
       bsToast.show();
@@ -2919,83 +3005,85 @@ async function registerForEvent(eventId) {
       }
     }
 // Load dashboard data specifically for dashboard page
-    async function loadDashboardData() {
-      if (!currentUser) return;
+    // Update your loadDashboardData function
+// Update your loadDashboardData function
+async function loadDashboardData() {
+  if (!currentUser) return;
 
-      try {
-        await updateDashboardStats(currentUser.uid);
-      } catch (error) {
-        console.error('Error loading dashboard data:', error);
-        showToast('Error loading dashboard data', 'danger');
-      }
-    }
-
+  try {
+    await updateDashboardStats(currentUser.uid);
+  } catch (error) {
+    console.error('Error loading dashboard data:', error);
+    showToast('Error loading dashboard data', 'danger');
+  }
+}
     // Page content loaders
     function loadDashboardPage() {
-      return `
-        <div class="row">
-          <div class="col-md-3">
-            <div class="stats-card">
-              <i class="fas fa-calendar-check"></i>
-              <div class="number" id="totalBookings">0</div>
-              <div class="label">My Bookings</div>
-            </div>
-          </div>
-          <div class="col-md-3">
-            <div class="stats-card">
-              <i class="fas fa-users"></i>
-              <div class="number" id="totalFriends">0</div>
-              <div class="label">Friends</div>
-            </div>
-          </div>
-          <div class="col-md-3">
-            <div class="stats-card">
-              <i class="fas fa-trophy"></i>
-              <div class="number" id="loyaltyPoints">0</div>
-              <div class="label">Loyalty Points</div>
-            </div>
-          </div>
-          <div class="col-md-3">
-            <div class="stats-card">
-              <i class="fas fa-calendar-day"></i>
-              <div class="number" id="upcomingEvents">0</div>
-              <div class="label">Upcoming Events</div>
-            </div>
-          </div>
+  return `
+    <div class="row">
+      <div class="col-md-3">
+        <div class="stats-card">
+          <i class="fas fa-calendar-check"></i>
+          <div class="number" id="totalBookings">0</div>
+          <div class="label">My Bookings</div>
         </div>
+      </div>
+      <div class="col-md-3">
+        <div class="stats-card">
+          <i class="fas fa-users"></i>
+          <div class="number" id="totalFriends">0</div>
+          <div class="label">Friends</div>
+        </div>
+      </div>
+      <div class="col-md-3">
+        <div class="stats-card">
+          <i class="fas fa-trophy"></i>
+          <div class="number" id="loyaltyPoints">0</div>
+          <div class="label">Loyalty Points</div>
+        </div>
+      </div>
+      <div class="col-md-3">
+        <div class="stats-card">
+          <i class="fas fa-calendar-day"></i>
+          <div class="number" id="upcomingEvents">0</div>
+          <div class="label">Upcoming Events</div>
+        </div>
+      </div>
+    </div>
 
-        <div class="row mt-4">
-          <div class="col-md-8">
-            <div class="table-card">
-              <h4>Recent Bookings</h4>
-              <div class="table-responsive">
-                <table class="table table-hover">
-                  <thead>
-                    <tr>
-                      <th>Facility</th>
-                      <th>Date</th>
-                      <th>Time</th>
-                      <th>Status</th>
-                    </tr>
-                  </thead>
-                  <tbody id="recentBookings">
-                    <!-- Bookings will be loaded dynamically -->
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          </div>
-          <div class="col-md-4">
-            <div class="table-card">
-              <h4>Upcoming Events</h4>
-              <div class="list-group" id="upcomingEventsList">
-                <!-- Events will be loaded dynamically -->
-              </div>
-            </div>
+    <div class="row mt-4">
+      <div class="col-md-8">
+        <div class="table-card">
+          <h4>Recent Bookings</h4>
+          <div class="table-responsive">
+            <table class="table table-hover">
+              <thead>
+                <tr>
+                  <th>Facility</th>
+                  <th>Date</th>
+                  <th>Time</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+              <tbody id="recentBookings">
+                <!-- Bookings will be loaded dynamically -->
+              </tbody>
+            </table>
           </div>
         </div>
-      `;
-    }
+      </div>
+      <div class="col-md-4">
+        <div class="table-card">
+          <h4>Upcoming Events</h4>
+          <div class="list-group" id="upcomingEventsList">
+            <!-- Events will be loaded dynamically -->
+          </div>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
     //Book Facility page
     // Global variables
 let availableSportTypes = new Set();
@@ -3006,6 +3094,13 @@ let facilityAmenities = [];
 
 function loadBookFacilityPage() {
     return `
+    <!-- Book Together Banner -->
+    <div id="bookTogetherBanner" class="alert alert-info alert-dismissible fade show d-none" role="alert">
+        <i class="fas fa-users me-2"></i>
+        <strong>Booking with a friend!</strong> Both of you will be registered as participants for this booking.
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+
     <div class="row mb-4">
         <div class="col-md-12">
             <div class="form-card">
@@ -3108,14 +3203,18 @@ function loadBookFacilityPage() {
             </div>
             <div class="step" id="step3">
                 <div class="step-number">3</div>
-                <div class="step-label">Coach</div>
+                <div class="step-label">Court Layout</div>
             </div>
             <div class="step" id="step4">
                 <div class="step-number">4</div>
-                <div class="step-label">Snacks</div>
+                <div class="step-label">Coach</div>
             </div>
             <div class="step" id="step5">
                 <div class="step-number">5</div>
+                <div class="step-label">Snacks</div>
+            </div>
+            <div class="step" id="step6">
+                <div class="step-number">6</div>
                 <div class="step-label">Payment</div>
             </div>
         </div>
@@ -3143,8 +3242,20 @@ function loadBookFacilityPage() {
             </div>
         </div>
 
-        <!-- Step 3: Coach Selection -->
+        <!-- Step 3: Select Court Layout -->
         <div class="booking-step" id="step3-content">
+            <div class="form-card">
+                <h4>Select a Court Layout</h4>
+                <div id="courtLayoutsList" class="d-flex flex-wrap gap-3 mb-3"></div>
+                <div class="mt-3 d-flex justify-content-between">
+                    <button class="btn btn-secondary" id="backToStep2">Back</button>
+                    <button class="btn btn-primary" id="nextToStep4">Next</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Step 4: Coach Selection -->
+        <div class="booking-step" id="step4-content">
             <div class="form-card">
                 <h4>Do you need a coach?</h4>
                 <div class="form-check mb-3">
@@ -3166,14 +3277,14 @@ function loadBookFacilityPage() {
                 </div>
                 
                 <div class="mt-3 d-flex justify-content-between">
-                    <button class="btn btn-secondary" id="backToStep2">Back</button>
-                    <button class="btn btn-primary" id="nextToStep4">Next</button>
+                    <button class="btn btn-secondary" id="backToStep3">Back</button>
+                    <button class="btn btn-primary" id="nextToStep5">Next</button>
                 </div>
             </div>
         </div>
 
-        <!-- Step 4: Snacks Selection -->
-        <div class="booking-step" id="step4-content">
+        <!-- Step 5: Snacks Selection -->
+        <div class="booking-step" id="step5-content">
             <div class="form-card">
                 <h4>Do you want to order snacks?</h4>
                 <div class="form-check mb-3">
@@ -3199,14 +3310,14 @@ function loadBookFacilityPage() {
                 </div>
 
                 <div class="mt-3 d-flex justify-content-between">
-                    <button class="btn btn-secondary" id="backToStep3">Back</button>
-                    <button class="btn btn-primary" id="nextToStep5">Next</button>
+                    <button class="btn btn-secondary" id="backToStep4">Back</button>
+                    <button class="btn btn-primary" id="nextToStep6">Next</button>
                 </div>
             </div>
         </div>
 
-        <!-- Step 5: Payment -->
-        <div class="booking-step" id="step5-content">
+        <!-- Step 6: Payment -->
+        <div class="booking-step" id="step6-content">
             <div class="form-card">
                 <h4>Booking Summary & Payment</h4>
                 <div class="summary-card mb-4">
@@ -3222,6 +3333,10 @@ function loadBookFacilityPage() {
                     <div class="summary-item">
                         <span>Time:</span>
                         <span id="summaryTime">-</span>
+                    </div>
+                    <div class="summary-item">
+                        <span>Court Layout:</span>
+                        <span id="summaryCourtLayout">-</span>
                     </div>
                     <div class="summary-item">
                         <span>Court Fee:</span>
@@ -3442,45 +3557,61 @@ async function populateDateFilter(selectedSportType = 'all', selectedLocation = 
             dateSelect.appendChild(option);
         });
     } else {
-        try {
-            let query = db.collection('facilities');
-            
-            if (selectedSportType !== 'all') {
-                query = query.where('type', '==', selectedSportType);
-            }
-            
-            if (selectedLocation !== 'all') {
-                query = query.where('location', '==', selectedLocation);
-            }
-            
-            const facilitiesSnapshot = await query.get();
-            const filteredDates = new Set();
-            
-            facilitiesSnapshot.forEach(doc => {
-                const facility = doc.data();
-                if (facility.availableDates && Array.isArray(facility.availableDates)) {
-                    facility.availableDates.forEach(dateStr => {
-                        const date = new Date(dateStr);
-                        if (date >= today) { // Only add future dates
-                            filteredDates.add(dateStr);
-                        }
-                    });
-                }
-            });
-            
-            dateSelect.disabled = false;
-            const sortedDates = Array.from(filteredDates).sort();
-            sortedDates.forEach(dateStr => {
-                const option = document.createElement('option');
-                option.value = dateStr;
-                option.textContent = formatDateForDisplay(dateStr);
-                dateSelect.appendChild(option);
-            });
-            
-        } catch (error) {
-            console.error('Error filtering dates:', error);
+    try {
+        let query = db.collection('facilities');
+
+        if (selectedSportType !== 'all') {
+            query = query.where('type', '==', selectedSportType);
         }
+
+        if (selectedLocation !== 'all') {
+            query = query.where('location', '==', selectedLocation);
+        }
+
+        const facilitiesSnapshot = await query.get();
+        const filteredDates = new Set();
+
+        for (const doc of facilitiesSnapshot.docs) {
+            const facility = doc.data();
+            const facilityId = doc.id;
+
+            if (!facility.availableDates || !Array.isArray(facility.availableDates)) continue;
+
+            for (const dateStr of facility.availableDates) {
+                const date = new Date(dateStr);
+                if (date < today) continue;
+
+                // 🔥 Check bookings for this facility + date
+                const bookingsSnapshot = await db.collection('bookings')
+                    .where('facilityId', '==', facilityId)
+                    .where('date', '==', dateStr)
+                    .where('status', 'in', ['confirmed', 'pending'])
+                    .get();
+
+                const totalSlots = facility.slots?.length || 0;
+                const bookedSlots = bookingsSnapshot.size;
+
+                // ✅ Only add date if not fully booked
+                if (bookedSlots < totalSlots) {
+                    filteredDates.add(dateStr);
+                }
+            }
+        }
+
+        dateSelect.disabled = false;
+        const sortedDates = Array.from(filteredDates).sort();
+
+        sortedDates.forEach(dateStr => {
+            const option = document.createElement('option');
+            option.value = dateStr;
+            option.textContent = formatDateForDisplay(dateStr);
+            dateSelect.appendChild(option);
+        });
+
+    } catch (error) {
+        console.error('Error filtering dates:', error);
     }
+}
     
     resetFilter('time');
 }
@@ -3648,34 +3779,44 @@ function updateSelectedFiltersDisplay() {
 }
 
 // Clear single filter
-function clearSingleFilter(filterType) {
+async function clearSingleFilter(filterType) {
     if (filterType === 'sportType') {
         document.getElementById('sportType').value = 'all';
-        resetFilter('location');
-        resetFilter('date');
-        resetFilter('time');
-    } else if (filterType === 'location') {
+        await populateLocationFilter('all');
+        await populateDateFilter('all', 'all');
+        await populateTimeFilter('all', 'all', 'all');
+    }
+
+    if (filterType === 'location') {
         document.getElementById('bookinglocation').value = 'all';
-        resetFilter('date');
-        resetFilter('time');
-    } else if (filterType === 'date') {
+        const sportType = document.getElementById('sportType').value;
+        await populateDateFilter(sportType, 'all');
+        await populateTimeFilter(sportType, 'all', 'all');
+    }
+
+    if (filterType === 'date') {
         document.getElementById('bookingDate').value = 'all';
-        resetFilter('time');
-    } else if (filterType === 'time') {
+        const sportType = document.getElementById('sportType').value;
+        const location = document.getElementById('bookinglocation').value;
+        await populateTimeFilter(sportType, location, 'all');
+    }
+
+    if (filterType === 'time') {
         document.getElementById('bookingTime').value = 'all';
     }
-    
+
     updateSelectedFiltersDisplay();
     searchFacilities();
 }
 
 // Clear all filters
-function clearAllFilters() {
+async function clearAllFilters() {
     document.getElementById('sportType').value = 'all';
-    resetFilter('location');
-    resetFilter('date');
-    resetFilter('time');
-    
+
+    await populateLocationFilter('all');
+    await populateDateFilter('all', 'all');
+    await populateTimeFilter('all', 'all', 'all');
+
     updateSelectedFiltersDisplay();
     searchFacilities();
 }
@@ -4384,6 +4525,108 @@ async function loadAvailableCoachesForFacility(facilityId) {
     }
 }
 
+async function loadCourtLayoutsForFacility(facilityId) {
+    try {
+        const facilityDoc = await db.collection('facilities').doc(facilityId).get();
+        
+        if (!facilityDoc.exists) {
+            console.log('Facility not found');
+            return;
+        }
+
+        const facility = facilityDoc.data();
+        const courtLayouts = facility.courtLayouts || [];
+        
+        const layoutsContainer = document.getElementById('courtLayoutsList');
+        layoutsContainer.innerHTML = '';
+
+        if (courtLayouts.length === 0) {
+            layoutsContainer.innerHTML = '<p class="text-muted">No court layouts available for this facility.</p>';
+            // Disable next button if no layouts
+            document.getElementById('nextToStep4').disabled = true;
+            return;
+        }
+
+        // Enable next button if layouts exist
+        document.getElementById('nextToStep4').disabled = false;
+
+        // Create popup zoom container if it doesn't exist
+        if (!document.getElementById('courtLayoutZoomPopup')) {
+            const popupHTML = `
+                <div id="courtLayoutZoomPopup" class="court-layout-zoom-popup">
+                    <div class="court-layout-zoom-content">
+                        <button class="court-layout-close-btn" onclick="closeCourtLayoutZoom()">&times;</button>
+                        <img id="courtLayoutZoomImage" src="" alt="Court Layout">
+                    </div>
+                </div>
+            `;
+            document.body.insertAdjacentHTML('beforeend', popupHTML);
+        }
+
+        courtLayouts.forEach((layout, index) => {
+            const layoutDiv = document.createElement('div');
+            layoutDiv.className = 'court-layout-option';
+            layoutDiv.style.cssText = 'cursor: pointer; border: 2px solid #ddd; border-radius: 8px; padding: 10px; text-align: center; transition: all 0.3s; overflow: hidden;';
+            layoutDiv.innerHTML = `
+                <input type="radio" name="courtLayout" value="${layout.name}" id="layout-${index}">
+                <label for="layout-${index}" style="cursor: pointer; display: block; margin-top: 10px;">
+                    <img class="court-layout-img" src="${layout.image}" style="width: 150px; height: 150px; object-fit: cover; border-radius: 6px; margin-bottom: 10px; display: block;" data-full-image="${layout.image}">
+                    <div><strong>${layout.name}</strong></div>
+                </label>
+            `;
+
+            // Add click handler to image for zoom popup
+            const img = layoutDiv.querySelector('.court-layout-img');
+            img.addEventListener('click', (e) => {
+                e.stopPropagation();
+                openCourtLayoutZoom(layout.image);
+            });
+
+            layoutDiv.addEventListener('click', () => {
+                document.querySelectorAll('.court-layout-option').forEach(el => {
+                    el.style.borderColor = '#ddd';
+                    el.style.backgroundColor = 'transparent';
+                });
+                layoutDiv.style.borderColor = '#0d6efd';
+                layoutDiv.style.backgroundColor = '#e7f1ff';
+                document.getElementById(`layout-${index}`).checked = true;
+                selectCourtLayout(layout.name);
+            });
+
+            layoutsContainer.appendChild(layoutDiv);
+        });
+
+    } catch (error) {
+        console.error('Error loading court layouts:', error);
+        showToast('Error loading court layouts', 'danger');
+    }
+}
+
+function openCourtLayoutZoom(imageUrl) {
+    const popup = document.getElementById('courtLayoutZoomPopup');
+    const img = document.getElementById('courtLayoutZoomImage');
+    img.src = imageUrl;
+    popup.classList.add('show');
+}
+
+function closeCourtLayoutZoom() {
+    const popup = document.getElementById('courtLayoutZoomPopup');
+    popup.classList.remove('show');
+}
+
+// Close popup when clicking outside the image
+document.addEventListener('click', (e) => {
+    const popup = document.getElementById('courtLayoutZoomPopup');
+    if (popup && popup.classList.contains('show') && e.target === popup) {
+        closeCourtLayoutZoom();
+    }
+});
+
+function selectCourtLayout(layoutName) {
+    selectedCourtLayout = layoutName;
+    console.log('Selected court layout:', selectedCourtLayout);
+}
+
 async function initializeTimeSlots() {
     const timeSlotsEl = document.getElementById('timeSlots');
     timeSlotsEl.innerHTML = '';
@@ -4559,6 +4802,7 @@ function updateBookingSummary() {
     document.getElementById('summaryFacility').textContent = selectedFacility.name;
     document.getElementById('summaryDate').textContent = selectedDate.toLocaleDateString();
     document.getElementById('summaryTime').textContent = selectedTimeSlot;
+    document.getElementById('summaryCourtLayout').textContent = selectedCourtLayout || '-';
     document.getElementById('summaryCourtFee').textContent = `RM ${courtFee}`;
     document.getElementById('summaryCoach').textContent = selectedCoach ? `${selectedCoach.name} (RM${coachFee})` : 'No coach';
     
@@ -4591,6 +4835,7 @@ function resetBookingProcess() {
     selectedFacility = null;
     selectedDate = null;
     selectedTimeSlot = null;
+    selectedCourtLayout = null;
     selectedCoach = null;
     selectedSnacks = [];
     selectedAmenities = [];
@@ -4633,6 +4878,7 @@ function goToStep(stepNumber) {
 function canProceedToStep(stepNumber) {
     if (stepNumber >= 2 && !selectedDate) return false;
     if (stepNumber >= 3 && !selectedTimeSlot) return false;
+    if (stepNumber >= 4 && !selectedCourtLayout) return false;
     return true;
 }
 
@@ -4741,6 +4987,7 @@ async function submitBooking() {
             amount: parseFloat(totalAmount.toFixed(2)),
             capacity: selectedFacility.capacity || 50,
             coach: coachData,
+            courtLayout: selectedCourtLayout,
             createdAt: firebase.firestore.FieldValue.serverTimestamp(),
             date: selectedDate,
             description: selectedFacility.description || "Your dream tennis court where you can achieve success.",
@@ -4819,6 +5066,18 @@ async function submitBooking() {
 
 // Initialize Book Facility Page with Cascade Filtering
 async function initializeBookFacilityPage() {
+    // Check for Book Together mode
+    const urlParams = new URLSearchParams(window.location.search);
+    const isBookTogether = urlParams.get('bookTogether') === 'true';
+    const friendId = urlParams.get('friendId');
+    
+    if (isBookTogether && friendId) {
+        const banner = document.getElementById('bookTogetherBanner');
+        if (banner) {
+            banner.classList.remove('d-none');
+        }
+    }
+    
     // Get current user
     auth.onAuthStateChanged(async (user) => {
         if (user) {
@@ -4878,81 +5137,133 @@ async function initializeBookFacilityPage() {
         });
     });
 
-    // Step navigation event listeners
-    document.addEventListener('click', function (e) {
-        if (e.target && e.target.id === 'nextToStep2') {
+    // Step navigation event listeners - attach to specific buttons instead of entire document
+    const nextToStep2Btn = document.getElementById('nextToStep2');
+    if (nextToStep2Btn) {
+        nextToStep2Btn.addEventListener('click', function (e) {
             if (!selectedDate) {
                 showToast('Please select a date', 'warning');
                 return;
             }
             goToStep(2);
             initializeTimeSlots();
-        }
-        
-        if (e.target && e.target.id === 'backToStep1') {
+        });
+    }
+    
+    const backToStep1Btn = document.getElementById('backToStep1');
+    if (backToStep1Btn) {
+        backToStep1Btn.addEventListener('click', function (e) {
             goToStep(1);
-        }
-        
-        if (e.target && e.target.id === 'nextToStep3') {
+        });
+    }
+    
+    const nextToStep3Btn = document.getElementById('nextToStep3');
+    if (nextToStep3Btn) {
+        nextToStep3Btn.addEventListener('click', function (e) {
             if (!selectedTimeSlot) {
                 showToast('Please select a time slot', 'warning');
                 return;
             }
             goToStep(3);
-        }
-        
-        if (e.target && e.target.id === 'backToStep2') {
+            loadCourtLayoutsForFacility(selectedFacility.id);
+        });
+    }
+    
+    const backToStep2Btn = document.getElementById('backToStep2');
+    if (backToStep2Btn) {
+        backToStep2Btn.addEventListener('click', function (e) {
             goToStep(2);
-        }
-        
-        if (e.target && e.target.id === 'nextToStep4') {
+        });
+    }
+    
+    const nextToStep4Btn = document.getElementById('nextToStep4');
+    if (nextToStep4Btn) {
+        nextToStep4Btn.addEventListener('click', function (e) {
+            if (!selectedCourtLayout) {
+                showToast('Please select a court layout', 'warning');
+                return;
+            }
             goToStep(4);
-        }
-        
-        if (e.target && e.target.id === 'backToStep3') {
+            loadAvailableCoachesForFacility(selectedFacility.id);
+        });
+    }
+    
+    const backToStep3Btn = document.getElementById('backToStep3');
+    if (backToStep3Btn) {
+        backToStep3Btn.addEventListener('click', function (e) {
             goToStep(3);
-        }
-        
-        if (e.target && e.target.id === 'nextToStep5') {
+        });
+    }
+    
+    const nextToStep5Btn = document.getElementById('nextToStep5');
+    if (nextToStep5Btn) {
+        nextToStep5Btn.addEventListener('click', function (e) {
             goToStep(5);
-            updateBookingSummary();
-        }
-        
-        if (e.target && e.target.id === 'backToStep4') {
+        });
+    }
+    
+    const backToStep4Btn = document.getElementById('backToStep4');
+    if (backToStep4Btn) {
+        backToStep4Btn.addEventListener('click', function (e) {
             goToStep(4);
-        }
-        
-        if (e.target && e.target.id === 'submitBooking') {
+        });
+    }
+    
+    const nextToStep6Btn = document.getElementById('nextToStep6');
+    if (nextToStep6Btn) {
+        nextToStep6Btn.addEventListener('click', function (e) {
+            goToStep(6);
+            updateBookingSummary();
+        });
+    }
+    
+    const backToStep5Btn = document.getElementById('backToStep5');
+    if (backToStep5Btn) {
+        backToStep5Btn.addEventListener('click', function (e) {
+            goToStep(5);
+        });
+    }
+    
+    const submitBookingBtn = document.getElementById('submitBooking');
+    if (submitBookingBtn) {
+        submitBookingBtn.addEventListener('click', function (e) {
             submitBooking();
-        }
-    });
+        });
+    }
     
     // Toggle coach selection
-    document.addEventListener('change', function (e) {
-        if (e.target && e.target.name === 'coachNeeded') {
+    const coachNeededRadios = document.querySelectorAll('input[name="coachNeeded"]');
+    coachNeededRadios.forEach(radio => {
+        radio.addEventListener('change', function (e) {
             const coachSelectionEl = document.getElementById('coachSelection');
-            if (e.target.value === 'yes') {
+            if (this.value === 'yes') {
                 coachSelectionEl.style.display = 'block';
             } else {
                 coachSelectionEl.style.display = 'none';
                 selectedCoach = null;
             }
-        }
-        
-        if (e.target && e.target.name === 'snacksNeeded') {
+        });
+    });
+    
+    const snacksNeededRadios = document.querySelectorAll('input[name="snacksNeeded"]');
+    snacksNeededRadios.forEach(radio => {
+        radio.addEventListener('change', function (e) {
             const snacksSelectionEl = document.getElementById('snacksSelection');
-            if (e.target.value === 'yes') {
+            if (this.value === 'yes') {
                 snacksSelectionEl.style.display = 'block';
             } else {
                 snacksSelectionEl.style.display = 'none';
                 selectedSnacks = [];
             }
-        }
-        
-        if (e.target && e.target.id === 'useLoyaltyPoints') {
-            updateBookingSummary();
-        }
+        });
     });
+    
+    const useLoyaltyPointsCheckbox = document.getElementById('useLoyaltyPoints');
+    if (useLoyaltyPointsCheckbox) {
+        useLoyaltyPointsCheckbox.addEventListener('change', function (e) {
+            updateBookingSummary();
+        });
+    }
     
     // Load facilities initially
     await loadFacilities();
@@ -7075,6 +7386,20 @@ function initializeChatListeners() {
   if (closeBtn) {
     closeBtn.addEventListener("click", closeChat);
   }
+
+  // Book Together button
+  const bookTogetherBtn = document.getElementById("bookTogetherBtn");
+  if (bookTogetherBtn) {
+    bookTogetherBtn.addEventListener("click", function() {
+      if (!activeReceiverId) {
+        showToast("Please open a chat first", "warning");
+        return;
+      }
+      // Redirect to book facility page with friend ID
+      const bookingUrl = `user-dashboard.html?page=book-facility&bookTogether=true&friendId=${activeReceiverId}`;
+      window.location.href = bookingUrl;
+    });
+  }
   
   // Delete chat button
   const deleteBtn = document.getElementById("deleteChatBtn");
@@ -8201,16 +8526,21 @@ function loadMarketplacePage() {
         
           <div class="modal-body">
             <!-- Image Carousel -->
-            <div id="productCarousel" class="carousel slide mb-3" data-bs-ride="carousel">
-              <div class="carousel-inner" id="carouselImages"></div>
-            
-              <button class="carousel-control-prev" type="button" data-bs-target="#productCarousel" data-bs-slide="prev">
-                <span class="carousel-control-prev-icon"></span>
-              </button>
-              <button class="carousel-control-next" type="button" data-bs-target="#productCarousel" data-bs-slide="next">
-                <span class="carousel-control-next-icon"></span>
-              </button>
-            </div>
+            <div id="productCarousel" class="carousel slide">
+  <div class="carousel-inner" id="carouselImages"></div>
+
+  <button class="carousel-control-prev" type="button"
+          data-bs-target="#productCarousel"
+          data-bs-slide="prev">
+    <span class="carousel-control-prev-icon"></span>
+  </button>
+
+  <button class="carousel-control-next" type="button"
+          data-bs-target="#productCarousel"
+          data-bs-slide="next">
+    <span class="carousel-control-next-icon"></span>
+  </button>
+</div>
           
             <p id="modalProductDesc"></p>
             <h5 id="modalProductPrice"></h5>
@@ -8248,19 +8578,38 @@ async function openProductModal(productId) {
   document.getElementById("modalProductDesc").innerText = product.description;
   document.getElementById("modalProductPrice").innerText = `RM${product.price}`;
 
-  const carousel = document.getElementById("carouselImages");
-  carousel.innerHTML = "";
+  const carouselInner = document.getElementById("carouselImages");
+  carouselInner.innerHTML = "";
 
   product.images.forEach((img, index) => {
-    carousel.innerHTML += `
-      <div class="carousel-item ${index === 0 ? 'active' : ''}">
-        <img src="${img}" class="d-block w-100"
-             style="max-height:400px; object-fit:contain;">
-      </div>
+    const item = document.createElement("div");
+    item.className = `carousel-item ${index === 0 ? "active" : ""}`;
+    item.innerHTML = `
+      <img src="${img}" class="d-block w-100"
+           style="max-height:400px; object-fit:contain;">
     `;
+    carouselInner.appendChild(item);
   });
 
-  new bootstrap.Modal(document.getElementById("productModal")).show();
+  const modalElement = document.getElementById("productModal");
+  const modal = new bootstrap.Modal(modalElement);
+  modal.show();
+
+  const carouselElement = document.getElementById("productCarousel");
+
+  // Destroy old instance safely
+  const existingCarousel = bootstrap.Carousel.getInstance(carouselElement);
+  if (existingCarousel) {
+    existingCarousel.dispose();
+  }
+
+  // Create fresh instance with NO auto sliding
+  new bootstrap.Carousel(carouselElement, {
+    interval: false,
+    ride: false,
+    wrap: true,
+    pause: true
+  });
 }
 // Initialize Marketplace Page
     async function initializeMarketplacePage() {
@@ -9032,7 +9381,6 @@ async function openPostModalById(postId) {
   postModal.show();
 }
 
-    // Create post element with emoji reactions
     // Create post element with REACTIONS ONLY
 function createPostElement(post) {
   const postDiv = document.createElement('div');
@@ -9748,237 +10096,269 @@ async function getUserProfile() {
       // Event page initialization code would go here
     }
 //events page
+//events page - Updated HTML with tabs
 function loadEventsPage() {
-      return `
-        <div class="row mb-4">
-          <div class="col-md-12">
-            <div class="form-card">
-              <h4>Create New Event</h4>
-              <form id="createEventForm">
-                <div class="row">
-                  <div class="col-md-6">
-                    <div class="form-group">
-                      <label class="form-label">Event Name</label>
-                      <input type="text" class="form-control" id="eventName" required placeholder="e.g. Tennis Tournament">
-                    </div>
-                  </div>
-                  <div class="col-md-6">
-                    <div class="form-group">
-                      <label class="form-label">Sport Type</label>
-                      <select class="form-select" id="eventSport" required>
-                        <option value="tennis">Tennis</option>
-                        <option value="badminton">Badminton</option>
-                        <option value="basketball">Basketball</option>
-                        <option value="football">Football</option>
-                        <option value="volleyball">Volleyball</option>
-                        <option value="swimming">Swimming</option>
-                        <option value="other">Other</option>
-                      </select>
-                    </div>
-                  </div>
-                  <div class="col-md-4">
-                    <div class="form-group position-relative">
-                      <label class="form-label">Start Date</label>
-                      <input type="date" class="form-control clickable-input" id="eventStartDate" required min="${new Date().toISOString().split('T')[0]}">
-                    </div>
-                  </div>
-                  <div class="col-md-4">
-                    <div class="form-group position-relative">
-                      <label class="form-label">End Date</label>
-                      <input type="date" class="form-control clickable-input" id="eventEndDate">
-                      <small class="text-muted">Leave empty if single day event</small>
-                    </div>
-                  </div>
-                  <div class="col-md-4">
-                    <div class="form-group position-relative">
-                      <label class="form-label">Start Time</label>
-                      <input
-                        type="time"
-                        class="form-control clickable-input"
-                        id="eventStartTime"
-                        required
-                      >
-                    </div>
-                  </div>
-
-                  <div class="col-md-4">
-                    <div class="form-group position-relative">
-                      <label class="form-label">End Time</label>
-                      <input
-                        type="time"
-                        class="form-control clickable-input"
-                        id="eventEndTime"
-                        required
-                      >
-                    </div>
-                  </div>
-                  <div class="col-md-4">
-                    <label class="form-label">State</label>
-                    <select class="form-select" id="eventState" required></select>
-                  </div>
-
-                  <div class="col-md-4">
-                    <label class="form-label">District</label>
-                    <select class="form-select" id="eventDistrict" required disabled></select>
-                  </div>
-
-                  <div class="col-md-4">
-                    <label class="form-label">Venue Name</label>
-                    <input type="text" class="form-control" id="eventLocation" placeholder="Court / Stadium name">
-                  </div>
-                  <div class="col-md-6">
-                    <div class="form-group">
-                      <label class="form-label">Max Participants</label>
-                      <input type="number" class="form-control" id="eventMaxParticipants" min="2" placeholder="Leave empty for unlimited">
-                    </div>
-                  </div>
-                  <div class="col-md-12">
-                    <div class="form-group">
-                      <label class="form-label">Event Description</label>
-                      <textarea class="form-control" id="eventDescription" rows="3" placeholder="Describe your event..."></textarea>
-                    </div>
-                  </div>
-                  <div class="col-md-6">
-                    <div class="form-group mb-3">
-                      <label class="form-label">Event Image</label>
-                      <input type="file" id="eventImageFile" accept="image/*" class="form-control">
-                      <img id="eventImagePreview" class="img-fluid mt-2 rounded" style="max-height: 200px; display:none;" />
-                    </div>
-                  </div>
-                  <div class="col-md-6">
-                    <div class="form-group">
-                      <label class="form-label">Contact Information</label>
-                      <input type="text" class="form-control" id="eventContact" placeholder="Your contact number or email">
-                    </div>
-                    <div class="form-group">
-                      <label class="form-label">Event Type</label>
-                      <select class="form-select" id="eventType">
-                        <option value="tournament">Tournament</option>
-                        <option value="friendly">Friendly Match</option>
-                        <option value="training">Training Session</option>
-                        <option value="social">Social Gathering</option>
-                        <option value="other">Other</option>
-                      </select>
-                    </div>
-                  </div>
-                  <div class="col-md-12">
-                    <div class="d-flex justify-content-end">
-                      <button type="button" class="btn btn-secondary me-2" onclick="clearEventForm()">Clear</button>
-                      <button type="submit" class="btn btn-primary">
-                        <i class="fas fa-plus-circle me-2"></i> Create Event
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              </form>
-            </div>
-          </div>
-        </div>
-      
-        <div class="row mb-4">
-          <div class="col-md-12">
-            <div class="form-card">
-              <h4>Filter Events</h4>
-              <div class="row">
-                <div class="col-md-3">
-                  <div class="form-group">
-                    <label class="form-label">Sport Type</label>
-                    <select class="form-select" id="filterEventSport">
-                      <option value="all">All Sports</option>
-                      <option value="tennis">Tennis</option>
-                      <option value="badminton">Badminton</option>
-                      <option value="basketball">Basketball</option>
-                      <option value="football">Football</option>
-                      <option value="other">Other</option>
-                    </select>
-                  </div>
-                </div>
-                <div class="col-md-3">
-                  <div class="form-group">
-                    <label class="form-label">Event Type</label>
-                    <select class="form-select" id="filterEventType">
-                      <option value="all">All Types</option>
-                      <option value="tournament">Tournament</option>
-                      <option value="friendly">Friendly Match</option>
-                      <option value="training">Training Session</option>
-                      <option value="social">Social Gathering</option>
-                    </select>
-                  </div>
-                </div>
-                <div class="col-md-3">
-                  <div class="form-group">
-                    <label class="form-label">Date Range</label>
-                    <select class="form-select" id="filterEventDate">
-                      <option value="all">All Dates</option>
-                      <option value="today">Today</option>
-                      <option value="week">This Week</option>
-                      <option value="month">This Month</option>
-                      <option value="upcoming">Upcoming</option>
-                      <option value="past">Past Events</option>
-                    </select>
-                  </div>
-                </div>
-                <div class="col-md-3">
-                  <div class="form-group">
-                    <label class="form-label">Show</label>
-                    <select class="form-select" id="filterEventShow">
-                      <option value="all">All Events</option>
-                      <option value="my">My Events</option>
-                      <option value="registered">Registered Events</option>
-                      <option value="available">Available to Join</option>
-                    </select>
-                  </div>
+  return `
+    <div class="row mb-4">
+      <div class="col-md-12">
+        <div class="form-card">
+          <h4>Create New Event</h4>
+          <form id="createEventForm">
+            <!-- Your existing create event form remains the same -->
+            <div class="row">
+              <div class="col-md-6">
+                <div class="form-group">
+                  <label class="form-label">Event Name</label>
+                  <input type="text" class="form-control" id="eventName" required placeholder="e.g. Tennis Tournament">
                 </div>
               </div>
-              <div class="row mt-3">
-                <div class="col-md-3">
-                  <label class="form-label">State</label>
-                  <select class="form-select" id="filterEventState">
-                    <option value="all">All States</option>
-                  </select>
-                </div>
-              
-                <div class="col-md-3">
-                  <label class="form-label">District</label>
-                  <select class="form-select" id="filterEventDistrict" disabled>
-                    <option value="all">All Districts</option>
+              <div class="col-md-6">
+                <div class="form-group">
+                  <label class="form-label">Sport Type</label>
+                  <select class="form-select" id="eventSport" required>
+                    <option value="tennis">Tennis</option>
+                    <option value="badminton">Badminton</option>
+                    <option value="basketball">Basketball</option>
+                    <option value="football">Football</option>
+                    <option value="volleyball">Volleyball</option>
+                    <option value="swimming">Swimming</option>
+                    <option value="other">Other</option>
                   </select>
                 </div>
               </div>
-              <div class="row mt-3">
-                <div class="col-md-12">
-                  <div class="d-flex justify-content-between">
-                    <button class="btn btn-primary" id="filterEventsBtn">
-                      <i class="fas fa-filter me-2"></i> Apply Filters
-                    </button>
-                    <button class="btn btn-outline-secondary" id="clearEventFiltersBtn">
-                      <i class="fas fa-times me-2"></i> Clear Filters
-                    </button>
-                  </div>
+              <div class="col-md-4">
+                <div class="form-group position-relative">
+                  <label class="form-label">Start Date</label>
+                  <input type="date" class="form-control clickable-input" id="eventStartDate" required min="${new Date().toISOString().split('T')[0]}">
                 </div>
+              </div>
+              <div class="col-md-4">
+                <div class="form-group position-relative">
+                  <label class="form-label">End Date</label>
+                  <input type="date" class="form-control clickable-input" id="eventEndDate">
+                  <small class="text-muted">Leave empty if single day event</small>
+                </div>
+              </div>
+              <div class="col-md-4">
+                <div class="form-group position-relative">
+                  <label class="form-label">Start Time</label>
+                  <input
+                    type="time"
+                    class="form-control clickable-input"
+                    id="eventStartTime"
+                    required
+                  >
+                </div>
+              </div>
+
+              <div class="col-md-4">
+                <div class="form-group position-relative">
+                  <label class="form-label">End Time</label>
+                  <input
+                    type="time"
+                    class="form-control clickable-input"
+                    id="eventEndTime"
+                    required
+                  >
+                </div>
+              </div>
+              <div class="col-md-4">
+                <label class="form-label">State</label>
+                <select class="form-select" id="eventState" required></select>
+              </div>
+
+              <div class="col-md-4">
+                <label class="form-label">District</label>
+                <select class="form-select" id="eventDistrict" required disabled></select>
+              </div>
+
+              <div class="col-md-4">
+                <label class="form-label">Venue Name</label>
+                <input type="text" class="form-control" id="eventLocation" placeholder="Court / Stadium name">
+              </div>
+              <div class="col-md-6">
+                <div class="form-group">
+                  <label class="form-label">Max Participants</label>
+                  <input type="number" class="form-control" id="eventMaxParticipants" min="2" placeholder="Leave empty for unlimited">
+                </div>
+              </div>
+              <div class="col-md-12">
+                <div class="form-group">
+                  <label class="form-label">Event Description</label>
+                  <textarea class="form-control" id="eventDescription" rows="3" placeholder="Describe your event..."></textarea>
+                </div>
+              </div>
+              <div class="col-md-6">
+                <div class="form-group mb-3">
+                  <label class="form-label">Event Image</label>
+                  <input type="file" id="eventImageFile" accept="image/*" class="form-control">
+                  <img id="eventImagePreview" class="img-fluid mt-2 rounded" style="max-height: 200px; display:none;" />
+                </div>
+              </div>
+              <div class="col-md-6">
+                <div class="form-group">
+                  <label class="form-label">Contact Information</label>
+                  <input type="text" class="form-control" id="eventContact" placeholder="Your contact number or email">
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Event Type</label>
+                  <select class="form-select" id="eventType">
+                    <option value="tournament">Tournament</option>
+                    <option value="friendly">Friendly Match</option>
+                    <option value="training">Training Session</option>
+                    <option value="social">Social Gathering</option>
+                    <option value="other">Other</option>
+                  </select>
+                </div>
+              </div>
+              <div class="col-md-12">
+                <div class="d-flex justify-content-end">
+                  <button type="button" class="btn btn-secondary me-2" onclick="clearEventForm()">Clear</button>
+                  <button type="submit" class="btn btn-primary">
+                    <i class="fas fa-plus-circle me-2"></i> Create Event
+                  </button>
+                </div>
+              </div>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  
+    <!-- NEW: Tabs for My Events vs All Events -->
+    <div class="row mb-4">
+      <div class="col-md-12">
+        <ul class="nav nav-tabs" id="eventsTab" role="tablist">
+          <li class="nav-item" role="presentation">
+            <button class="nav-link active" id="all-events-tab" data-bs-toggle="tab" data-bs-target="#all-events" type="button" role="tab" aria-controls="all-events" aria-selected="true">
+              <i class="fas fa-globe me-2"></i>All Events
+            </button>
+          </li>
+          <li class="nav-item" role="presentation">
+            <button class="nav-link" id="my-events-tab" data-bs-toggle="tab" data-bs-target="#my-events" type="button" role="tab" aria-controls="my-events" aria-selected="false">
+              <i class="fas fa-user me-2"></i>My Events
+            </button>
+          </li>
+          <li class="nav-item" role="presentation">
+            <button class="nav-link" id="registered-events-tab" data-bs-toggle="tab" data-bs-target="#registered-events" type="button" role="tab" aria-controls="registered-events" aria-selected="false">
+              <i class="fas fa-calendar-check me-2"></i>Registered Events
+            </button>
+          </li>
+        </ul>
+      </div>
+    </div>
+  
+    <div class="row mb-4">
+      <div class="col-md-12">
+        <div class="form-card">
+          <h4>Filter Events</h4>
+          <div class="row">
+            <div class="col-md-3">
+              <div class="form-group">
+                <label class="form-label">Sport Type</label>
+                <select class="form-select" id="filterEventSport">
+                  <option value="all">All Sports</option>
+                  <option value="tennis">Tennis</option>
+                  <option value="badminton">Badminton</option>
+                  <option value="basketball">Basketball</option>
+                  <option value="football">Football</option>
+                  <option value="other">Other</option>
+                </select>
+              </div>
+            </div>
+            <div class="col-md-3">
+              <div class="form-group">
+                <label class="form-label">Event Type</label>
+                <select class="form-select" id="filterEventType">
+                  <option value="all">All Types</option>
+                  <option value="tournament">Tournament</option>
+                  <option value="friendly">Friendly Match</option>
+                  <option value="training">Training Session</option>
+                  <option value="social">Social Gathering</option>
+                </select>
+              </div>
+            </div>
+            <div class="col-md-3">
+              <div class="form-group">
+                <label class="form-label">Date Range</label>
+                <select class="form-select" id="filterEventDate">
+                  <option value="all">All Dates</option>
+                  <option value="today">Today</option>
+                  <option value="week">This Week</option>
+                  <option value="month">This Month</option>
+                  <option value="upcoming">Upcoming</option>
+                  <option value="past">Past Events</option>
+                </select>
+              </div>
+            </div>
+            <div class="col-md-3">
+              <div class="form-group">
+                <label class="form-label">State</label>
+                <select class="form-select" id="filterEventState">
+                  <option value="all">All States</option>
+                </select>
+              </div>
+            </div>
+            <div class="col-md-3">
+              <div class="form-group">
+                <label class="form-label">District</label>
+                <select class="form-select" id="filterEventDistrict" disabled>
+                  <option value="all">All Districts</option>
+                </select>
+              </div>
+            </div>
+          </div>
+          <div class="row mt-3">
+            <div class="col-md-12">
+              <div class="d-flex justify-content-between">
+                <button class="btn btn-primary" id="filterEventsBtn">
+                  <i class="fas fa-filter me-2"></i> Apply Filters
+                </button>
+                <button class="btn btn-outline-secondary" id="clearEventFiltersBtn">
+                  <i class="fas fa-times me-2"></i> Clear Filters
+                </button>
               </div>
             </div>
           </div>
         </div>
-      
-        <div class="row" id="eventsList">
-          <!-- Events will be loaded dynamically -->
+      </div>
+    </div>
+  
+    <!-- Tab panes -->
+    <div class="tab-content" id="eventsTabContent">
+      <div class="tab-pane fade show active" id="all-events" role="tabpanel" aria-labelledby="all-events-tab">
+        <div class="row" id="allEventsList">
+          <!-- All events will be loaded here -->
           <div class="col-12 text-center">
             <div class="spinner-border text-primary" role="status">
               <span class="visually-hidden">Loading events...</span>
             </div>
           </div>
         </div>
-      `;
-      document.getElementById("eventStartTime").addEventListener("change", () => {
-        const start = document.getElementById("eventStartTime").value;
-        const endInput = document.getElementById("eventEndTime");
-
-        if (start) {
-          endInput.min = start;
-        }
-      });
-    }
+      </div>
+      <div class="tab-pane fade" id="my-events" role="tabpanel" aria-labelledby="my-events-tab">
+        <div class="row" id="myEventsList">
+          <!-- My events will be loaded here -->
+          <div class="col-12 text-center">
+            <div class="spinner-border text-primary" role="status">
+              <span class="visually-hidden">Loading your events...</span>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="tab-pane fade" id="registered-events" role="tabpanel" aria-labelledby="registered-events-tab">
+        <div class="row" id="registeredEventsList">
+          <!-- Registered events will be loaded here -->
+          <div class="col-12 text-center">
+            <div class="spinner-border text-primary" role="status">
+              <span class="visually-hidden">Loading registered events...</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  `;
+}
     function initEventCreateLocation() {
   const stateEl = document.getElementById("eventState");
   const districtEl = document.getElementById("eventDistrict");
@@ -10039,18 +10419,35 @@ async function initializeEventsPage() {
 
   // Filter buttons
   document.getElementById('filterEventsBtn')?.addEventListener('click', () => {
-    filterEvents();
+    const activeTab = document.querySelector('#eventsTab .nav-link.active').id;
+    filterEvents(activeTab);
   });
 
   document.getElementById('clearEventFiltersBtn')?.addEventListener('click', () => {
     clearEventFilters();
   });
+  
+  // Tab change event
+  document.querySelectorAll('#eventsTab button').forEach(tab => {
+    tab.addEventListener('shown.bs.tab', (e) => {
+      const targetId = e.target.getAttribute('data-bs-target');
+      if (targetId === '#all-events') {
+        loadAllEvents();
+      } else if (targetId === '#my-events') {
+        loadMyEvents();
+      } else if (targetId === '#registered-events') {
+        loadRegisteredEvents();
+      }
+    });
+  });
+
   document.querySelectorAll('input[type="date"], input[type="time"]').forEach(input => {
-  input.addEventListener('click', function () {
+    input.addEventListener('click', function () {
       this.showPicker?.(); // Chrome, Edge
       this.focus();
     });
   });
+  
   // Add real-time date/time validation
   document.getElementById('eventStartDate')?.addEventListener('change', validateDatesInRealTime);
   document.getElementById('eventEndDate')?.addEventListener('change', validateDatesInRealTime);
@@ -10058,7 +10455,7 @@ async function initializeEventsPage() {
   document.getElementById('eventEndTime')?.addEventListener('change', validateTimesInRealTime);
 
   // Load all events initially
-  await loadEvents();
+  await loadAllEvents();
   initEventCreateLocation();
   initEventFilterLocation();
 }
@@ -10185,7 +10582,186 @@ async function createEvent() {
     showToast('Error creating event: ' + error.message, 'danger');
   }
 }
+// Load all events (public)
+async function loadAllEvents(filters = {}) {
+  try {
+    const eventsList = document.getElementById('allEventsList');
+    eventsList.innerHTML = '<div class="col-12 text-center"><div class="spinner-border text-primary" role="status"><span class="visually-hidden">Loading events...</span></div></div>';
 
+    let eventsQuery = db.collection('events').orderBy('startDate', 'asc');
+    
+    // Apply filters
+    const eventsSnapshot = await eventsQuery.get();
+    
+    let events = [];
+    eventsSnapshot.forEach(doc => {
+      const event = {
+        id: doc.id,
+        ...doc.data()
+      };
+      events.push(event);
+    });
+
+    // Apply client-side filters
+    events = await applyFilters(events, filters);
+    
+    // Sort by date (upcoming first)
+    events.sort((a, b) => new Date(a.startDate) - new Date(b.startDate));
+    
+    renderAllEvents(events);
+
+  } catch (error) {
+    console.error('Error loading all events:', error);
+    document.getElementById('allEventsList').innerHTML = `
+      <div class="col-12 text-center">
+        <div class="alert alert-danger">
+          <i class="fas fa-exclamation-triangle me-2"></i>
+          Error loading events: ${error.message}
+        </div>
+      </div>
+    `;
+  }
+}
+
+// Load my events (created by user)
+async function loadMyEvents(filters = {}) {
+  try {
+    const eventsList = document.getElementById('myEventsList');
+    eventsList.innerHTML = '<div class="col-12 text-center"><div class="spinner-border text-primary" role="status"><span class="visually-hidden">Loading your events...</span></div></div>';
+
+    let eventsQuery = db.collection('events')
+      .where('creatorId', '==', currentUser.uid)
+      .orderBy('startDate', 'asc');
+    
+    const eventsSnapshot = await eventsQuery.get();
+    
+    let events = [];
+    eventsSnapshot.forEach(doc => {
+      const event = {
+        id: doc.id,
+        ...doc.data()
+      };
+      events.push(event);
+    });
+
+    // Apply client-side filters
+    events = await applyFilters(events, filters);
+    
+    renderMyEvents(events);
+
+  } catch (error) {
+    console.error('Error loading my events:', error);
+    document.getElementById('myEventsList').innerHTML = `
+      <div class="col-12 text-center">
+        <div class="alert alert-danger">
+          <i class="fas fa-exclamation-triangle me-2"></i>
+          Error loading your events: ${error.message}
+        </div>
+      </div>
+    `;
+  }
+}
+
+// Load registered events (events user has joined)
+async function loadRegisteredEvents(filters = {}) {
+  try {
+    const eventsList = document.getElementById('registeredEventsList');
+    eventsList.innerHTML = '<div class="col-12 text-center"><div class="spinner-border text-primary" role="status"><span class="visually-hidden">Loading registered events...</span></div></div>';
+
+    // First get all events where user is a participant
+    let eventsQuery = db.collection('events')
+      .where('participants', 'array-contains', currentUser.uid)
+      .orderBy('startDate', 'asc');
+    
+    const eventsSnapshot = await eventsQuery.get();
+    
+    let events = [];
+    eventsSnapshot.forEach(doc => {
+      const event = {
+        id: doc.id,
+        ...doc.data()
+      };
+      events.push(event);
+    });
+
+    // Apply client-side filters
+    events = await applyFilters(events, filters);
+    
+    renderRegisteredEvents(events);
+
+  } catch (error) {
+    console.error('Error loading registered events:', error);
+    document.getElementById('registeredEventsList').innerHTML = `
+      <div class="col-12 text-center">
+        <div class="alert alert-danger">
+          <i class="fas fa-exclamation-triangle me-2"></i>
+          Error loading registered events: ${error.message}
+        </div>
+      </div>
+    `;
+  }
+}
+
+// Helper function to apply filters to events
+async function applyFilters(events, filters) {
+  let filteredEvents = [...events];
+
+  // Apply sport filter
+  if (filters.sport && filters.sport !== 'all') {
+    filteredEvents = filteredEvents.filter(event => event.sport === filters.sport);
+  }
+
+  // Apply event type filter
+  if (filters.eventType && filters.eventType !== 'all') {
+    filteredEvents = filteredEvents.filter(event => event.type === filters.eventType);
+  }
+
+  // Apply state filter
+  if (filters.state && filters.state !== 'all') {
+    filteredEvents = filteredEvents.filter(event => event.state === filters.state);
+  }
+
+  // Apply district filter
+  if (filters.district && filters.district !== 'all') {
+    filteredEvents = filteredEvents.filter(event => event.district === filters.district);
+  }
+
+  // Apply date filters
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  if (filters.dateRange) {
+    if (filters.dateRange === 'today') {
+      filteredEvents = filteredEvents.filter(event => 
+        event.startDate === today.toISOString().split('T')[0]
+      );
+    } else if (filters.dateRange === 'upcoming') {
+      filteredEvents = filteredEvents.filter(event => 
+        new Date(event.startDate) >= today
+      );
+    } else if (filters.dateRange === 'past') {
+      filteredEvents = filteredEvents.filter(event => 
+        new Date(event.startDate) < today
+      );
+    } else if (filters.dateRange === 'week') {
+      const nextWeek = new Date();
+      nextWeek.setDate(nextWeek.getDate() + 7);
+      filteredEvents = filteredEvents.filter(event => {
+        const eventDate = new Date(event.startDate);
+        return eventDate >= today && eventDate <= nextWeek;
+      });
+    } else if (filters.dateRange === 'month') {
+      const nextMonth = new Date();
+      nextMonth.setMonth(nextMonth.getMonth() + 1);
+      filteredEvents = filteredEvents.filter(event => {
+        const eventDate = new Date(event.startDate);
+        return eventDate >= today && eventDate <= nextMonth;
+      });
+    }
+  }
+
+  return filteredEvents;
+}
 // Load events with filters
 async function loadEvents(filters = {}) {
   try {
@@ -10324,6 +10900,164 @@ async function resolveEventCreatorName(event) {
 
   return "";
 }
+// Render all events
+async function renderAllEvents(events) {
+  const eventsList = document.getElementById('allEventsList');
+  await renderEventsToContainer(events, eventsList, 'all');
+}
+
+// Render my events
+async function renderMyEvents(events) {
+  const eventsList = document.getElementById('myEventsList');
+  await renderEventsToContainer(events, eventsList, 'my');
+}
+
+// Render registered events
+async function renderRegisteredEvents(events) {
+  const eventsList = document.getElementById('registeredEventsList');
+  await renderEventsToContainer(events, eventsList, 'registered');
+}
+
+// Generic render function
+async function renderEventsToContainer(events, container, type) {
+  container.innerHTML = '';
+
+  if (events.length === 0) {
+    container.innerHTML = `
+      <div class="col-12 text-center">
+        <div class="alert alert-info">
+          <i class="fas fa-info-circle me-2"></i>
+          No events found.
+        </div>
+      </div>
+    `;
+    return;
+  }
+
+  for (const event of events) {
+    const col = document.createElement('div');
+    col.className = 'col-md-4 mb-4';
+    
+    const isRegistered = event.participants && 
+                        event.participants.includes(currentUser.uid);
+    const isCreator = event.creatorId === currentUser.uid;
+    const isFull = event.maxParticipants && 
+                   event.participants && 
+                   event.participants.length >= event.maxParticipants;
+    
+    const startDate = new Date(event.startDate);
+    const formattedDate = startDate.toLocaleDateString('en-US', {
+      weekday: 'short',
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric'
+    });
+
+    const participantsCount = event.participants ? event.participants.length : 0;
+    const spotsLeft = event.maxParticipants ? 
+                     event.maxParticipants - participantsCount : 'Unlimited';
+    const locationText = await resolveEventLocation(event);
+    const creatorNames = await resolveEventCreatorName(event);
+
+    // Determine button based on context and type
+    let actionButton = '';
+    
+    if (type === 'my') {
+      // My events - show manage buttons
+      actionButton = `
+        <div class="btn-group w-100" role="group">
+          <button class="btn btn-sm btn-outline-danger delete-event-btn" data-event-id="${event.id}">
+            <i class="fas fa-trash me-1"></i> Delete
+          </button>
+        </div>
+      `;
+    } else if (type === 'registered') {
+      // Registered events - show unregister button
+      actionButton = `
+        <button class="btn btn-sm btn-warning unregister-event-btn w-100" data-event-id="${event.id}">
+          <i class="fas fa-user-minus me-1"></i> Unregister
+        </button>
+      `;
+    } else {
+      // All events - show register/unregister based on status
+      if (isCreator) {
+        actionButton = `<span class="badge bg-success w-100 py-2">Created by You</span>`;
+      } else if (isRegistered) {
+        actionButton = `
+          <button class="btn btn-sm btn-warning unregister-event-btn w-100" data-event-id="${event.id}">
+            <i class="fas fa-user-minus me-1"></i> Unregister
+          </button>
+        `;
+      } else if (isFull) {
+        actionButton = `<span class="badge bg-danger w-100 py-2">Event Full</span>`;
+      } else {
+        actionButton = `
+          <button class="btn btn-sm btn-primary register-event-btn w-100" data-event-id="${event.id}">
+            <i class="fas fa-user-plus me-1"></i> Register
+          </button>
+        `;
+      }
+    }
+
+    col.innerHTML = `
+      <div class="card h-100 event-card">
+        <img src="${event.imageUrl || 'https://via.placeholder.com/300x200?text=Event'}" 
+             class="card-img-top" alt="${event.name}"
+             style="height: 200px; object-fit: cover;"
+             onerror="this.src='https://via.placeholder.com/300x200?text=Event'">
+        <div class="card-body d-flex flex-column">
+          <div class="d-flex justify-content-between align-items-start mb-2">
+            <h5 class="card-title">${event.name}</h5>
+            <span class="badge bg-primary text-capitalize">${event.type}</span>
+          </div>
+          <p class="card-text flex-grow-1">${event.description || 'No description provided'}</p>
+          
+          <div class="mb-3">
+            <p class="mb-1">
+              <i class="fas fa-calendar-alt me-2"></i>
+              ${formattedDate}
+            </p>
+            <p class="mb-1">
+              <i class="fas fa-clock me-2"></i>
+              ${event.startTime} - ${event.endTime}
+            </p>
+            <p class="mb-1">
+              <i class="fas fa-map-marker-alt me-2"></i>
+              ${locationText}, ${event.district || ''}, ${event.state || ''}
+            </p>
+            <p class="mb-1">
+              <i class="fas fa-users me-2"></i>
+              ${participantsCount} participants
+              ${event.maxParticipants ? `<br><small>${spotsLeft} spots left</small>` : ''}
+            </p>
+            <p class="mb-0">
+              <i class="fas fa-basketball-ball me-2"></i>
+              ${event.sport}
+            </p>
+          </div>
+
+          <div class="mt-auto">
+            <div class="mb-2">
+              ${actionButton}
+            </div>
+            
+            <div class="mt-2">
+              <button class="btn btn-sm btn-outline-secondary view-event-btn w-100" 
+                      data-event-id="${event.id}">
+                <i class="fas fa-eye me-1"></i> View Details
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    `;
+
+    container.appendChild(col);
+  }
+
+  // Add event listeners for this container
+  addEventListenersToContainer(container);
+}
 // Render events list
 async function renderEvents(events) {
   const eventsList = document.getElementById('eventsList');
@@ -10443,6 +11177,46 @@ async function renderEvents(events) {
   // Add event listeners
   addEventListeners();
 }
+// Add event listeners to buttons within a specific container
+function addEventListenersToContainer(container) {
+  if (!container) return;
+  
+  // Register buttons
+  container.querySelectorAll('.register-event-btn').forEach(btn => {
+    btn.addEventListener('click', function(e) {
+      e.stopPropagation();
+      const eventId = this.getAttribute('data-event-id');
+      registerForEventFromList(eventId);
+    });
+  });
+
+  // Unregister buttons
+  container.querySelectorAll('.unregister-event-btn').forEach(btn => {
+    btn.addEventListener('click', function(e) {
+      e.stopPropagation();
+      const eventId = this.getAttribute('data-event-id');
+      unregisterFromEvent(eventId);
+    });
+  });
+
+  // View details buttons
+  container.querySelectorAll('.view-event-btn').forEach(btn => {
+    btn.addEventListener('click', function(e) {
+      e.stopPropagation();
+      const eventId = this.getAttribute('data-event-id');
+      viewEventDetails(eventId);
+    });
+  });
+
+  // Delete buttons (for my events)
+  container.querySelectorAll('.delete-event-btn').forEach(btn => {
+    btn.addEventListener('click', function(e) {
+      e.stopPropagation();
+      const eventId = this.getAttribute('data-event-id');
+      deleteEvent(eventId);
+    });
+  });
+}
 
 // Add event listeners for register and view buttons
 function addEventListeners() {
@@ -10467,6 +11241,18 @@ function addEventListeners() {
       const eventId = this.getAttribute('data-event-id');
       unregisterFromEvent(eventId);
     });
+  });
+  // Add listeners to all containers
+  const containers = [
+    document.getElementById('allEventsList'),
+    document.getElementById('myEventsList'),
+    document.getElementById('registeredEventsList')
+  ];
+  
+  containers.forEach(container => {
+    if (container) {
+      addEventListenersToContainer(container);
+    }
   });
 }
 
@@ -10676,16 +11462,48 @@ async function viewEventDetails(eventId) {
   }
 }
 
-// Register from modal
-async function registerForEventFromModal(eventId) {
-  await registerForEventFromList(eventId);
-  
-  // Close modal
-  const modal = bootstrap.Modal.getInstance(document.getElementById('eventDetailsModal'));
-  if (modal) modal.hide();
+// Update register function to refresh appropriate views
+async function registerForEventFromList(eventId) {
+  try {
+    const eventDoc = await db.collection('events').doc(eventId).get();
+    if (!eventDoc.exists) {
+      showToast('Event not found', 'danger');
+      return;
+    }
+
+    const event = eventDoc.data();
+    
+    if (event.participants && event.participants.includes(currentUser.uid)) {
+      showToast('You are already registered for this event', 'warning');
+      return;
+    }
+
+    if (event.maxParticipants && event.participants && 
+        event.participants.length >= event.maxParticipants) {
+      showToast('This event is already full', 'warning');
+      return;
+    }
+
+    await db.collection('events').doc(eventId).update({
+      participants: firebase.firestore.FieldValue.arrayUnion(currentUser.uid),
+      updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+    });
+
+    showToast('Successfully registered for the event!', 'success');
+    
+    // Refresh all views
+    await Promise.all([
+      loadAllEvents(),
+      loadRegisteredEvents()
+    ]);
+
+  } catch (error) {
+    console.error('Error registering for event:', error);
+    showToast('Error registering for event: ' + error.message, 'danger');
+  }
 }
 
-// Unregister from event
+// Update unregister function
 async function unregisterFromEvent(eventId) {
   if (!confirm('Are you sure you want to unregister from this event?')) return;
 
@@ -10696,9 +11514,14 @@ async function unregisterFromEvent(eventId) {
     });
 
     showToast('Successfully unregistered from event', 'success');
-    await loadEvents(); // Reload events
     
-    // Close modal if open
+    // Refresh all views
+    await Promise.all([
+      loadAllEvents(),
+      loadMyEvents(),
+      loadRegisteredEvents()
+    ]);
+    
     const modal = bootstrap.Modal.getInstance(document.getElementById('eventDetailsModal'));
     if (modal) modal.hide();
 
@@ -10708,16 +11531,20 @@ async function unregisterFromEvent(eventId) {
   }
 }
 
-// Delete event (creator only)
+// Update delete function
 async function deleteEvent(eventId) {
   if (!confirm('Are you sure you want to delete this event? This action cannot be undone.')) return;
 
   try {
     await db.collection('events').doc(eventId).delete();
     showToast('Event deleted successfully', 'success');
-    await loadEvents(); // Reload events
     
-    // Close modal
+    // Refresh all views
+    await Promise.all([
+      loadAllEvents(),
+      loadMyEvents()
+    ]);
+    
     const modal = bootstrap.Modal.getInstance(document.getElementById('eventDetailsModal'));
     if (modal) modal.hide();
 
@@ -10727,28 +11554,37 @@ async function deleteEvent(eventId) {
   }
 }
 
-// Filter events
-function filterEvents() {
+// Filter events based on active tab
+async function filterEvents(activeTabId) {
   const filters = {
     sport: document.getElementById('filterEventSport').value,
     eventType: document.getElementById('filterEventType').value,
     dateRange: document.getElementById('filterEventDate').value,
-    show: document.getElementById('filterEventShow').value,
     state: document.getElementById('filterEventState').value,
     district: document.getElementById('filterEventDistrict').value
   };
 
-  loadEvents(filters);
+  if (activeTabId === 'all-events-tab' || !activeTabId) {
+    await loadAllEvents(filters);
+  } else if (activeTabId === 'my-events-tab') {
+    await loadMyEvents(filters);
+  } else if (activeTabId === 'registered-events-tab') {
+    await loadRegisteredEvents(filters);
+  }
 }
 
-// Clear event filters
+// Clear filters
 function clearEventFilters() {
   document.getElementById('filterEventSport').value = 'all';
   document.getElementById('filterEventType').value = 'all';
   document.getElementById('filterEventDate').value = 'all';
-  document.getElementById('filterEventShow').value = 'all';
+  document.getElementById('filterEventState').value = 'all';
+  document.getElementById('filterEventDistrict').innerHTML = '<option value="all">All Districts</option>';
+  document.getElementById('filterEventDistrict').disabled = true;
   
-  loadEvents(); // Load all events
+  // Reload based on active tab
+  const activeTab = document.querySelector('#eventsTab .nav-link.active').id;
+  filterEvents(activeTab);
 }
 function validateEventDateTime() {
   const startDate = document.getElementById('eventStartDate').value;

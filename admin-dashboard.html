@@ -1345,8 +1345,10 @@
     let allProducts = [];
     let amenities = [];
     let foods = [];
+    let courtLayouts = [];
     let editAmenities = [];
     let editFoods = [];
+    let editCourtLayouts = [];
     let editPDFUrl = "";
     let currentBooking = null;
     let oldBookingDate = "";
@@ -1842,6 +1844,43 @@
     }
 
     // Page content loaders - Implementing all functionality
+    // Load promotions in dashboard
+    async function loadPromotionsInDashboard() {
+      try {
+        const promotionsSnapshot = await db.collection('promotions').orderBy('createdAt', 'desc').get();
+        const container = document.getElementById('promotionImagesList');
+        
+        if (promotionsSnapshot.empty) {
+          container.innerHTML = '<p class="text-muted text-center py-4">No promotion images yet</p>';
+          return;
+        }
+        
+        container.innerHTML = '';
+        promotionsSnapshot.forEach(doc => {
+          const promo = doc.data();
+          const card = document.createElement('div');
+          card.className = 'col-md-3 mb-3';
+          card.innerHTML = `
+            <div class="card" style="cursor: pointer;">
+              <img src="${promo.imageUrl}" class="card-img-top" alt="Promotion" style="height: 200px; object-fit: cover;">
+              <div class="card-body">
+                <h6 class="card-title">${promo.title || 'Promotion'}</h6>
+                <small class="text-muted">${new Date(promo.createdAt.toDate()).toLocaleDateString()}</small>
+                <div class="mt-2">
+                  <button class="btn btn-danger btn-sm" onclick="deletePromotion('${doc.id}')">
+                    <i class="fas fa-trash"></i>
+                  </button>
+                </div>
+              </div>
+            </div>
+          `;
+          container.appendChild(card);
+        });
+      } catch (error) {
+        console.error('Error loading promotions:', error);
+      }
+    }
+
     async function loadDashboardPage() {
       // Return the dashboard HTML structure
       return `
@@ -1872,6 +1911,23 @@
           <i class="fas fa-building"></i>
           <div class="number" id="totalFacilities">0</div>
           <div class="label">Total Facilities</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Promotions Section -->
+    <div class="row mt-4">
+      <div class="col-md-12">
+        <div class="table-card">
+          <div class="d-flex justify-content-between align-items-center mb-3">
+            <h4>Promotion Images</h4>
+            <button class="btn btn-success btn-sm" onclick="openPromotionUploadModal()">
+              <i class="fas fa-plus"></i> Add Promotion
+            </button>
+          </div>
+          <div class="row" id="promotionImagesList">
+            <p class="text-muted text-center py-4">No promotion images yet</p>
+          </div>
         </div>
       </div>
     </div>
@@ -2097,6 +2153,17 @@
                   <div class="mt-3">
                     <img id="imagePreview" style="max-width:150px; display:none; border-radius:10px;">
                   </div>
+
+                  <div class="form-group mt-4">
+                    <label class="form-label">Court Layouts (Upload Images)</label>
+                    <div id="courtLayoutsList" class="mb-3"></div>
+                    <div class="input-group mb-2">
+                      <input type="text" id="layoutName" class="form-control" placeholder="Layout name (e.g., Court A, Court B)">
+                      <input type="file" id="layoutImage" class="form-control" accept="image/*">
+                      <button type="button" class="btn btn-success" onclick="addCourtLayout()">+ Add Layout</button>
+                    </div>
+                  </div>
+
                   <div class="form-group mt-4">
                     <label class="form-label">Amenities</label>
                     <div id="amenitiesList"></div>
@@ -2275,6 +2342,50 @@
     function removeFood(i) {
         foods.splice(i, 1);
         renderFoods();
+    }
+
+    async function addCourtLayout() {
+        const layoutName = document.getElementById("layoutName").value.trim();
+        const layoutFile = document.getElementById("layoutImage").files[0];
+
+        if (!layoutName || !layoutFile) {
+            alert("Please fill all layout details!");
+            return;
+        }
+
+        const imageUrl = await uploadToCloudinary(layoutFile);
+
+        courtLayouts.push({
+            name: layoutName,
+            image: imageUrl
+        });
+
+        renderCourtLayouts();
+
+        document.getElementById("layoutName").value = "";
+        document.getElementById("layoutImage").value = "";
+    }
+
+    function renderCourtLayouts() {
+        const container = document.getElementById("courtLayoutsList");
+        container.innerHTML = "";
+
+        courtLayouts.forEach((layout, index) => {
+            container.innerHTML += `
+                <div class="d-flex justify-content-between align-items-center border p-2 mb-2 rounded">
+                    <div>
+                        <strong>${layout.name}</strong>
+                    </div>
+                    <img src="${layout.image}" width="80" height="80" style="border-radius:6px; object-fit:cover;">
+                    <button class="btn btn-sm btn-danger" onclick="removeCourtLayout(${index})">Delete</button>
+                </div>
+            `;
+        });
+    }
+
+    function removeCourtLayout(index) {
+        courtLayouts.splice(index, 1);
+        renderCourtLayouts();
     }
 
     async function loadBookingManagementPage() {
@@ -8575,6 +8686,7 @@ document.getElementById("pCondition").value =
         case 'dashboard':
           // Load dashboard data when dashboard page is initialized
           loadDashboardData();
+          loadPromotionsInDashboard();
           break;
         case 'calendar-scheduling':
           initializeCalendarDragDrop();
@@ -8854,6 +8966,7 @@ document.getElementById("pCondition").value =
           termsText: formData.termsText || "",
           termsPDF: termsPDFUrl || "",
           imageUrl: imageUrl, // store cloudinary url
+          courtLayouts: courtLayouts || [],
           amenities: amenities,
           foods: foods,
           userId: currentUser.uid,
@@ -8882,6 +8995,8 @@ document.getElementById("pCondition").value =
         // Reset form
         form.reset();
         document.getElementById("imagePreview").style.display = "none";
+        courtLayouts = [];
+        document.getElementById("courtLayoutsList").innerHTML = "";
 
         // Reload facilities
         await loadAdminFacilities();
@@ -9883,6 +9998,18 @@ document.getElementById("pCondition").value =
                           <button type="button" class="btn btn-success" onclick="addFoodEdit()">+ Add Food</button>
                         </div>
                       </div>
+
+                      <!-- Court Layouts -->
+                      <div class="form-group mt-4">
+                        <label class="form-label">Court Layouts</label>
+                        <div id="edit_courtLayoutsList"></div>
+                      
+                        <div class="input-group mb-2">
+                          <input type="text" id="edit_layoutName" class="form-control" placeholder="Layout name (e.g., Court A)">
+                          <input type="file" id="edit_layoutImage" class="form-control" accept="image/*">
+                          <button type="button" class="btn btn-success" onclick="addCourtLayoutEdit()">+ Add Layout</button>
+                        </div>
+                      </div>
                     
                       <input type="hidden" name="facilityId" value="${id}">
                     </form>
@@ -9911,17 +10038,6 @@ document.getElementById("pCondition").value =
               </div>
             `;
         });
-
-        document.addEventListener("change", function (e) {
-          if (e.target.id === "editFacilityImage") {
-            const file = e.target.files[0];
-            if (file) {
-              document.getElementById("editImagePreview").src = URL.createObjectURL(file);
-              document.getElementById("editImagePreview").style.display = "block";
-            }
-          }
-        });
-
 
         // Remove existing modal if any
         const existingModal = document.getElementById('editFacilityModal');
@@ -9953,6 +10069,23 @@ document.getElementById("pCondition").value =
         // Load Food Menu
         editFoods = facilityy.foods || [];
         renderEditFoods();
+
+        // Load Court Layouts
+        editCourtLayouts = facilityy.courtLayouts || [];
+        renderEditCourtLayouts();
+
+        // Add event listener for image file input AFTER modal is created
+        const imageInput = document.getElementById("editFacilityImage");
+        if (imageInput) {
+          imageInput.addEventListener("change", function (e) {
+            const file = this.files[0];
+            if (file) {
+              const preview = document.getElementById("editImagePreview");
+              preview.src = URL.createObjectURL(file);
+              preview.style.display = "block";
+            }
+          });
+        }
 
         // Show modal
         const editModal = new bootstrap.Modal(document.getElementById('editFacilityModal'));
@@ -10096,6 +10229,50 @@ function removeFoodEdit(i) {
     editFoods.splice(i, 1);
     renderEditFoods();
 }
+
+async function addCourtLayoutEdit() {
+    const layoutName = document.getElementById("edit_layoutName").value.trim();
+    const layoutFile = document.getElementById("edit_layoutImage").files[0];
+
+    if (!layoutName || !layoutFile) {
+        alert("Please fill all layout details!");
+        return;
+    }
+
+    const imageUrl = await uploadToCloudinary(layoutFile);
+
+    editCourtLayouts.push({
+        name: layoutName,
+        image: imageUrl
+    });
+
+    renderEditCourtLayouts();
+
+    document.getElementById("edit_layoutName").value = "";
+    document.getElementById("edit_layoutImage").value = "";
+}
+
+function renderEditCourtLayouts() {
+    const container = document.getElementById("edit_courtLayoutsList");
+    container.innerHTML = "";
+
+    editCourtLayouts.forEach((layout, index) => {
+        container.innerHTML += `
+            <div class="d-flex justify-content-between align-items-center border p-2 mb-2 rounded">
+                <div>
+                    <strong>${layout.name}</strong>
+                </div>
+                <img src="${layout.image}" width="80" height="80" style="border-radius:6px; object-fit:cover;">
+                <button class="btn btn-sm btn-danger" onclick="removeCourtLayoutEdit(${index})">Delete</button>
+            </div>
+        `;
+    });
+}
+
+function removeCourtLayoutEdit(index) {
+    editCourtLayouts.splice(index, 1);
+    renderEditCourtLayouts();
+}
 async function handlePDFEdit() {
     const file = document.getElementById("edit_termsPDF").files[0];
     if (file) {
@@ -10151,6 +10328,7 @@ async function handlePDFEdit() {
         facilityData.termsPDF = editPDFUrl;
         facilityData.amenities = editAmenities;
         facilityData.foods = editFoods;
+        facilityData.courtLayouts = editCourtLayouts;
       
         // ----- Update Firestore only once -----
         await db.collection("facilities").doc(id).update(facilityData);
@@ -11624,6 +11802,145 @@ async function saveBookingChanges(bookingId, userEmail) {
     window.confirmReschedule = confirmReschedule;
     window.printBookingDetails = printBookingDetails;
 
+    // Promotion Management Functions
+    async function loadPromotionsInDashboard() {
+      try {
+        const promotionsSnapshot = await db.collection('promotions').orderBy('createdAt', 'desc').get();
+        const container = document.getElementById('promotionImagesList');
+        
+        if (!container) return;
+        
+        if (promotionsSnapshot.empty) {
+          container.innerHTML = '<p class="text-muted text-center py-4 w-100">No promotion images yet</p>';
+          return;
+        }
+        
+        container.innerHTML = '';
+        promotionsSnapshot.forEach(doc => {
+          const promo = doc.data();
+          const card = document.createElement('div');
+          card.className = 'col-md-3 mb-3';
+          card.innerHTML = `
+            <div class="card" style="cursor: pointer;">
+              <img src="${promo.imageUrl}" class="card-img-top" alt="Promotion" style="height: 200px; object-fit: cover;">
+              <div class="card-body">
+                <h6 class="card-title">${promo.title || 'Promotion'}</h6>
+                <small class="text-muted">${new Date(promo.createdAt.toDate()).toLocaleDateString()}</small>
+                <div class="mt-2">
+                  <button class="btn btn-danger btn-sm" onclick="deletePromotion('${doc.id}')">
+                    <i class="fas fa-trash"></i>
+                  </button>
+                </div>
+              </div>
+            </div>
+          `;
+          container.appendChild(card);
+        });
+      } catch (error) {
+        console.error('Error loading promotions:', error);
+      }
+    }
+
+    function openPromotionUploadModal() {
+      document.getElementById('promotionUploadModal')?.remove();
+      
+      const modalHTML = `
+        <div class="modal fade" id="promotionUploadModal" tabindex="-1">
+          <div class="modal-dialog">
+            <div class="modal-content">
+              <div class="modal-header">
+                <h5 class="modal-title">Add Promotion Image</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+              </div>
+              <div class="modal-body">
+                <div class="form-group mb-3">
+                  <label class="form-label">Title (Optional)</label>
+                  <input type="text" class="form-control" id="promoTitle" placeholder="Promotion title">
+                </div>
+                <div class="form-group mb-3">
+                  <label class="form-label">Upload Image</label>
+                  <input type="file" class="form-control" id="promoImageFile" accept="image/*">
+                  <small class="text-muted">JPG, PNG, WebP (Max 5MB)</small>
+                </div>
+                <div id="promoImagePreview" style="display:none; margin-top: 15px;">
+                  <img id="promoPreviewImg" src="" alt="Preview" style="max-width: 100%; max-height: 300px; border-radius: 8px;">
+                </div>
+              </div>
+              <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" onclick="savePromotion()">Upload</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      `;
+      
+      document.body.insertAdjacentHTML('beforeend', modalHTML);
+      
+      // Add image preview listener
+      document.getElementById('promoImageFile').addEventListener('change', function(e) {
+        const file = e.target.files[0];
+        if (file) {
+          const reader = new FileReader();
+          reader.onload = function(event) {
+            document.getElementById('promoImagePreview').style.display = 'block';
+            document.getElementById('promoPreviewImg').src = event.target.result;
+          };
+          reader.readAsDataURL(file);
+        }
+      });
+      
+      new bootstrap.Modal(document.getElementById('promotionUploadModal')).show();
+    }
+
+    async function savePromotion() {
+      try {
+        const title = document.getElementById('promoTitle').value || 'Promotion';
+        const imageFile = document.getElementById('promoImageFile').files[0];
+        
+        if (!imageFile) {
+          showToast('Please select an image', 'warning');
+          return;
+        }
+        
+        // Upload to Cloudinary
+        const imageUrl = await uploadToCloudinary(imageFile);
+        
+        // Save to Firestore
+        await db.collection('promotions').add({
+          title: title,
+          imageUrl: imageUrl,
+          createdAt: firebase.firestore.FieldValue.serverTimestamp()
+        });
+        
+        showToast('Promotion uploaded successfully', 'success');
+        
+        // Close modal
+        const modal = bootstrap.Modal.getInstance(document.getElementById('promotionUploadModal'));
+        if (modal) modal.hide();
+        
+        // Reload promotions
+        loadPromotionsInDashboard();
+        
+      } catch (error) {
+        console.error('Error saving promotion:', error);
+        showToast('Error uploading promotion', 'danger');
+      }
+    }
+
+    async function deletePromotion(promoId) {
+      if (!confirm('Delete this promotion image?')) return;
+      
+      try {
+        await db.collection('promotions').doc(promoId).delete();
+        showToast('Promotion deleted', 'success');
+        loadPromotionsInDashboard();
+      } catch (error) {
+        console.error('Error deleting promotion:', error);
+        showToast('Error deleting promotion', 'danger');
+      }
+    }
+
     // Update the window object to include the new functions
     window.editFacility = editFacility;
     window.updateFacility = updateFacility;
@@ -11641,6 +11958,10 @@ async function saveBookingChanges(bookingId, userEmail) {
     window.savePromo = savePromo;
     window.saveEvent = saveEvent;
     window.saveProduct = saveProduct;
+    window.openPromotionUploadModal = openPromotionUploadModal;
+    window.savePromotion = savePromotion;
+    window.deletePromotion = deletePromotion;
+    window.loadPromotionsInDashboard = loadPromotionsInDashboard;
     window.viewBooking = viewBooking;
     window.editUser = editUser;
     window.deleteUser = deleteUser;
