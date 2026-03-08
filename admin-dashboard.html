@@ -1274,6 +1274,7 @@
   </script>
   <script>
   let createPicker, editPicker;
+  let courtCreatePicker, courtEditPicker;
     
   // Initialize when modal opens
   document.addEventListener('shown.bs.modal', function (e) {
@@ -1284,7 +1285,18 @@
           createInput._initialized = true;
           createPicker = flatpickr(createInput, {
               mode: "multiple",
-              dateFormat: "Y-m-d"
+              dateFormat: "Y-m-d",
+              conjunction: ", "
+          });
+      }
+    
+      const courtCreateInput = modal.querySelector('#courtDates');
+      if (courtCreateInput && !courtCreateInput._initialized) {
+          courtCreateInput._initialized = true;
+          courtCreatePicker=flatpickr(courtCreateInput, {
+              mode: "multiple",
+              dateFormat: "Y-m-d",
+              conjunction: ", "
           });
       }
     
@@ -1293,19 +1305,93 @@
           editInput._initialized = true;
           editPicker = flatpickr(editInput, {
               mode: "multiple",
-              dateFormat: "Y-m-d"
+              dateFormat: "Y-m-d",
+              conjunction: ", "
+          });
+      }
+    
+      const courtEditInput = modal.querySelector('#editCourtDates');
+      if (courtEditInput && !courtEditInput._initialized) {
+          courtEditInput._initialized = true;
+          courtEditPicker = flatpickr(courtEditInput, {
+              mode: "multiple",
+              dateFormat: "Y-m-d",
+              conjunction: ", "
           });
       }
   });
   
   // Get selected dates
-  function getCreateSelectedDates() {
-      return createPicker.selectedDates.map(d => d.toISOString().split("T")[0]);
-  }
-  
-  function getEditSelectedDates() {
-      return editPicker.selectedDates.map(d => d.toISOString().split("T")[0]);
-  }
+  // Get selected dates from create modal main facility
+function getCreateSelectedDates() {
+    if (!createPicker) {
+        console.warn("Create picker not initialized");
+        return [];
+    }
+    return createPicker.selectedDates.map(d => {
+        // Format as YYYY-MM-DD
+        const year = d.getFullYear();
+        const month = String(d.getMonth() + 1).padStart(2, '0');
+        const day = String(d.getDate()).padStart(2, '0');
+        return `${year}-${month}-${day}`;
+    });
+}
+
+// Get selected dates from edit modal main facility
+function getEditSelectedDates() {
+    if (!editPicker) {
+        console.warn("Edit picker not initialized");
+        return [];
+    }
+    return editPicker.selectedDates.map(d => {
+        const year = d.getFullYear();
+        const month = String(d.getMonth() + 1).padStart(2, '0');
+        const day = String(d.getDate()).padStart(2, '0');
+        return `${year}-${month}-${day}`;
+    });
+}
+
+// Get selected dates for court in create modal
+function getCourtCreateSelectedDates() {
+    if (!courtCreatePicker) {
+        // Try to get the picker instance directly from the input
+        const input = document.getElementById('courtDates');
+        if (input && input._flatpickr) {
+            courtCreatePicker = input._flatpickr;
+        } else {
+            console.warn("Court create picker not initialized");
+            return [];
+        }
+    }
+    
+    return courtCreatePicker.selectedDates.map(d => {
+        const year = d.getFullYear();
+        const month = String(d.getMonth() + 1).padStart(2, '0');
+        const day = String(d.getDate()).padStart(2, '0');
+        return `${year}-${month}-${day}`;
+    });
+}
+
+// Get selected dates for court in edit modal
+function getCourtEditSelectedDates() {
+    if (!courtEditPicker) {
+        // Try to get the picker instance directly from the input
+        const input = document.getElementById('editCourtDates');
+        if (input && input._flatpickr) {
+            courtEditPicker = input._flatpickr;
+        } else {
+            console.warn("Court edit picker not initialized");
+            return [];
+        }
+    }
+    
+    return courtEditPicker.selectedDates.map(d => {
+        const year = d.getFullYear();
+        const month = String(d.getMonth() + 1).padStart(2, '0');
+        const day = String(d.getDate()).padStart(2, '0');
+        return `${year}-${month}-${day}`;
+    });
+}
   </script>
 
   <script>
@@ -1345,9 +1431,12 @@
     let allProducts = [];
     let amenities = [];
     let foods = [];
-    let courtLayouts = [];
+    let courts = [];
+    let courtLayoutImageUrl = "";
     let editAmenities = [];
     let editFoods = [];
+    let editCourts = [];
+    let editCourtLayoutImageUrl = "";
     let editCourtLayouts = [];
     let editPDFUrl = "";
     let currentBooking = null;
@@ -2100,16 +2189,41 @@
                   </div>
                   <div class="row mt-3">
                     <div class="col-12">
-                      <label class="form-label">Available Time Slots</label>
-                    
-                      <div id="addAvailableSlotsContainer"></div>
-                    
-                      <button type="button" class="btn btn-outline-primary mt-2" onclick="addSlotToFacility()">
-                        + Add Time Slot
-                      </button>
+                      <label class="form-label">Courts</label>
+                      <div id="courtsList"></div>
+                      
+                      <!-- Court Form -->
+                      <div class="border p-3 mb-3 rounded">
+                        <div class="row">
+                          <div class="col-md-4">
+                            <label class="form-label">Court Name</label>
+                            <input type="text" class="form-control" id="courtName" placeholder="e.g., Court A">
+                          </div>
+                          <div class="col-md-8">
+                            <label class="form-label">Available Dates</label>
+                            <input id="courtDates" class="form-control" type="text" placeholder="Select multiple dates">
+                          </div>
+                        </div>
+                        <div class="mt-3">
+                          <label class="form-label">Time Slots</label>
+                          <div id="courtSlotsContainer"></div>
+                          <button type="button" class="btn btn-outline-secondary btn-sm mt-2" onclick="addSlotToCourt()">
+                            + Add Slot
+                          </button>
+                        </div>
+                        <button type="button" class="btn btn-success mt-3" onclick="addCourtToFacility()">
+                          Add Court
+                        </button>
+                      </div>
                     </div>
-                    <label><strong>Select Available Dates</strong></label>
-                    <input id="multiDateCreate" class="form-control" type="text" placeholder="Select multiple dates">
+                  </div>
+                  
+                  <div class="form-group mt-3">
+                    <label class="form-label">Court Layout Image (Single image showing all courts)</label>
+                    <input type="file" class="form-control" id="courtLayoutImage" accept="image/*">
+                    <div class="mt-2">
+                      <img id="courtLayoutPreview" style="max-width:300px; display:none; border-radius:10px;">
+                    </div>
                   </div>
                   
                   <div class="row">
@@ -2154,15 +2268,7 @@
                     <img id="imagePreview" style="max-width:150px; display:none; border-radius:10px;">
                   </div>
 
-                  <div class="form-group mt-4">
-                    <label class="form-label">Court Layouts (Upload Images)</label>
-                    <div id="courtLayoutsList" class="mb-3"></div>
-                    <div class="input-group mb-2">
-                      <input type="text" id="layoutName" class="form-control" placeholder="Layout name (e.g., Court A, Court B)">
-                      <input type="file" id="layoutImage" class="form-control" accept="image/*">
-                      <button type="button" class="btn btn-success" onclick="addCourtLayout()">+ Add Layout</button>
-                    </div>
-                  </div>
+
 
                   <div class="form-group mt-4">
                     <label class="form-label">Amenities</label>
@@ -2201,6 +2307,15 @@
         document.getElementById("imagePreview").src = URL.createObjectURL(file);
         document.getElementById("imagePreview").style.display = "block";
       });
+      
+      document.getElementById("courtLayoutImage").addEventListener("change", function () {
+        const file = this.files[0];
+        if (!file) return;
+
+        document.getElementById("courtLayoutPreview").src = URL.createObjectURL(file);
+        document.getElementById("courtLayoutPreview").style.display = "block";
+      });
+      
       const cloudName = "dagqzn57w";
       const uploadPreset = "ml_default";
     }
@@ -2262,11 +2377,11 @@
             return;
         }
 
-        const imageUrl = await uploadToCloudinary(amenityfile);
+        const imageUrl = await uploadToCloudinary(amenityFile);
     
         amenities.push({
             amenity: amenity,
-            amenityPrice: amenityprice,
+            amenityPrice: amenityPrice,
             amenityImage: imageUrl
         });
         renderAmenities();
@@ -2344,48 +2459,81 @@
         renderFoods();
     }
 
-    async function addCourtLayout() {
-        const layoutName = document.getElementById("layoutName").value.trim();
-        const layoutFile = document.getElementById("layoutImage").files[0];
+    async function addCourtToFacility() {
+        const courtName = document.getElementById("courtName").value.trim();
+    const courtDates = getCourtCreateSelectedDates();
+    const courtSlots = [];
 
-        if (!layoutName || !layoutFile) {
-            alert("Please fill all layout details!");
-            return;
+    // Get slots for this court
+    const startTimes = document.querySelectorAll("input[name='courtStart[]']");
+    const endTimes = document.querySelectorAll("input[name='courtEnd[]']");
+
+    startTimes.forEach((start, i) => {
+        const end = endTimes[i].value;
+        if (start.value && end) {
+            courtSlots.push(`${start.value}-${end}`);
         }
+    });
 
-        const imageUrl = await uploadToCloudinary(layoutFile);
-
-        courtLayouts.push({
-            name: layoutName,
-            image: imageUrl
-        });
-
-        renderCourtLayouts();
-
-        document.getElementById("layoutName").value = "";
-        document.getElementById("layoutImage").value = "";
+    if (!courtName || courtSlots.length === 0 || courtDates.length === 0) {
+        alert("Please fill court name, slots, and dates!");
+        return;
     }
 
-    function renderCourtLayouts() {
-        const container = document.getElementById("courtLayoutsList");
+    courts.push({
+        name: courtName,
+        slots: courtSlots,
+        dates: courtDates
+    });
+
+    renderCourts();
+
+    // Reset form
+    document.getElementById("courtName").value = "";
+    document.getElementById("courtSlotsContainer").innerHTML = "";
+    // Reset date picker
+    if (courtCreatePicker) {
+        courtCreatePicker.clear();
+    }
+  }
+    function renderCourts() {
+        const container = document.getElementById("courtsList");
         container.innerHTML = "";
 
-        courtLayouts.forEach((layout, index) => {
+        courts.forEach((court, index) => {
             container.innerHTML += `
-                <div class="d-flex justify-content-between align-items-center border p-2 mb-2 rounded">
-                    <div>
-                        <strong>${layout.name}</strong>
+                <div class="border p-3 mb-3 rounded">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <strong>${court.name}</strong>
+                        <button class="btn btn-sm btn-danger" onclick="removeCourt(${index})">Delete Court</button>
                     </div>
-                    <img src="${layout.image}" width="80" height="80" style="border-radius:6px; object-fit:cover;">
-                    <button class="btn btn-sm btn-danger" onclick="removeCourtLayout(${index})">Delete</button>
+                    <div><strong>Slots:</strong> ${court.slots.join(", ")}</div>
+                    <div><strong>Dates:</strong> ${court.dates.join(", ")}</div>
                 </div>
             `;
         });
     }
 
-    function removeCourtLayout(index) {
-        courtLayouts.splice(index, 1);
-        renderCourtLayouts();
+    function removeCourt(index) {
+        courts.splice(index, 1);
+        renderCourts();
+    }
+
+    function addSlotToCourt() {
+        const container = document.getElementById("courtSlotsContainer");
+        const id = Date.now();
+        container.innerHTML += `
+            <div class="d-flex gap-2 mt-2 align-items-center" id="court-slot-${id}">
+                <input type="time" class="form-control" name="courtStart[]" required>
+                <span>to</span>
+                <input type="time" class="form-control" name="courtEnd[]" required>
+                <button class="btn btn-danger btn-sm" onclick="removeCourtSlot('${id}')">X</button>
+            </div>
+        `;
+    }
+
+    function removeCourtSlot(id) {
+        document.getElementById(`court-slot-${id}`).remove();
     }
 
     async function loadBookingManagementPage() {
@@ -7235,12 +7383,6 @@ async function generateDayView() {
         case 'reports':
           initializeReportCharts();
           break;
-        case 'notifications':
-          // Initialize real-time notifications
-          setTimeout(() => {
-            initializeNotifications();
-          }, 100);
-          break;
         case 'promo-vouchers':
           setTimeout(() => {
             initializePromoManagement();
@@ -7252,17 +7394,16 @@ async function generateDayView() {
     // Add cleanup when navigating away from notifications page
     const originalNavigateToPage = navigateToPage;
     navigateToPage = function (page) {
-      // Clean up notifications listener if leaving notifications page
-      if (currentPage === 'notifications' && page !== 'notifications' && notificationsListener) {
-        notificationsListener();
-        notificationsListener = null;
+      // Clean up promo listener if leaving promo page
+      if (currentPage === 'promo-vouchers' && page !== 'promo-vouchers' && promoListener) {
+        promoListener();
+        promoListener = null;
       }
 
       originalNavigateToPage.call(this, page);
     };
 
     // Make functions globally available
-    window.markAsRead = markAsRead;
     window.markAllAsRead = markAllAsRead;
     window.deleteNotification = deleteNotification;
     window.viewNotification = viewNotification;
@@ -8530,6 +8671,7 @@ async function loadFacilitiesForEvents() {
             <option value="fair">Fair</option>
           </select>
           <input type="number" class="form-control mb-2" id="pPrice" placeholder="Price" value="${data.price || ""}">
+          <input type="text" class="form-control mb-2" id="pLocation" placeholder="Location" value="${data.itemLocation || ""}">
 
           <input type="file" class="form-control mb-2" id="pImages" multiple>
 
@@ -8600,7 +8742,7 @@ document.getElementById("pCondition").value =
       price: Number(pPrice.value),
       description: pDesc.value,
       images: imageUrls,
-
+      itemLocation: pLocation.value,
       sellerId: user.uid,
       sellerName: userData.name,
       sellerContact: contactNumber.value,
@@ -8917,6 +9059,7 @@ document.getElementById("pCondition").value =
     // ========================
     async function saveFacility() {
       try {
+        const cloudName = "dagqzn57w";
         let termsPDFUrl = "";
 
         const termsPDF = document.getElementById("termsPDF").files[0];
@@ -8935,7 +9078,6 @@ document.getElementById("pCondition").value =
 
         // Upload to Cloudinary if file is selected
         if (file) {
-          const cloudName = "dagqzn57w";
           const preset = "ml_default";
 
           const uploadData = new FormData();
@@ -8951,6 +9093,24 @@ document.getElementById("pCondition").value =
           imageUrl = data.secure_url;
         }
 
+        // Get court layout image
+        const courtLayoutFile = document.getElementById("courtLayoutImage").files[0];
+        let courtLayoutUrl = "";
+
+        if (courtLayoutFile) {
+          const uploadData = new FormData();
+          uploadData.append("file", courtLayoutFile);
+          uploadData.append("upload_preset", "ml_default");
+
+          const res = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/image/upload`, {
+            method: "POST",
+            body: uploadData
+          });
+
+          const data = await res.json();
+          courtLayoutUrl = data.secure_url;
+        }
+
         // Prepare facility data
         const facilityData = {
           name: formData.get("name"),
@@ -8963,25 +9123,16 @@ document.getElementById("pCondition").value =
           capacity: parseInt(formData.get("capacity")),
           status: formData.get("status"),
           description: formData.get("description"),
-          termsText: formData.termsText || "",
+          termsText: formData.get("termsText") || "",
           termsPDF: termsPDFUrl || "",
-          imageUrl: imageUrl, // store cloudinary url
-          courtLayouts: courtLayouts || [],
+          imageUrl: imageUrl,
+          courts: courts,
+          courtLayoutImage: courtLayoutUrl,
           amenities: amenities,
           foods: foods,
           userId: currentUser.uid,
           createdAt: firebase.firestore.FieldValue.serverTimestamp()
         };
-        const startTimes = document.querySelectorAll("input[name='facilityStart[]']");
-        const endTimes = document.querySelectorAll("input[name='facilityEnd[]']");
-        facilityData.availableDates = getCreateSelectedDates();
-
-        facilityData.slots = [];
-
-        startTimes.forEach((start, i) => {
-            const end = endTimes[i].value;
-            facilityData.slots.push(`${start.value}-${end}`);
-        });
         
         // Save to Firestore
         await db.collection("facilities").add(facilityData);
@@ -8995,8 +9146,9 @@ document.getElementById("pCondition").value =
         // Reset form
         form.reset();
         document.getElementById("imagePreview").style.display = "none";
-        courtLayouts = [];
-        document.getElementById("courtLayoutsList").innerHTML = "";
+        document.getElementById("courtLayoutPreview").style.display = "none";
+        courts = [];
+        document.getElementById("courtsList").innerHTML = "";
 
         // Reload facilities
         await loadAdminFacilities();
@@ -9910,19 +10062,39 @@ document.getElementById("pCondition").value =
                         </div>
                       </div>
                     
-                      <!-- Row 4: Slots -->
+                      <!-- Courts -->
                       <div class="row mt-3">
                         <div class="col-12">
-                          <label class="form-label">Available Time Slots</label>
-                        
+                          <label class="form-label">Available Slots (Legacy)</label>
                           <div id="editAvailableSlotsContainer"></div>
-                        
-                          <button type="button" class="btn btn-outline-primary mt-2" onclick="addSlotToEditFacility()">
-                            + Add Time Slot
-                          </button>
+                          
+                          <label class="form-label">Courts</label>
+                          <div id="editCourtsList"></div>
+                          
+                          <!-- Court Form -->
+                          <div class="border p-3 mb-3 rounded">
+                            <div class="row">
+                              <div class="col-md-4">
+                                <label class="form-label">Court Name</label>
+                                <input type="text" class="form-control" id="editCourtName" placeholder="e.g., Court A">
+                              </div>
+                              <div class="col-md-8">
+                                <label class="form-label">Available Dates</label>
+                                <input id="editCourtDates" class="form-control" type="text" placeholder="Select multiple dates">
+                              </div>
+                            </div>
+                            <div class="mt-3">
+                              <label class="form-label">Time Slots</label>
+                              <div id="editCourtSlotsContainer"></div>
+                              <button type="button" class="btn btn-outline-secondary btn-sm mt-2" onclick="addSlotToEditCourt()">
+                                + Add Slot
+                              </button>
+                            </div>
+                            <button type="button" class="btn btn-success mt-3" onclick="addCourtToEditFacility()">
+                              Add Court
+                            </button>
+                          </div>
                         </div>
-                        <label><strong>Edit Available Dates</strong></label>
-                        <input id="multiDateEdit" class="form-control" type="text" placeholder="Select multiple dates">
                       </div>
                     
                       <!-- Row 5 -->
@@ -9972,6 +10144,19 @@ document.getElementById("pCondition").value =
                       
                         <input type="hidden" id="existingEditImageUrl" value="${facility.imageUrl || ''}">
                       </div>
+                      
+                      <!-- Court Layout Image -->
+                      <div class="form-group mt-3">
+                        <label class="form-label">Court Layout Image (Single image showing all courts)</label>
+                        <input type="file" class="form-control" id="editCourtLayoutImage" accept="image/*">
+                      
+                        <div class="mt-2">
+                          <img id="editCourtLayoutPreview" src="${facility.courtLayoutImage || ''}"
+                               style="max-width:300px; border-radius:8px; display:${facility.courtLayoutImage ? 'block' : 'none'};">
+                        </div>
+                      
+                        <input type="hidden" id="existingEditCourtLayoutUrl" value="${facility.courtLayoutImage || ''}">
+                      </div>
                     
                       <!-- Amenities -->
                       <div class="form-group mt-4">
@@ -9999,17 +10184,7 @@ document.getElementById("pCondition").value =
                         </div>
                       </div>
 
-                      <!-- Court Layouts -->
-                      <div class="form-group mt-4">
-                        <label class="form-label">Court Layouts</label>
-                        <div id="edit_courtLayoutsList"></div>
-                      
-                        <div class="input-group mb-2">
-                          <input type="text" id="edit_layoutName" class="form-control" placeholder="Layout name (e.g., Court A)">
-                          <input type="file" id="edit_layoutImage" class="form-control" accept="image/*">
-                          <button type="button" class="btn btn-success" onclick="addCourtLayoutEdit()">+ Add Layout</button>
-                        </div>
-                      </div>
+
                     
                       <input type="hidden" name="facilityId" value="${id}">
                     </form>
@@ -10070,9 +10245,9 @@ document.getElementById("pCondition").value =
         editFoods = facilityy.foods || [];
         renderEditFoods();
 
-        // Load Court Layouts
-        editCourtLayouts = facilityy.courtLayouts || [];
-        renderEditCourtLayouts();
+        // Load Courts
+        editCourts = facilityy.courts || [];
+        renderEditCourts();
 
         // Add event listener for image file input AFTER modal is created
         const imageInput = document.getElementById("editFacilityImage");
@@ -10081,6 +10256,19 @@ document.getElementById("pCondition").value =
             const file = this.files[0];
             if (file) {
               const preview = document.getElementById("editImagePreview");
+              preview.src = URL.createObjectURL(file);
+              preview.style.display = "block";
+            }
+          });
+        }
+
+        // Add event listener for court layout image file input
+        const courtLayoutInput = document.getElementById("editCourtLayoutImage");
+        if (courtLayoutInput) {
+          courtLayoutInput.addEventListener("change", function (e) {
+            const file = this.files[0];
+            if (file) {
+              const preview = document.getElementById("editCourtLayoutPreview");
               preview.src = URL.createObjectURL(file);
               preview.style.display = "block";
             }
@@ -10230,48 +10418,82 @@ function removeFoodEdit(i) {
     renderEditFoods();
 }
 
-async function addCourtLayoutEdit() {
-    const layoutName = document.getElementById("edit_layoutName").value.trim();
-    const layoutFile = document.getElementById("edit_layoutImage").files[0];
+async function addCourtToEditFacility() {
+    const courtName = document.getElementById("editCourtName").value.trim();
+    const courtDates = getCourtEditSelectedDates();
+    const courtSlots = [];
 
-    if (!layoutName || !layoutFile) {
-        alert("Please fill all layout details!");
+    // Get slots for this court
+    const startTimes = document.querySelectorAll("input[name='editCourtStart[]']");
+    const endTimes = document.querySelectorAll("input[name='editCourtEnd[]']");
+
+    startTimes.forEach((start, i) => {
+        const end = endTimes[i].value;
+        if (start.value && end) {
+            courtSlots.push(`${start.value}-${end}`);
+        }
+    });
+
+    if (!courtName || courtSlots.length === 0 || courtDates.length === 0) {
+        alert("Please fill court name, slots, and dates!");
         return;
     }
 
-    const imageUrl = await uploadToCloudinary(layoutFile);
-
-    editCourtLayouts.push({
-        name: layoutName,
-        image: imageUrl
+    editCourts.push({
+        name: courtName,
+        slots: courtSlots,
+        dates: courtDates
     });
 
-    renderEditCourtLayouts();
+    renderEditCourts();
 
-    document.getElementById("edit_layoutName").value = "";
-    document.getElementById("edit_layoutImage").value = "";
+    // Reset form
+    document.getElementById("editCourtName").value = "";
+    document.getElementById("editCourtSlotsContainer").innerHTML = "";
+    // Reset date picker
+    if (courtEditPicker) {
+        courtEditPicker.clear();
+    }
 }
 
-function renderEditCourtLayouts() {
-    const container = document.getElementById("edit_courtLayoutsList");
+function renderEditCourts() {
+    const container = document.getElementById("editCourtsList");
     container.innerHTML = "";
 
-    editCourtLayouts.forEach((layout, index) => {
+    editCourts.forEach((court, index) => {
         container.innerHTML += `
-            <div class="d-flex justify-content-between align-items-center border p-2 mb-2 rounded">
-                <div>
-                    <strong>${layout.name}</strong>
+            <div class="border p-3 mb-3 rounded">
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <strong>${court.name}</strong>
+                    <button class="btn btn-sm btn-danger" onclick="removeEditCourt(${index})">Delete Court</button>
                 </div>
-                <img src="${layout.image}" width="80" height="80" style="border-radius:6px; object-fit:cover;">
-                <button class="btn btn-sm btn-danger" onclick="removeCourtLayoutEdit(${index})">Delete</button>
+                <div><strong>Slots:</strong> ${court.slots.join(", ")}</div>
+                <div><strong>Dates:</strong> ${court.dates.join(", ")}</div>
             </div>
         `;
     });
 }
 
-function removeCourtLayoutEdit(index) {
-    editCourtLayouts.splice(index, 1);
-    renderEditCourtLayouts();
+function removeEditCourt(index) {
+    editCourts.splice(index, 1);
+    renderEditCourts();
+}
+
+function addSlotToEditCourt() {
+    const container = document.getElementById("editCourtSlotsContainer");
+    const id = Date.now();
+    container.innerHTML += `
+        <div class="d-flex gap-2 mt-2 align-items-center" id="edit-court-slot-${id}">
+            <input type="time" class="form-control" name="editCourtStart[]" required>
+            <span>to</span>
+            <input type="time" class="form-control" name="editCourtEnd[]" required>
+            <button class="btn btn-danger btn-sm" onclick="removeEditCourtSlot('${id}')">X</button>
+        </div>
+    `;
+}
+
+function removeEditCourtSlot(id) {
+    document.getElementById(`edit-court-slot-${id}`).remove();
 }
 async function handlePDFEdit() {
     const file = document.getElementById("edit_termsPDF").files[0];
@@ -10293,6 +10515,14 @@ async function handlePDFEdit() {
           imageUrl = await uploadToCloudinary(newImageFile);
         }
       
+        let courtLayoutUrl = document.getElementById("existingEditCourtLayoutUrl").value;
+        const newCourtLayoutFile = document.getElementById("editCourtLayoutImage").files[0];
+      
+        // Upload new court layout image only if user selected one
+        if (newCourtLayoutFile) {
+          courtLayoutUrl = await uploadToCloudinary(newCourtLayoutFile);
+        }
+
         // ----- Build main facility data -----
         const facilityData = {
           name: formData.get('name'),
@@ -10305,21 +10535,13 @@ async function handlePDFEdit() {
           capacity: parseInt(formData.get('capacity')),
           status: formData.get('status'),
           description: formData.get('description'),
-          amenities: formData.getAll('amenities'),
+          amenities: editAmenities,
+          foods: editFoods,
           imageUrl: imageUrl,
-          updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
-          slots: []   // 👈 add slot array here
+          courts: editCourts,
+          courtLayoutImage: courtLayoutUrl,
+          updatedAt: firebase.firestore.FieldValue.serverTimestamp()
         };
-      
-        // ----- Add slots -----
-        const startTimes = document.querySelectorAll("input[name='editFacilityStart[]']");
-        const endTimes = document.querySelectorAll("input[name='editFacilityEnd[]']");
-        facilityData.availableDates = getEditSelectedDates();
-      
-        startTimes.forEach((start, i) => {
-          const end = endTimes[i].value;
-          facilityData.slots.push(`${start.value}-${end}`);
-        });
       
         // ----- Add terms, foods, PDF -----
         await handlePDFEdit(); // sets editPDFUrl
