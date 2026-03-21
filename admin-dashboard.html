@@ -4011,7 +4011,7 @@ function forceRemoveBackdrop() {
               ...booking,
               commission: commission,
               netamount: netamount,
-              paymentDate: formatDate1(booking.date)
+              paymentDate: booking.createdAt
             });
           }
         });
