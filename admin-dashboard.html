@@ -1506,7 +1506,7 @@ function forceRemoveBackdrop() {
         window.location.href = "login.html";
       }
     });
-
+    let promoListener = null;
     // Navigate to a specific page
     function navigateToPage(page) {
       // Update active menu item
@@ -1525,6 +1525,17 @@ function forceRemoveBackdrop() {
       // Load page content
       loadPageContent(page);
     }
+    // Add cleanup when navigating away from notifications page
+    const originalNavigateToPage = navigateToPage;
+    navigateToPage = function (page) {
+      // Clean up promo listener if leaving promo page
+      if (currentPage === 'promo-vouchers' && page !== 'promo-vouchers' && promoListener) {
+        promoListener();
+        promoListener = null;
+      }
+
+      originalNavigateToPage.call(this, page);
+    };
 
     // Load admin facilities - FIXED VERSION
     async function loadAdminFacilities() {
@@ -7407,17 +7418,6 @@ async function generateDayView() {
       }
     }
 
-    // Add cleanup when navigating away from notifications page
-    const originalNavigateToPage = navigateToPage;
-    navigateToPage = function (page) {
-      // Clean up promo listener if leaving promo page
-      if (currentPage === 'promo-vouchers' && page !== 'promo-vouchers' && promoListener) {
-        promoListener();
-        promoListener = null;
-      }
-
-      originalNavigateToPage.call(this, page);
-    };
 
     // Make functions globally available
     window.markAllAsRead = markAllAsRead;
