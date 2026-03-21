@@ -1258,7 +1258,7 @@
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-storage-compat.js"></script>
-
+  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
   <!-- Bootstrap JS -->
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/moment@2.29.4/moment.min.js"></script>
@@ -1391,6 +1391,16 @@ function getCourtEditSelectedDates() {
         const day = String(d.getDate()).padStart(2, '0');
         return `${year}-${month}-${day}`;
     });
+}
+function forceRemoveBackdrop() {
+  document.body.classList.remove('modal-open');
+  
+  // Remove all backdrops
+  document.querySelectorAll('.modal-backdrop').forEach(el => el.remove());
+  
+  // Reset body styles
+  document.body.style.overflow = '';
+  document.body.style.paddingRight = '';
 }
   </script>
 
@@ -2535,6 +2545,10 @@ function getCourtEditSelectedDates() {
     function removeCourtSlot(id) {
         document.getElementById(`court-slot-${id}`).remove();
     }
+    function parseLocalDate(dateStr) {
+      const [y, m, d] = dateStr.split("-");
+      return new Date(y, m - 1, d);
+    }
 
     async function loadBookingManagementPage() {
       try {
@@ -2608,7 +2622,7 @@ function getCourtEditSelectedDates() {
             } else if (a.date && a.date.toDate) {
               dateA = a.date.toDate();
             } else if (a.date) {
-              dateA = new Date(a.date);
+              dateA = parseLocalDate(a.date);
             } else {
               dateA = new Date(0);
             }
@@ -2618,7 +2632,7 @@ function getCourtEditSelectedDates() {
             } else if (b.date && b.date.toDate) {
               dateB = b.date.toDate();
             } else if (b.date) {
-              dateB = new Date(b.date);
+              dateB = parseLocalDate(b.date);
             } else {
               dateB = new Date(0);
             }
@@ -2638,12 +2652,14 @@ function getCourtEditSelectedDates() {
             } else if (booking.date && booking.date.toDate) {
               displayDate = booking.date.toDate().toLocaleDateString();
             } else if (booking.date) {
-              try {
-                displayDate = new Date(booking.date).toLocaleDateString();
-              } catch (e) {
-                displayDate = String(booking.date).substring(0, 10);
+                try {
+                  const [year, month, day] = booking.date.split("-");
+                  const localDate = new Date(year, month - 1, day); // LOCAL date (no timezone issue)
+                  displayDate = localDate.toLocaleDateString();
+                } catch (e) {
+                  displayDate = booking.date;
+                }
               }
-            }
 
             // Get status badge class
             let statusBadgeClass = 'badge-pending';
@@ -10958,6 +10974,7 @@ if (booking.snacks && booking.snacks.length > 0) {
 
         document.getElementById('viewBookingModal').addEventListener('hidden.bs.modal', function () {
           this.remove();
+          forceRemoveBackdrop();
         });
 
       } catch (error) {
@@ -10967,6 +10984,11 @@ if (booking.snacks && booking.snacks.length > 0) {
     }
 
     function openAssignStaffModal(id, facility, date, time, duration, name) {
+      $('#viewBookingModal').modal('hide'); // close first
+  
+      setTimeout(() => {
+        $('#assignStaffModal').modal('show'); // then open
+      }, 400);
       window.currentBookingForStaff = { id, facility, date, time, duration, name };
 
       document.getElementById('staffWhatsapp').value = '';
