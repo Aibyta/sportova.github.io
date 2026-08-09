@@ -2526,7 +2526,9 @@ function forceRemoveBackdrop() {
                 <div class="border p-3 mb-3 rounded">
                     <div class="d-flex justify-content-between align-items-center mb-2">
                         <strong>${court.name}</strong>
-                        <button class="btn btn-sm btn-danger" onclick="removeCourt(${index})">Delete Court</button>
+                        <button class="btn btn-sm btn-danger" onclick="removeCourt(${index})" title="Delete Court">
+                          <i class="fas fa-trash"></i>
+                        </button>
                     </div>
                     <div><strong>Slots:</strong> ${court.slots.join(", ")}</div>
                     <div><strong>Dates:</strong> ${court.dates.join(", ")}</div>
@@ -3721,7 +3723,7 @@ function forceRemoveBackdrop() {
         if (coaches.length === 0) {
           coachesHTML = `
                 <tr>
-                    <td colspan="7" class="text-center py-4">
+                    <td colspan="6" class="text-center py-4">
                         <div class="text-muted">
                             <i class="fas fa-user-tie fa-2x mb-3"></i>
                             <p>No coaches found</p>
@@ -3735,6 +3737,7 @@ function forceRemoveBackdrop() {
             const experience = coach.experience ? `${coach.experience} years` : 'N/A';
             const rate = coach.rate ? `RM${coach.rate}/hour` : 'N/A';
             const status = coach.status || 'Active';
+            const specialtyLabel = coach.sport || (typeof coach.specialties === 'string' ? coach.specialties : Array.isArray(coach.specialties) ? coach.specialties.join(', ') : 'N/A');
 
             coachesHTML += `
                     <tr>
@@ -3746,14 +3749,14 @@ function forceRemoveBackdrop() {
                                      onerror="this.src='https://via.placeholder.com/40x40?text=Coach'">
                                 <div>
                                     <div class="fw-semibold">${coach.name || 'N/A'}</div>
-                                    <small class="text-muted">${coach.sport || 'N/A'}</small>
+                                    <small class="text-muted">${specialtyLabel}</small>
                                 </div>
                             </div>
                         </td>
-                        <td>${coach.sport || 'N/A'}</td>
+                        <td>${specialtyLabel}</td>
                         <td>${experience}</td>
                         <td>${rate}</td>
-                        <td>${coach.availability || 'Flexible'}</td>
+                        <td>${coach.availableForHire ? 'Yes' : 'No'}</td>
                         <td>
                             <span class="badge ${status === 'Active' ? 'bg-success' : status === 'Inactive' ? 'bg-secondary' : 'bg-warning'}">
                                 ${status}
@@ -3822,10 +3825,10 @@ function forceRemoveBackdrop() {
                         <thead>
                             <tr>
                                 <th>Coach</th>
-                                <th>Sport</th>
+                                <th>Specialty</th>
                                 <th>Experience</th>
                                 <th>Rate</th>
-                                <th>Availability</th>
+                                <th>Available</th>
                                 <th>Status</th>
                                 <th>Actions</th>
                             </tr>
@@ -3850,10 +3853,9 @@ function forceRemoveBackdrop() {
                                 <div class="row">
                                     <div class="col-md-6">
                                         <div class="form-group mb-3">
-                                            <label class="form-label">Profile Picture URL</label>
-                                            <input type="url" class="form-control" name="photoURL" 
-                                                   placeholder="https://example.com/coach.jpg">
-                                            <small class="form-text text-muted">Optional: Direct link to coach's photo</small>
+                                            <label class="form-label">Profile Picture</label>
+                                            <input type="file" class="form-control" name="photoFile" accept="image/*">
+                                            <small class="form-text text-muted">Optional: upload a coach profile image</small>
                                         </div>
                                     </div>
                                     <div class="col-md-6">
@@ -3909,19 +3911,6 @@ function forceRemoveBackdrop() {
                                 <div class="row">
                                     <div class="col-md-6">
                                         <div class="form-group mb-3">
-                                            <label class="form-label">Availability *</label>
-                                            <select class="form-select" name="availability" required>
-                                                <option value="Flexible">Flexible</option>
-                                                <option value="Weekdays">Weekdays Only</option>
-                                                <option value="Weekends">Weekends Only</option>
-                                                <option value="Mornings">Mornings (8AM-12PM)</option>
-                                                <option value="Afternoons">Afternoons (12PM-5PM)</option>
-                                                <option value="Evenings">Evenings (5PM-10PM)</option>
-                                            </select>
-                                        </div>
-                                    </div>
-                                    <div class="col-md-6">
-                                        <div class="form-group mb-3">
                                             <label class="form-label">Status *</label>
                                             <select class="form-select" name="status" required>
                                                 <option value="Active">Active</option>
@@ -3936,7 +3925,11 @@ function forceRemoveBackdrop() {
                                     <label class="form-label">Email Address</label>
                                     <input type="email" class="form-control" name="email" placeholder="coach@example.com">
                                 </div>
-                                
+                                <div class="form-group mb-3">
+                                    <label class="form-label">Coach User ID</label>
+                                    <input type="text" class="form-control" name="userId" placeholder="jtuiOF7WQyQusmTbdzjVeLClJKD2">
+                                    <small class="form-text text-muted">Optional: link this coach to an existing user account</small>
+                                </div>
                                 <div class="form-group mb-3">
                                     <label class="form-label">Bio/Qualifications</label>
                                     <textarea class="form-control" name="bio" rows="4" placeholder="Describe the coach's qualifications, achievements, and coaching style..."></textarea>
@@ -9258,7 +9251,7 @@ document.getElementById("pCondition").value =
 
 
         // Validate required fields
-        const requiredFields = ['name', 'sport', 'experience', 'rate', 'availability', 'status'];
+        const requiredFields = ['name', 'sport', 'experience', 'rate', 'status'];
         for (let field of requiredFields) {
           if (!formData.get(field)) {
             showToast(`Please fill in the ${field} field`, 'warning');
@@ -9271,19 +9264,23 @@ document.getElementById("pCondition").value =
           sport: formData.get('sport'),
           experience: parseInt(formData.get('experience')),
           rate: parseFloat(formData.get('rate')),
-          availability: formData.get('availability'),
           status: formData.get('status'),
           phone: formData.get('phone') || null,
           email: formData.get('email') || null,
+          userId: formData.get('userId') || null,
           bio: formData.get('bio') || null,
-          specialties: formData.get('specialties') ? formData.get('specialties').split(',').map(s => s.trim()) : [],
+          specialties: formData.get('specialties') ? formData.get('specialties').trim() : formData.get('sport') || null,
           availableForHire: formData.get('availableForHire') === 'on',
-          photoURL: formData.get('photoURL') || null,
           facilities: Array.from(document.getElementById('createcoachFacilities').selectedOptions)
             .map(option => option.value),
           createdAt: firebase.firestore.FieldValue.serverTimestamp(),
           updatedAt: firebase.firestore.FieldValue.serverTimestamp()
         };
+
+        const photoFile = formData.get('photoFile');
+        if (photoFile && photoFile.size > 0) {
+          coachData.photoURL = await uploadToCloudinary(photoFile);
+        }
 
         // Remove null values
         Object.keys(coachData).forEach(key => {
@@ -9359,15 +9356,17 @@ document.getElementById("pCondition").value =
 
         const coach = coachDoc.data();
         const createdAt = coach.createdAt ? coach.createdAt.toDate().toLocaleDateString() : 'N/A';
+        const specialtyLabel = coach.sport || (typeof coach.specialties === 'string' ? coach.specialties : Array.isArray(coach.specialties) ? coach.specialties.join(', ') : 'N/A');
+        const specialtiesHtml = coach.specialties ? (Array.isArray(coach.specialties) ? coach.specialties.map(specialty => `\n                                                                <span class="badge bg-dark text-dark me-1 mb-1">${specialty}</span>\n                                                            `).join('') : `<span class="badge bg-dark text-dark">${coach.specialties}</span>`) : '';
 
         // Create modal content
         const modalContent = `
-            <div class="modal fade" id="viewCoachModal" tabindex="-1">
+            <div class="modal fade" id="viewCoachModal" tabindex="-1" aria-labelledby="viewCoachModalLabel" aria-hidden="true" data-bs-backdrop="true" data-bs-keyboard="true">
                 <div class="modal-dialog modal-lg">
                     <div class="modal-content">
                         <div class="modal-header">
-                            <h5 class="modal-title">Coach Details: ${coach.name || 'N/A'}</h5>
-                            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                            <h5 class="modal-title" id="viewCoachModalLabel">Coach Details: ${coach.name || 'N/A'}</h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                         </div>
                         <div class="modal-body">
                             <div class="row">
@@ -9378,7 +9377,7 @@ document.getElementById("pCondition").value =
                                          style="width: 200px; height: 200px; object-fit: cover;"
                                          onerror="this.src='https://via.placeholder.com/200x200?text=Coach'">
                                     <h4>${coach.name || 'N/A'}</h4>
-                                    <p class="text-muted">${coach.sport || 'N/A'} Coach</p>
+                                    <p class="text-muted">${specialtyLabel || 'N/A'} Coach</p>
                                     <span class="badge ${coach.status === 'Active' ? 'bg-success' : coach.status === 'Inactive' ? 'bg-secondary' : 'bg-warning'}">
                                         ${coach.status || 'Active'}
                                     </span>
@@ -9393,9 +9392,10 @@ document.getElementById("pCondition").value =
                                                 <div class="card-body">
                                                     <p><strong>Experience:</strong> ${coach.experience || '0'} years</p>
                                                     <p><strong>Hourly Rate:</strong> RM${coach.rate || '0'}</p>
-                                                    <p><strong>Availability:</strong> ${coach.availability || 'Flexible'}</p>
                                                     <p><strong>Phone:</strong> ${coach.phone || 'N/A'}</p>
                                                     <p><strong>Email:</strong> ${coach.email || 'N/A'}</p>
+                                                    <p><strong>User ID:</strong> ${coach.userId || 'N/A'}</p>
+                                                    <p><strong>Facilities:</strong> ${Array.isArray(coach.facilities) ? coach.facilities.length + ' selected' : 'N/A'}</p>
                                                 </div>
                                             </div>
                                         </div>
@@ -9407,12 +9407,10 @@ document.getElementById("pCondition").value =
                                                 <div class="card-body">
                                                     <p><strong>Status:</strong> ${coach.status || 'Active'}</p>
                                                     <p><strong>Available for Hire:</strong> ${coach.availableForHire ? 'Yes' : 'No'}</p>
-                                                    ${coach.specialties && coach.specialties.length > 0 ? `
+                                                    ${coach.specialties ? `
                                                         <p><strong>Specialties:</strong></p>
                                                         <div>
-                                                            ${coach.specialties.map(specialty => `
-                                                                <span class="badge bg-dark text-dark me-1 mb-1">${specialty}</span>
-                                                            `).join('')}
+                                                            ${specialtiesHtml}
                                                         </div>
                                                     ` : ''}
                                                 </div>
@@ -9480,6 +9478,8 @@ document.getElementById("pCondition").value =
         }
 
         const coach = coachDoc.data();
+        const selectedSport = coach.sport || (typeof coach.specialties === 'string' && coach.specialties.indexOf(',') === -1 ? coach.specialties.trim() : '');
+        const specialtiesValue = typeof coach.specialties === 'string' ? coach.specialties : Array.isArray(coach.specialties) ? coach.specialties.join(', ') : '';
 
         // Create edit modal
         const editModalHTML = `
@@ -9495,10 +9495,9 @@ document.getElementById("pCondition").value =
                                 <div class="row">
                                     <div class="col-md-6">
                                         <div class="form-group mb-3">
-                                            <label class="form-label">Profile Picture URL</label>
-                                            <input type="url" class="form-control" id="editCoachPhotoURL" 
-                                                   value="${coach.photoURL || ''}" 
-                                                   placeholder="https://example.com/coach.jpg">
+                                            <label class="form-label">Profile Picture</label>
+                                            <input type="file" class="form-control" id="editCoachPhotoFile" accept="image/*">
+                                            <small class="form-text text-muted">Optional: upload a new coach profile image</small>
                                         </div>
                                     </div>
                                     <div class="col-md-6">
@@ -9516,16 +9515,16 @@ document.getElementById("pCondition").value =
                                             <label class="form-label">Sport *</label>
                                             <select class="form-select" id="editCoachSport" required>
                                                 <option value="">Select Sport</option>
-                                                <option value="Badminton" ${coach.sport === 'Badminton' ? 'selected' : ''}>Badminton</option>
-                                                <option value="Tennis" ${coach.sport === 'Tennis' ? 'selected' : ''}>Tennis</option>
-                                                <option value="Basketball" ${coach.sport === 'Basketball' ? 'selected' : ''}>Basketball</option>
-                                                <option value="Football" ${coach.sport === 'Football' ? 'selected' : ''}>Football</option>
-                                                <option value="Swimming" ${coach.sport === 'Swimming' ? 'selected' : ''}>Swimming</option>
-                                                <option value="Gym" ${coach.sport === 'Gym' ? 'selected' : ''}>Gym & Fitness</option>
-                                                <option value="Yoga" ${coach.sport === 'Yoga' ? 'selected' : ''}>Yoga</option>
-                                                <option value="Martial Arts" ${coach.sport === 'Martial Arts' ? 'selected' : ''}>Martial Arts</option>
-                                                <option value="Cricket" ${coach.sport === 'Cricket' ? 'selected' : ''}>Cricket</option>
-                                                <option value="Other" ${coach.sport === 'Other' ? 'selected' : ''}>Other</option>
+                                                <option value="Badminton" ${selectedSport === 'Badminton' ? 'selected' : ''}>Badminton</option>
+                                                <option value="Tennis" ${selectedSport === 'Tennis' ? 'selected' : ''}>Tennis</option>
+                                                <option value="Basketball" ${selectedSport === 'Basketball' ? 'selected' : ''}>Basketball</option>
+                                                <option value="Football" ${selectedSport === 'Football' ? 'selected' : ''}>Football</option>
+                                                <option value="Swimming" ${selectedSport === 'Swimming' ? 'selected' : ''}>Swimming</option>
+                                                <option value="Gym" ${selectedSport === 'Gym' ? 'selected' : ''}>Gym & Fitness</option>
+                                                <option value="Yoga" ${selectedSport === 'Yoga' ? 'selected' : ''}>Yoga</option>
+                                                <option value="Martial Arts" ${selectedSport === 'Martial Arts' ? 'selected' : ''}>Martial Arts</option>
+                                                <option value="Cricket" ${selectedSport === 'Cricket' ? 'selected' : ''}>Cricket</option>
+                                                <option value="Other" ${selectedSport === 'Other' ? 'selected' : ''}>Other</option>
                                             </select>
                                         </div>
                                     </div>
@@ -9558,19 +9557,6 @@ document.getElementById("pCondition").value =
                                 <div class="row">
                                     <div class="col-md-6">
                                         <div class="form-group mb-3">
-                                            <label class="form-label">Availability *</label>
-                                            <select class="form-select" id="editCoachAvailability" required>
-                                                <option value="Flexible" ${coach.availability === 'Flexible' ? 'selected' : ''}>Flexible</option>
-                                                <option value="Weekdays" ${coach.availability === 'Weekdays' ? 'selected' : ''}>Weekdays Only</option>
-                                                <option value="Weekends" ${coach.availability === 'Weekends' ? 'selected' : ''}>Weekends Only</option>
-                                                <option value="Mornings" ${coach.availability === 'Mornings' ? 'selected' : ''}>Mornings (8AM-12PM)</option>
-                                                <option value="Afternoons" ${coach.availability === 'Afternoons' ? 'selected' : ''}>Afternoons (12PM-5PM)</option>
-                                                <option value="Evenings" ${coach.availability === 'Evenings' ? 'selected' : ''}>Evenings (5PM-10PM)</option>
-                                            </select>
-                                        </div>
-                                    </div>
-                                    <div class="col-md-6">
-                                        <div class="form-group mb-3">
                                             <label class="form-label">Status *</label>
                                             <select class="form-select" id="editCoachStatus" required>
                                                 <option value="Active" ${coach.status === 'Active' ? 'selected' : ''}>Active</option>
@@ -9586,17 +9572,20 @@ document.getElementById("pCondition").value =
                                     <input type="email" class="form-control" id="editCoachEmail" 
                                            value="${coach.email || ''}" placeholder="coach@example.com">
                                 </div>
-                                
+                                <div class="form-group mb-3">
+                                    <label class="form-label">Coach User ID</label>
+                                    <input type="text" class="form-control" id="editCoachUserId" 
+                                           value="${coach.userId || ''}" placeholder="jtuiOF7WQyQusmTbdzjVeLClJKD2">
+                                    <small class="form-text text-muted">Optional: link this coach to an existing user account</small>
+                                </div>
                                 <div class="form-group mb-3">
                                     <label class="form-label">Bio/Qualifications</label>
-                                    <textarea class="form-control" id="editCoachBio" rows="4" 
-                                              placeholder="Describe the coach's qualifications, achievements, and coaching style...">${coach.bio || ''}</textarea>
+                                    <textarea class="form-control" id="editCoachBio" rows="4" placeholder="Describe the coach's qualifications, achievements, and coaching style...">${coach.bio || ''}</textarea>
                                 </div>
-                                
                                 <div class="form-group mb-3">
                                     <label class="form-label">Specialties</label>
                                     <input type="text" class="form-control" id="editCoachSpecialties" 
-                                           value="${coach.specialties ? coach.specialties.join(', ') : ''}" 
+                                           value="${specialtiesValue}" 
                                            placeholder="e.g., Beginner Training, Advanced Techniques, Competition Prep">
                                     <small class="form-text text-muted">Separate multiple specialties with commas</small>
                                 </div>
@@ -9671,21 +9660,19 @@ document.getElementById("pCondition").value =
           sport: document.getElementById('editCoachSport').value,
           experience: parseInt(document.getElementById('editCoachExperience').value),
           rate: parseFloat(document.getElementById('editCoachRate').value),
-          availability: document.getElementById('editCoachAvailability').value,
           status: document.getElementById('editCoachStatus').value,
           phone: document.getElementById('editCoachPhone').value || null,
           email: document.getElementById('editCoachEmail').value || null,
-          bio: document.getElementById('editCoachBio').value || null,
-          specialties: document.getElementById('editCoachSpecialties').value ?
-            document.getElementById('editCoachSpecialties').value.split(',').map(s => s.trim()) : [],
+          userId: document.getElementById('editCoachUserId').value || null,
+          bio: document.getElementById('editCoachBio') ? document.getElementById('editCoachBio').value || null : null,
+          specialties: document.getElementById('editCoachSpecialties').value.trim() || document.getElementById('editCoachSport').value || null,
           availableForHire: document.getElementById('editCoachAvailableForHire').checked,
           updatedAt: firebase.firestore.FieldValue.serverTimestamp()
         };
 
-        // Only update photoURL if provided
-        const photoURL = document.getElementById('editCoachPhotoURL').value;
-        if (photoURL) {
-          coachData.photoURL = photoURL;
+        const photoFile = document.getElementById('editCoachPhotoFile').files[0];
+        if (photoFile) {
+          coachData.photoURL = await uploadToCloudinary(photoFile);
         }
 
         // Remove empty values
@@ -10481,8 +10468,24 @@ function renderEditCourts() {
             <div class="border p-3 mb-3 rounded">
                 <div class="d-flex justify-content-between align-items-center mb-2">
                     <strong>${court.name}</strong>
-                    <button class="btn btn-sm btn-danger" onclick="removeEditCourt(${index})">Delete Court</button>
+                    
+                    <div>
+                        <!-- Edit Button -->
+                        <button class="btn btn-sm btn-primary me-2" 
+                                onclick="editCourt(${index})" 
+                                title="Edit Court">
+                            <i class="fas fa-edit"></i>
+                        </button>
+
+                        <!-- Delete Button -->
+                        <button class="btn btn-sm btn-danger" 
+                                onclick="removeCourt(${index})" 
+                                title="Delete Court">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
                 </div>
+
                 <div><strong>Slots:</strong> ${court.slots.join(", ")}</div>
                 <div><strong>Dates:</strong> ${court.dates.join(", ")}</div>
             </div>
