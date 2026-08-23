@@ -222,6 +222,24 @@
             .role-tabs {
                 justify-content: center;
             }
+            .sports-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+            .times-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+
+        @media (max-width: 480px) {
+            .sports-grid {
+                grid-template-columns: 1fr;
+            }
+            .times-grid {
+                grid-template-columns: 1fr;
+            }
+            .grid-2 {
+                grid-template-columns: 1fr;
+            }
         }
 
         .form-box {
@@ -236,7 +254,6 @@
             width: 100%;
         }
 
-        /* FIX: Center forms in User panel */
         #panel-user .panel-grid {
             display: grid;
             grid-template-columns: 1fr 1fr;
@@ -251,7 +268,6 @@
             align-self: stretch;
         }
 
-        /* For single column layouts (admin, owner, coach) */
         .panel-grid.single {
             display: grid;
             grid-template-columns: 1fr;
@@ -381,26 +397,60 @@
             color: rgba(255, 255, 255, 0.2);
         }
 
-        .input-group select[multiple] {
-            background-image: none;
-            padding: 0.6rem 0.8rem;
-            min-height: 80px;
-            border-radius: 16px;
+        /* File input styling */
+        .file-input-wrapper {
+            position: relative;
+            width: 100%;
         }
-        .input-group select[multiple] option {
-            padding: 0.5rem 0.8rem;
-            border-radius: 10px;
-            margin: 2px 0;
-            transition: all 0.2s ease;
-            background: transparent;
+
+        .file-input-wrapper input[type="file"] {
+            position: absolute;
+            opacity: 0;
+            width: 100%;
+            height: 100%;
+            cursor: pointer;
+            z-index: 2;
         }
-        .input-group select[multiple] option:checked {
-            background: linear-gradient(135deg, #ff6b6b, #ffd93d);
-            color: #0a0e1a;
-            font-weight: 600;
+
+        .file-input-label {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 0.8rem 1.2rem;
+            background: rgba(255, 255, 255, 0.04);
+            border: 1.5px dashed rgba(255, 255, 255, 0.12);
+            border-radius: 20px;
+            color: rgba(255, 255, 255, 0.5);
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+            z-index: 1;
         }
-        .input-group select[multiple]:focus option:checked {
-            background: linear-gradient(135deg, #ff6b6b, #ffd93d);
+
+        .file-input-label:hover {
+            border-color: rgba(255, 107, 107, 0.3);
+            background: rgba(255, 255, 255, 0.06);
+            color: rgba(255, 255, 255, 0.8);
+        }
+
+        .file-input-label i {
+            font-size: 1.2rem;
+            color: #ff6b6b;
+        }
+
+        .profile-preview {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            object-fit: cover;
+            margin: 10px auto;
+            display: none;
+            border: 2px solid #ff6b6b;
+            box-shadow: 0 0 30px rgba(255, 107, 107, 0.15);
+        }
+
+        .profile-preview.show {
+            display: block;
         }
 
         .btn-auth {
@@ -542,11 +592,6 @@
             grid-template-columns: 1fr 1fr;
             gap: 10px;
         }
-        @media (max-width: 480px) {
-            .grid-2 {
-                grid-template-columns: 1fr;
-            }
-        }
 
         .ripple {
             position: absolute;
@@ -576,6 +621,154 @@
         }
         .login-form-wrapper.hidden {
             display: none;
+        }
+
+        .input-group input[type="date"] {
+            color-scheme: dark;
+        }
+        .input-group input[type="date"]::-webkit-calendar-picker-indicator {
+            filter: invert(1);
+            cursor: pointer;
+        }
+        .input-group input[type="date"]::-webkit-datetime-edit {
+            color: rgba(255, 255, 255, 0.8);
+        }
+
+        /* ===== SPORT CHIP STYLES ===== */
+        .sports-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 8px;
+            max-height: 200px;
+            overflow-y: auto;
+            padding: 4px;
+            background: rgba(255, 255, 255, 0.02);
+            border-radius: 16px;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .sport-chip {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            padding: 8px 12px;
+            border-radius: 30px;
+            background: rgba(255, 255, 255, 0.04);
+            border: 1.5px solid rgba(255, 255, 255, 0.06);
+            color: rgba(255, 255, 255, 0.6);
+            font-size: 0.8rem;
+            cursor: pointer;
+            transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+            user-select: none;
+            -webkit-user-select: none;
+        }
+
+        .sport-chip:hover {
+            background: rgba(255, 255, 255, 0.08);
+            border-color: rgba(255, 107, 107, 0.3);
+            transform: translateY(-1px);
+        }
+
+        .sport-chip.selected {
+            background: linear-gradient(135deg, rgba(255, 107, 107, 0.25), rgba(255, 217, 61, 0.15));
+            border-color: #ff6b6b;
+            color: #fff;
+            box-shadow: 0 0 20px rgba(255, 107, 107, 0.1);
+        }
+
+        .sport-chip .emoji {
+            font-size: 1rem;
+        }
+
+        .sport-chip .check {
+            display: none;
+            margin-left: auto;
+            color: #6bcb77;
+        }
+
+        .sport-chip.selected .check {
+            display: inline-block;
+        }
+
+        /* ===== TIME CHIP STYLES ===== */
+        .times-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 8px;
+            max-height: 150px;
+            overflow-y: auto;
+            padding: 4px;
+            background: rgba(255, 255, 255, 0.02);
+            border-radius: 16px;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .time-chip {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            padding: 8px 12px;
+            border-radius: 30px;
+            background: rgba(255, 255, 255, 0.04);
+            border: 1.5px solid rgba(255, 255, 255, 0.06);
+            color: rgba(255, 255, 255, 0.6);
+            font-size: 0.75rem;
+            cursor: pointer;
+            transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+            user-select: none;
+            -webkit-user-select: none;
+        }
+
+        .time-chip:hover {
+            background: rgba(255, 255, 255, 0.08);
+            border-color: rgba(107, 203, 119, 0.3);
+            transform: translateY(-1px);
+        }
+
+        .time-chip.selected {
+            background: linear-gradient(135deg, rgba(107, 203, 119, 0.2), rgba(255, 217, 61, 0.1));
+            border-color: #6bcb77;
+            color: #fff;
+            box-shadow: 0 0 20px rgba(107, 203, 119, 0.1);
+        }
+
+        .time-chip .check {
+            display: none;
+            margin-left: auto;
+            color: #6bcb77;
+        }
+
+        .time-chip.selected .check {
+            display: inline-block;
+        }
+
+        .selected-count {
+            display: inline-block;
+            background: rgba(255, 107, 107, 0.2);
+            color: #ff6b6b;
+            padding: 2px 10px;
+            border-radius: 12px;
+            font-size: 0.7rem;
+            font-weight: 600;
+            margin-left: 8px;
+        }
+
+        /* Scrollbar styling for sports grid */
+        .sports-grid::-webkit-scrollbar,
+        .times-grid::-webkit-scrollbar {
+            width: 4px;
+        }
+
+        .sports-grid::-webkit-scrollbar-track,
+        .times-grid::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.02);
+            border-radius: 4px;
+        }
+
+        .sports-grid::-webkit-scrollbar-thumb,
+        .times-grid::-webkit-scrollbar-thumb {
+            background: rgba(255, 107, 107, 0.3);
+            border-radius: 4px;
         }
     </style>
 </head>
@@ -625,7 +818,7 @@
                         <div class="switch-link">Don't have an account? <a id="switchToSignup">Sign up</a></div>
                     </div>
 
-                    <!-- SIGNUP (hidden initially) -->
+                    <!-- SIGNUP with File Upload for Profile Picture -->
                     <div class="form-box signup-form-wrapper" id="userSignupWrapper">
                         <h3><i class="fas fa-user-plus"></i> Sign Up</h3>
                         <div class="sub">Join the community</div>
@@ -649,32 +842,43 @@
                                 <input type="password" id="signupPassword" placeholder="••••••••" minlength="8" required>
                             </div>
                             <div class="input-group">
+                                <label>Date of Birth</label>
+                                <input type="date" id="signupDob" required max="2008-01-01">
+                                <div class="text-muted">You must be at least 16 years old</div>
+                            </div>
+                            <div class="input-group">
                                 <label>Phone Number</label>
-                                <input type="tel" id="signupPhone" placeholder="+1 (555) 123-4567">
+                                <input type="tel" id="signupPhone" placeholder="+6012-345-6789">
                             </div>
+
+                            <!-- Profile Picture Upload -->
                             <div class="input-group">
-                                <label>Profile Picture URL</label>
-                                <input type="url" id="signupProfileUrl" placeholder="https://example.com/your-picture.jpg">
+                                <label>Profile Picture</label>
+                                <div class="file-input-wrapper">
+                                    <input type="file" id="signupProfileImage" accept="image/*">
+                                    <div class="file-input-label">
+                                        <i class="fas fa-cloud-upload-alt"></i>
+                                        <span>Choose a profile picture</span>
+                                    </div>
+                                </div>
+                                <img id="profilePreview" class="profile-preview" alt="Profile preview">
+                                <div class="text-muted">Upload a JPG, PNG or GIF (max 5MB)</div>
                             </div>
+
+                            <!-- Sports Selection - Chip based -->
                             <div class="input-group">
-                                <label>Sports you play</label>
-                                <select id="signupSports" multiple>
-                                    <option value="tennis">🎾 Tennis</option>
-                                    <option value="badminton">🏸 Badminton</option>
-                                    <option value="table-tennis">🏓 Table Tennis</option>
-                                    <option value="squash">🧊 Squash</option>
-                                </select>
-                                <div class="text-muted">Hold Ctrl/Cmd to select multiple</div>
+                                <label>Sports you play <span class="selected-count" id="sportsCount">0 selected</span></label>
+                                <div class="sports-grid" id="sportsGrid">
+                                    <!-- Sports chips will be rendered by JavaScript -->
+                                </div>
                             </div>
+
                             <div class="grid-2">
                                 <div class="input-group">
                                     <label>Primary Sport</label>
                                     <select id="signupPrimarySport">
                                         <option value="">Select</option>
-                                        <option value="tennis">Tennis</option>
-                                        <option value="badminton">Badminton</option>
-                                        <option value="table-tennis">Table Tennis</option>
-                                        <option value="squash">Squash</option>
+                                        <!-- Options populated by JS -->
                                     </select>
                                 </div>
                                 <div class="input-group">
@@ -684,44 +888,53 @@
                                         <option value="beginner">Beginner</option>
                                         <option value="intermediate">Intermediate</option>
                                         <option value="advanced">Advanced</option>
+                                        <option value="expert">Expert</option>
                                     </select>
                                 </div>
                             </div>
+
+                            <!-- Malaysian Location Selection -->
                             <div class="grid-2">
                                 <div class="input-group">
-                                    <label>Preferred Location</label>
-                                    <select id="signupLocation">
-                                        <option value="">Select</option>
-                                        <option value="North">North</option>
-                                        <option value="South">South</option>
-                                        <option value="East">East</option>
-                                        <option value="West">West</option>
-                                        <option value="Central">Central</option>
+                                    <label>State</label>
+                                    <select id="signupState" required>
+                                        <option value="">Select State</option>
                                     </select>
                                 </div>
+                                <div class="input-group">
+                                    <label>District</label>
+                                    <select id="signupDistrict" required disabled>
+                                        <option value="">Select District</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div class="grid-2">
                                 <div class="input-group">
                                     <label>Playing Frequency</label>
                                     <select id="signupFrequency">
                                         <option value="">How often?</option>
+                                        <option value="Daily">Daily</option>
                                         <option value="Weekly">Weekly</option>
                                         <option value="Bi-weekly">Bi-weekly</option>
                                         <option value="Monthly">Monthly</option>
                                         <option value="Occasionally">Occasionally</option>
                                     </select>
                                 </div>
+                                <div class="input-group">
+                                    <label>Preferred Location</label>
+                                    <input type="text" id="signupLocation" placeholder="e.g., Near KLCC">
+                                </div>
                             </div>
+
+                            <!-- Preferred Times - Chip based -->
                             <div class="input-group">
-                                <label>Preferred Playing Times</label>
-                                <select id="signupTimes" multiple>
-                                    <option value="Weekday Mornings">Weekday Mornings</option>
-                                    <option value="Weekday Afternoons">Weekday Afternoons</option>
-                                    <option value="Weekday Evenings">Weekday Evenings</option>
-                                    <option value="Weekend Mornings">Weekend Mornings</option>
-                                    <option value="Weekend Afternoons">Weekend Afternoons</option>
-                                    <option value="Weekend Evenings">Weekend Evenings</option>
-                                </select>
-                                <div class="text-muted">Hold Ctrl/Cmd to select multiple</div>
+                                <label>Preferred Playing Times <span class="selected-count" id="timesCount">0 selected</span></label>
+                                <div class="times-grid" id="timesGrid">
+                                    <!-- Time chips will be rendered by JavaScript -->
+                                </div>
                             </div>
+
                             <button type="submit" class="btn-auth btn-outline" id="userSignupBtn"><i class="fas fa-rocket"></i> Create account</button>
                             <div class="message-box" id="userSignupMsg"></div>
                         </form>
@@ -813,7 +1026,7 @@
     <script src="https://www.gstatic.com/firebasejs/10.11.0/firebase-firestore-compat.js">
     </script>
     <script>
-        // ===== FIREBASE CONFIG (unchanged) =====
+        // ===== FIREBASE CONFIG =====
         const firebaseConfig = {
             apiKey: "AIzaSyDjMwv9Bxff1bUE7CR_S-DPx3NV5kkinTU",
             authDomain: "nste-booking-system.firebaseapp.com",
@@ -826,6 +1039,90 @@
         const auth = firebase.auth();
         const db = firebase.firestore();
 
+        // ===== CLOUDINARY UPLOAD FUNCTION =====
+        async function uploadToCloudinary(file) {
+            const CLOUD_NAME = "dagqzn57w";
+            const UPLOAD_PRESET = "ml_default";
+
+            const url = `https://api.cloudinary.com/v1_1/${CLOUD_NAME}/image/upload`;
+
+            const formData = new FormData();
+            formData.append("file", file);
+            formData.append("upload_preset", UPLOAD_PRESET);
+
+            try {
+                const res = await fetch(url, {
+                    method: "POST",
+                    body: formData
+                });
+
+                if (!res.ok) {
+                    throw new Error(`Upload failed: ${res.status}`);
+                }
+
+                const data = await res.json();
+                return data.secure_url;
+            } catch (error) {
+                console.error("Cloudinary upload error:", error);
+                throw error;
+            }
+        }
+
+        // ===== SPORTS DATA =====
+        const SPORTS = [
+            { value: 'tennis', emoji: '🎾', label: 'Tennis' },
+            { value: 'badminton', emoji: '🏸', label: 'Badminton' },
+            { value: 'pickleball', emoji: '🏓', label: 'Pickleball' },
+            { value: 'table-tennis', emoji: '🏓', label: 'Table Tennis' },
+            { value: 'squash', emoji: '🧊', label: 'Squash' },
+            { value: 'futsal', emoji: '⚽', label: 'Futsal' },
+            { value: 'soccer', emoji: '⚽', label: 'Soccer' },
+            { value: 'basketball', emoji: '🏀', label: 'Basketball' },
+            { value: 'volleyball', emoji: '🏐', label: 'Volleyball' },
+            { value: 'swimming', emoji: '🏊', label: 'Swimming' },
+            { value: 'gym', emoji: '🏋️', label: 'Gym / Fitness' },
+            { value: 'cricket', emoji: '🏏', label: 'Cricket' },
+            { value: 'rugby', emoji: '🏉', label: 'Rugby' },
+            { value: 'golf', emoji: '⛳', label: 'Golf' },
+            { value: 'cycling', emoji: '🚴', label: 'Cycling' },
+            { value: 'running', emoji: '🏃', label: 'Running' },
+            { value: 'yoga', emoji: '🧘', label: 'Yoga' },
+            { value: 'dancing', emoji: '💃', label: 'Dancing' },
+            { value: 'martial-arts', emoji: '🥋', label: 'Martial Arts' },
+            { value: 'boxing', emoji: '🥊', label: 'Boxing' },
+            { value: 'hiking', emoji: '🥾', label: 'Hiking' },
+            { value: 'skateboarding', emoji: '🛹', label: 'Skateboarding' },
+            { value: 'surfing', emoji: '🏄', label: 'Surfing' },
+            { value: 'snowboarding', emoji: '🏂', label: 'Snowboarding' }
+        ];
+
+        const TIME_SLOTS = [
+            { value: 'Weekday Mornings', emoji: '🌅', label: 'Weekday Mornings' },
+            { value: 'Weekday Afternoons', emoji: '☀️', label: 'Weekday Afternoons' },
+            { value: 'Weekday Evenings', emoji: '🌆', label: 'Weekday Evenings' },
+            { value: 'Weekend Mornings', emoji: '🌅', label: 'Weekend Mornings' },
+            { value: 'Weekend Afternoons', emoji: '☀️', label: 'Weekend Afternoons' },
+            { value: 'Weekend Evenings', emoji: '🌆', label: 'Weekend Evenings' }
+        ];
+
+        const MALAYSIA_LOCATIONS = {
+            "Selangor": ["Petaling", "Hulu Langat", "Gombak", "Klang", "Shah Alam", "Subang Jaya", "Puchong", "Kajang"],
+            "Kuala Lumpur": ["Bukit Bintang", "Cheras", "Setapak", "Kepong", "Ampang", "Bangsar", "Damansara", "Sentul"],
+            "Johor": ["Johor Bahru", "Batu Pahat", "Muar", "Kluang", "Kulai", "Pontian", "Segamat"],
+            "Penang": ["George Town", "Bayan Lepas", "Butterworth", "Seberang Jaya", "Sungai Petani"],
+            "Perak": ["Ipoh", "Taiping", "Sitiawan", "Kampar", "Teluk Intan", "Lumut"],
+            "Negeri Sembilan": ["Seremban", "Port Dickson", "Nilai", "Rembau"],
+            "Melaka": ["Melaka Tengah", "Alor Gajah", "Jasin"],
+            "Pahang": ["Kuantan", "Bentong", "Temerloh", "Raub", "Jerantut"],
+            "Kedah": ["Alor Setar", "Sungai Petani", "Kulim", "Langkawi"],
+            "Kelantan": ["Kota Bharu", "Pasir Mas", "Tanah Merah", "Tumpat"],
+            "Terengganu": ["Kuala Terengganu", "Kemaman", "Dungun", "Besut"],
+            "Sabah": ["Kota Kinabalu", "Sandakan", "Tawau", "Lahad Datu", "Keningau"],
+            "Sarawak": ["Kuching", "Sibu", "Miri", "Bintulu", "Kota Samarahan"],
+            "Perlis": ["Kangar", "Arau", "Padang Besar"],
+            "Labuan": ["Victoria", "Labuan Town"]
+        };
+
         // ===== DOM REFS =====
         const tabs = document.querySelectorAll('.role-tab');
         const panels = {
@@ -834,6 +1131,144 @@
             owner: document.getElementById('panel-owner'),
             coach: document.getElementById('panel-coach')
         };
+
+        // ===== RENDER SPORT CHIPS =====
+        function renderSportChips() {
+            const grid = document.getElementById('sportsGrid');
+            grid.innerHTML = '';
+            SPORTS.forEach(sport => {
+                const chip = document.createElement('div');
+                chip.className = 'sport-chip';
+                chip.dataset.value = sport.value;
+                chip.innerHTML = `
+                    <span class="emoji">${sport.emoji}</span>
+                    <span>${sport.label}</span>
+                    <span class="check"><i class="fas fa-check-circle"></i></span>
+                `;
+                chip.addEventListener('click', () => {
+                    chip.classList.toggle('selected');
+                    updateSportsCount();
+                });
+                grid.appendChild(chip);
+            });
+        }
+
+        // ===== RENDER TIME CHIPS =====
+        function renderTimeChips() {
+            const grid = document.getElementById('timesGrid');
+            grid.innerHTML = '';
+            TIME_SLOTS.forEach(slot => {
+                const chip = document.createElement('div');
+                chip.className = 'time-chip';
+                chip.dataset.value = slot.value;
+                chip.innerHTML = `
+                    <span class="emoji">${slot.emoji}</span>
+                    <span>${slot.label}</span>
+                    <span class="check"><i class="fas fa-check-circle"></i></span>
+                `;
+                chip.addEventListener('click', () => {
+                    chip.classList.toggle('selected');
+                    updateTimesCount();
+                });
+                grid.appendChild(chip);
+            });
+        }
+
+        // ===== UPDATE SELECTION COUNTS =====
+        function updateSportsCount() {
+            const selected = document.querySelectorAll('#sportsGrid .sport-chip.selected');
+            document.getElementById('sportsCount').textContent = `${selected.length} selected`;
+        }
+
+        function updateTimesCount() {
+            const selected = document.querySelectorAll('#timesGrid .time-chip.selected');
+            document.getElementById('timesCount').textContent = `${selected.length} selected`;
+        }
+
+        // ===== GET SELECTED VALUES =====
+        function getSelectedSports() {
+            return Array.from(document.querySelectorAll('#sportsGrid .sport-chip.selected'))
+                .map(chip => chip.dataset.value);
+        }
+
+        function getSelectedTimes() {
+            return Array.from(document.querySelectorAll('#timesGrid .time-chip.selected'))
+                .map(chip => chip.dataset.value);
+        }
+
+        // ===== PROFILE PICTURE PREVIEW =====
+        document.getElementById('signupProfileImage').addEventListener('change', function(e) {
+            const file = this.files[0];
+            const preview = document.getElementById('profilePreview');
+
+            if (file) {
+                // Validate file size (max 5MB)
+                if (file.size > 5 * 1024 * 1024) {
+                    showMsg('userSignupMsg', 'Profile picture must be less than 5MB', 'error');
+                    this.value = '';
+                    preview.classList.remove('show');
+                    return;
+                }
+
+                // Validate file type
+                if (!file.type.startsWith('image/')) {
+                    showMsg('userSignupMsg', 'Please upload an image file', 'error');
+                    this.value = '';
+                    preview.classList.remove('show');
+                    return;
+                }
+
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    preview.src = e.target.result;
+                    preview.classList.add('show');
+                };
+                reader.readAsDataURL(file);
+            } else {
+                preview.classList.remove('show');
+            }
+        });
+
+        // ===== POPULATE PRIMARY SPORT DROPDOWN =====
+        function populatePrimarySport() {
+            const select = document.getElementById('signupPrimarySport');
+            select.innerHTML = '<option value="">Select</option>';
+            SPORTS.forEach(sport => {
+                const option = document.createElement('option');
+                option.value = sport.value;
+                option.textContent = sport.label;
+                select.appendChild(option);
+            });
+        }
+
+        // ===== POPULATE STATE DROPDOWN =====
+        function populateStates() {
+            const stateSelect = document.getElementById('signupState');
+            stateSelect.innerHTML = '<option value="">Select State</option>';
+            Object.keys(MALAYSIA_LOCATIONS).sort().forEach(state => {
+                const option = document.createElement('option');
+                option.value = state;
+                option.textContent = state;
+                stateSelect.appendChild(option);
+            });
+        }
+
+        // ===== POPULATE DISTRICT DROPDOWN =====
+        function populateDistricts(state) {
+            const districtSelect = document.getElementById('signupDistrict');
+            districtSelect.innerHTML = '<option value="">Select District</option>';
+            districtSelect.disabled = true;
+
+            if (state && MALAYSIA_LOCATIONS[state]) {
+                districtSelect.disabled = false;
+                MALAYSIA_LOCATIONS[state].sort().forEach(district => {
+                    const option = document.createElement('option');
+                    option.value = district;
+                    option.textContent = district;
+                    districtSelect.appendChild(option);
+                });
+            }
+        }
 
         // ===== TAB SWITCHING =====
         tabs.forEach(tab => {
@@ -868,6 +1303,11 @@
             document.getElementById('userSignupWrapper').classList.remove('active');
             document.getElementById('userLoginMsg').style.display = 'none';
             document.getElementById('userSignupMsg').style.display = 'none';
+        });
+
+        // ===== LOCATION DROPDOWN EVENTS =====
+        document.getElementById('signupState').addEventListener('change', function() {
+            populateDistricts(this.value);
         });
 
         // ===== RIPPLE EFFECT =====
@@ -920,59 +1360,138 @@
         });
 
         // ============================================================
-        //  USER SIGNUP
+        //  USER SIGNUP (with Cloudinary upload for profile picture)
         // ============================================================
         document.getElementById('userSignupForm').addEventListener('submit', async (e) => {
             e.preventDefault();
             clearMsg('userSignupMsg');
 
-            const firstName = document.getElementById('signupFirstName').value.trim();
-            const lastName = document.getElementById('signupLastName').value.trim();
-            const email = document.getElementById('signupEmail').value.trim();
-            const password = document.getElementById('signupPassword').value;
-            const phone = document.getElementById('signupPhone').value.trim();
-            const profileUrl = document.getElementById('signupProfileUrl').value.trim() ||
-                'https://cdn.pixabay.com/photo/2015/10/05/22/37/blank-profile-picture-973460_640.png';
-            const sportsSelect = document.getElementById('signupSports');
-            const sports = Array.from(sportsSelect.selectedOptions).map(opt => opt.value);
-            const primarySport = document.getElementById('signupPrimarySport').value;
-            const skillLevel = document.getElementById('signupSkillLevel').value;
-            const location = document.getElementById('signupLocation').value;
-            const frequency = document.getElementById('signupFrequency').value;
-            const timesSelect = document.getElementById('signupTimes');
-            const preferredTimes = Array.from(timesSelect.selectedOptions).map(opt => opt.value);
-
-            if (!firstName || !lastName || !email || !password || !primarySport || !skillLevel || !location || !
-                frequency) {
-                showMsg('userSignupMsg', 'Please fill all required fields');
-                return;
-            }
-            if (password.length < 8) { showMsg('userSignupMsg', 'Password must be at least 8 characters'); return; }
-            if (sports.length === 0) { showMsg('userSignupMsg', 'Please select at least one sport'); return; }
-            if (preferredTimes.length === 0) { showMsg('userSignupMsg',
-                'Please select at least one preferred time'); return; }
+            // Show loading state
+            const submitBtn = document.getElementById('userSignupBtn');
+            const originalText = submitBtn.innerHTML;
+            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Creating account...';
+            submitBtn.disabled = true;
 
             try {
+                const firstName = document.getElementById('signupFirstName').value.trim();
+                const lastName = document.getElementById('signupLastName').value.trim();
+                const email = document.getElementById('signupEmail').value.trim();
+                const password = document.getElementById('signupPassword').value;
+                const dob = document.getElementById('signupDob').value;
+                const phone = document.getElementById('signupPhone').value.trim();
+                const profileImageFile = document.getElementById('signupProfileImage').files[0];
+
+                // Get selected sports from chips
+                const sports = getSelectedSports();
+
+                const primarySport = document.getElementById('signupPrimarySport').value;
+                const skillLevel = document.getElementById('signupSkillLevel').value;
+                const state = document.getElementById('signupState').value;
+                const district = document.getElementById('signupDistrict').value;
+                const location = document.getElementById('signupLocation').value.trim();
+                const frequency = document.getElementById('signupFrequency').value;
+
+                // Get selected times from chips
+                const preferredTimes = getSelectedTimes();
+
+                // Validate required fields
+                if (!firstName || !lastName || !email || !password || !dob || !primarySport || !skillLevel || !state || !district || !location || !frequency) {
+                    showMsg('userSignupMsg', 'Please fill all required fields');
+                    submitBtn.innerHTML = originalText;
+                    submitBtn.disabled = false;
+                    return;
+                }
+
+                // Validate password length
+                if (password.length < 8) {
+                    showMsg('userSignupMsg', 'Password must be at least 8 characters');
+                    submitBtn.innerHTML = originalText;
+                    submitBtn.disabled = false;
+                    return;
+                }
+
+                // Validate age (must be at least 16 years old)
+                const birthDate = new Date(dob);
+                const today = new Date();
+                let age = today.getFullYear() - birthDate.getFullYear();
+                const monthDiff = today.getMonth() - birthDate.getMonth();
+                if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+                    age--;
+                }
+                if (age < 16) {
+                    showMsg('userSignupMsg', 'You must be at least 16 years old to register');
+                    submitBtn.innerHTML = originalText;
+                    submitBtn.disabled = false;
+                    return;
+                }
+
+                // Validate sports selection
+                if (sports.length === 0) {
+                    showMsg('userSignupMsg', 'Please select at least one sport');
+                    submitBtn.innerHTML = originalText;
+                    submitBtn.disabled = false;
+                    return;
+                }
+
+                // Validate preferred times
+                if (preferredTimes.length === 0) {
+                    showMsg('userSignupMsg', 'Please select at least one preferred time');
+                    submitBtn.innerHTML = originalText;
+                    submitBtn.disabled = false;
+                    return;
+                }
+
+                // Upload profile picture to Cloudinary if provided
+                let profilePhotoURL = 'https://cdn.pixabay.com/photo/2015/10/05/22/37/blank-profile-picture-973460_640.png';
+                if (profileImageFile) {
+                    try {
+                        showMsg('userSignupMsg', '📤 Uploading profile picture...', 'success');
+                        profilePhotoURL = await uploadToCloudinary(profileImageFile);
+                    } catch (uploadError) {
+                        console.error('Profile upload error:', uploadError);
+                        showMsg('userSignupMsg', '⚠️ Profile picture upload failed. Using default avatar.', 'error');
+                        // Continue with default avatar
+                    }
+                }
+
+                // Create user account
                 const cred = await auth.createUserWithEmailAndPassword(email, password);
+
+                // Update user profile with photo
+                await cred.user.updateProfile({
+                    displayName: `${firstName} ${lastName}`,
+                    photoURL: profilePhotoURL
+                });
+
+                // Save user data to Firestore
                 await db.collection('users').doc(cred.user.uid).set({
                     uid: cred.user.uid,
                     name: `${firstName} ${lastName}`,
                     email: email,
+                    dateOfBirth: dob,
+                    age: age,
                     phone: phone,
-                    photoURL: profileUrl,
+                    photoURL: profilePhotoURL,
                     sports: sports,
                     primarySport: primarySport,
                     skillLevel: skillLevel,
+                    state: state,
+                    district: district,
                     location: location,
                     playingFrequency: frequency,
                     preferredTimes: preferredTimes,
                     role: 'user',
                     createdAt: firebase.firestore.FieldValue.serverTimestamp()
                 });
+
                 showMsg('userSignupMsg', '🎉 Account created! Redirecting...', 'success');
                 setTimeout(() => window.location.href = 'user-dashboard.html', 1400);
+
             } catch (err) {
+                console.error('Signup error:', err);
                 showMsg('userSignupMsg', '❌ ' + err.message);
+                submitBtn.innerHTML = originalText;
+                submitBtn.disabled = false;
             }
         });
 
@@ -1042,6 +1561,12 @@
                 showMsg('userLoginMsg', '📧 Reset link sent! Check spam folder.', 'success');
             } catch (err) { showMsg('userLoginMsg', '❌ ' + err.message); }
         });
+
+        // ===== INITIALIZE =====
+        renderSportChips();
+        renderTimeChips();
+        populatePrimarySport();
+        populateStates();
 
         // ===== PREVENT SOURCE INSPECTION =====
         document.addEventListener('contextmenu', e => e.preventDefault());
