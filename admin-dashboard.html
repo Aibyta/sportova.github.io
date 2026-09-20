@@ -7073,7 +7073,7 @@
         function markAllAsRead() { showToast('All notifications marked as read', 'success'); }
 
         // =========================================================================
-        // 24. PILATES & YOGA - NEW PAGE
+        // 24. PILATES & YOGA - NEW PAGE  (stored in the "events" collection)
         // =========================================================================
 
         let allSessions = [];
@@ -7143,23 +7143,79 @@
                 `;
         }
 
+        /* ------------------------------------------------------------------
+           Map an "events" document -> the shape the Pilates/Yoga table wants
+        ------------------------------------------------------------------ */
+        function mapEventToSession(id, data) {
+            let sessionDate = null;
+            const rawDate = data.startDate || data.endDate || '';
+            if (rawDate) {
+                if (typeof rawDate === 'string') {
+                    sessionDate = parseLocalDate(rawDate);
+                } else if (rawDate.toDate) {
+                    sessionDate = rawDate.toDate();
+                } else {
+                    sessionDate = new Date(rawDate);
+                }
+            }
+            return {
+                id,
+                ...data,
+                type: (data.sport || '').toLowerCase(),          // 'pilates' | 'yoga'
+                sessionDate,
+                startTime: data.startTime || '',
+                endTime: data.endTime || '',
+                price: parseFloat(data.price != null ? data.price : (data.entryFee || 0)) || 0,
+                participants: data.participants || [],
+                createdAt: data.createdAt && data.createdAt.toDate ? data.createdAt.toDate() : null
+            };
+        }
+
         async function loadPilatesYogaData() {
             try {
-                const snapshot = await db.collection('pilatesYogaSessions')
-                    .where('adminId', '==', currentUser.uid)
-                    .orderBy('sessionDate', 'desc')
+                allSessions = [];
+
+                // 1) Primary store: events collection (sport = pilates | yoga, created by this admin)
+                const eventsSnap = await db.collection('events')
+                    .where('creatorId', '==', currentUser.uid)
                     .get();
 
-                allSessions = [];
-                snapshot.forEach(doc => {
+                eventsSnap.forEach(doc => {
                     const data = doc.data();
-                    allSessions.push({
-                        id: doc.id,
-                        ...data,
-                        sessionDate: data.sessionDate ? data.sessionDate.toDate() : null,
-                        createdAt: data.createdAt ? data.createdAt.toDate() : null,
-                    });
+                    const sport = (data.sport || '').toLowerCase();
+                    if (sport !== 'pilates' && sport !== 'yoga') return;   // skip real sports events
+                    allSessions.push(mapEventToSession(doc.id, data));
                 });
+
+                // 2) Legacy store (older sessions saved before this change) - merged, not duplicated
+                try {
+                    const legacySnap = await db.collection('pilatesYogaSessions')
+                        .where('adminId', '==', currentUser.uid)
+                        .get();
+                    legacySnap.forEach(doc => {
+                        if (allSessions.some(s => s.id === doc.id)) return;
+                        const data = doc.data();
+                        allSessions.push({
+                            id: doc.id,
+                            ...data,
+                            type: (data.type || '').toLowerCase(),
+                            sessionDate: data.sessionDate
+                                ? (data.sessionDate.toDate ? data.sessionDate.toDate() : new Date(data.sessionDate))
+                                : null,
+                            startTime: data.startTime || '',
+                            endTime: data.endTime || '',
+                            price: parseFloat(data.price || 0),
+                            participants: data.participants || []
+                        });
+                    });
+                } catch (e) {
+                    /* legacy collection may not exist - ignore */
+                }
+
+                allSessions.sort((a, b) =>
+                    (b.sessionDate ? b.sessionDate.getTime() : 0) -
+                    (a.sessionDate ? a.sessionDate.getTime() : 0)
+                );
 
                 renderPilatesYogaTable();
                 updatePilatesYogaStats();
@@ -7192,8 +7248,9 @@
                     day: 'numeric',
                     year: 'numeric'
                 }) : 'N/A';
-                const timeStr = session.startTime && session.endTime ? `${session.startTime} - ${session.endTime}` :
-                    session.startTime || 'N/A';
+                const timeStr = session.startTime && session.endTime
+                    ? `${session.startTime} - ${session.endTime}`
+                    : (session.startTime || 'N/A');
                 const status = session.status || 'upcoming';
                 const statusMap = {
                     'upcoming': 'session-status-upcoming',
@@ -7229,8 +7286,7 @@
         }
 
         function updatePilatesYogaStats() {
-            const total = allSessions.length;
-            document.getElementById('pyTotalSessions').textContent = total;
+            document.getElementById('pyTotalSessions').textContent = allSessions.length;
 
             const now = new Date();
             const upcoming = allSessions.filter(s => {
@@ -7252,11 +7308,57 @@
             document.getElementById('pyTotalRevenue').textContent = `RM${totalRevenue.toFixed(2)}`;
         }
 
+        /* ------------------------------------------------------------------
+           Location dropdown helper (Malaysia states / districts)
+        ------------------------------------------------------------------ */
+        function initPilatesYogaLocation(selectedState = '', selectedDistrict = '') {
+            const stateEl = document.getElementById('pyState');
+            const districtEl = document.getElementById('pyDistrict');
+            if (!stateEl || !districtEl) return;
+
+            stateEl.innerHTML = '<option value="">Select State</option>';
+            Object.keys(MALAYSIA_LOCATIONS).forEach(state => {
+                stateEl.innerHTML += `<option value="${state}" ${selectedState === state ? 'selected' : ''}>${state}</option>`;
+            });
+
+            function loadDistricts(state, selected) {
+                districtEl.innerHTML = '<option value="">Select District</option>';
+                if (!state || !MALAYSIA_LOCATIONS[state]) { districtEl.disabled = true; return; }
+                districtEl.disabled = false;
+                MALAYSIA_LOCATIONS[state].forEach(d => {
+                    districtEl.innerHTML += `<option value="${d}" ${selected === d ? 'selected' : ''}>${d}</option>`;
+                });
+            }
+
+            if (selectedState) {
+                loadDistricts(selectedState, selectedDistrict);
+            } else {
+                districtEl.disabled = true;
+            }
+
+            stateEl.onchange = () => loadDistricts(stateEl.value, '');
+        }
+
+        /* ------------------------------------------------------------------
+           ADD / EDIT MODAL  (null-safe - this was the crash)
+        ------------------------------------------------------------------ */
         function openPilatesYogaModal(sessionId = null, sessionData = null) {
             const isEdit = !!sessionId;
             const modalId = 'pilatesYogaModal';
 
             document.getElementById(modalId)?.remove();
+
+            // Safe date value (handles null sessionData)
+            let sessionDateValue = '';
+            if (sessionData && sessionData.sessionDate) {
+                if (sessionData.sessionDate.toDate) {
+                    sessionDateValue = sessionData.sessionDate.toDate().toISOString().split('T')[0];
+                } else {
+                    sessionDateValue = new Date(sessionData.sessionDate).toISOString().split('T')[0];
+                }
+            } else if (sessionData && sessionData.startDate) {
+                sessionDateValue = sessionData.startDate;
+            }
 
             const modalHTML = `
                     <div class="modal fade" id="${modalId}" tabindex="-1">
@@ -7299,12 +7401,7 @@
                                             <div class="col-md-6">
                                                 <div class="form-group">
                                                     <label class="form-label">Session Date *</label>
-                                                    <input type="date" class="form-control" id="pySessionDate" value="${sessionData.sessionDate
-                                                        ? (
-                                                            sessionData.sessionDate.toDate
-                                                                ? sessionData.sessionDate.toDate().toISOString().split('T')[0]
-                                                                : new Date(sessionData.sessionDate).toISOString().split('T')[0]
-                                                          ) : ''}" required>
+                                                    <input type="date" class="form-control" id="pySessionDate" value="${sessionDateValue}" required>
                                                 </div>
                                             </div>
                                         </div>
@@ -7350,6 +7447,36 @@
                                             </div>
                                         </div>
 
+                                        <div class="row">
+                                            <div class="col-md-4">
+                                                <div class="form-group">
+                                                    <label class="form-label">Location / Venue</label>
+                                                    <input type="text" class="form-control" id="pyLocation" value="${sessionData?.location || ''}" placeholder="e.g. Studio A">
+                                                </div>
+                                            </div>
+                                            <div class="col-md-4">
+                                                <div class="form-group">
+                                                    <label class="form-label">State</label>
+                                                    <select class="form-select" id="pyState"><option value="">Select State</option></select>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-4">
+                                                <div class="form-group">
+                                                    <label class="form-label">District</label>
+                                                    <select class="form-select" id="pyDistrict" disabled><option value="">Select District</option></select>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div class="row">
+                                            <div class="col-md-6">
+                                                <div class="form-group">
+                                                    <label class="form-label">Contact Info</label>
+                                                    <input type="text" class="form-control" id="pyContactInfo" value="${sessionData?.contactInfo || ''}" placeholder="Phone or email for enquiries">
+                                                </div>
+                                            </div>
+                                        </div>
+
                                         <div class="form-group">
                                             <label class="form-label">Description</label>
                                             <textarea class="form-control" id="pyDescription" rows="3" placeholder="Describe the session, level, what to bring...">${sessionData?.description || ''}</textarea>
@@ -7358,7 +7485,7 @@
                                         <div class="form-group">
                                             <label class="form-label">Session Image</label>
                                             <input type="file" class="form-control" id="pyImage" accept="image/*">
-                                            ${sessionData?.imageUrl ? `<div class="mt-2"><img src="${sessionData.imageUrl}" style="max-width:200px; border-radius:8px;" id="pyImagePreview"></div>` : ''}
+                                            <img src="${sessionData?.imageUrl || ''}" id="pyImagePreview" style="max-width:200px; border-radius:8px; margin-top:8px; display:${sessionData?.imageUrl ? 'block' : 'none'};">
                                         </div>
                                     </form>
                                 </div>
@@ -7373,46 +7500,46 @@
 
             document.body.insertAdjacentHTML('beforeend', modalHTML);
 
-            document.getElementById('pyImage')?.addEventListener('change', function(e) {
+            document.getElementById('pyImage')?.addEventListener('change', function (e) {
                 const file = e.target.files[0];
-                if (file) {
-                    const reader = new FileReader();
-                    reader.onload = function(ev) {
-                        let preview = document.getElementById('pyImagePreview');
-                        if (!preview) {
-                            preview = document.createElement('img');
-                            preview.id = 'pyImagePreview';
-                            preview.style.maxWidth = '200px';
-                            preview.style.borderRadius = '8px';
-                            preview.style.marginTop = '8px';
-                            document.getElementById('pyImage').parentNode.appendChild(preview);
-                        }
-                        preview.src = ev.target.result;
-                    };
-                    reader.readAsDataURL(file);
-                }
+                if (!file) return;
+                const preview = document.getElementById('pyImagePreview');
+                preview.src = URL.createObjectURL(file);
+                preview.style.display = 'block';
             });
 
             const modal = new bootstrap.Modal(document.getElementById(modalId));
             modal.show();
-            document.getElementById(modalId).addEventListener('hidden.bs.modal', function() {
+
+            setTimeout(() => {
+                initPilatesYogaLocation(sessionData?.state || '', sessionData?.district || '');
+            }, 0);
+
+            document.getElementById(modalId).addEventListener('hidden.bs.modal', function () {
                 this.remove();
                 forceRemoveBackdrop();
             });
         }
 
+        /* ------------------------------------------------------------------
+           SAVE  -> writes to the "events" collection
+        ------------------------------------------------------------------ */
         async function savePilatesYogaSession() {
             try {
                 const sessionId = document.getElementById('pySessionId').value;
                 const name = document.getElementById('pySessionName').value.trim();
-                const type = document.getElementById('pySessionType').value;
+                const type = document.getElementById('pySessionType').value;   // pilates | yoga
                 const instructor = document.getElementById('pyInstructor').value.trim();
                 const sessionDate = document.getElementById('pySessionDate').value;
                 const startTime = document.getElementById('pyStartTime').value;
                 const endTime = document.getElementById('pyEndTime').value;
                 const maxParticipants = document.getElementById('pyMaxParticipants').value;
                 const price = parseFloat(document.getElementById('pyPrice').value) || 0;
-                const status = document.getElementById('pyStatus').value;
+                const status = document.getElementById('pyStatus').value || 'upcoming';
+                const location = document.getElementById('pyLocation').value.trim();
+                const state = document.getElementById('pyState').value;
+                const district = document.getElementById('pyDistrict').value;
+                const contactInfo = document.getElementById('pyContactInfo').value.trim();
                 const description = document.getElementById('pyDescription').value.trim();
                 const imageFile = document.getElementById('pyImage').files[0];
 
@@ -7425,38 +7552,46 @@
                 if (price < 0) { showToast('Price cannot be negative', 'warning'); return; }
 
                 let imageUrl = '';
+                const previewImg = document.getElementById('pyImagePreview');
                 if (imageFile) {
                     imageUrl = await uploadToCloudinary(imageFile);
-                } else {
-                    const existingImg = document.getElementById('pyImagePreview');
-                    if (existingImg && existingImg.src && !existingImg.src.startsWith('blob:')) {
-                        imageUrl = existingImg.src;
-                    }
+                } else if (previewImg && previewImg.src && !previewImg.src.startsWith('blob:')) {
+                    imageUrl = previewImg.src;
                 }
 
-                const sessionData = {
-                    name,
-                    type,
-                    instructor,
-                    sessionDate: new Date(sessionDate),
-                    startTime,
-                    endTime,
-                    maxParticipants: maxParticipants ? parseInt(maxParticipants) : null,
-                    price,
-                    status: status || 'upcoming',
+                // ---- Shape matches the "events" collection schema ----
+                const eventData = {
+                    name: name,
+                    sport: type,                       // "pilates" | "yoga"
+                    type: 'class',                     // event type
+                    instructor: instructor,            // extra field (used by this page)
                     description: description || '',
+                    startDate: sessionDate,            // "YYYY-MM-DD"
+                    endDate: sessionDate,              // single-day session
+                    startTime: startTime,              // "HH:mm"
+                    endTime: endTime,                  // "HH:mm"
+                    maxParticipants: maxParticipants ? parseInt(maxParticipants) : null,
+                    price: price,
+                    entryFee: price,
+                    status: status,
                     imageUrl: imageUrl || '',
-                    adminId: currentUser.uid,
+                    location: location || '',
+                    state: state || '',
+                    district: district || '',
+                    contactInfo: contactInfo || '',
+                    creatorId: currentUser.uid,
+                    creatorName: currentUser.displayName || 'Admin',
                     updatedAt: firebase.firestore.FieldValue.serverTimestamp()
                 };
 
                 if (sessionId) {
-                    await db.collection('pilatesYogaSessions').doc(sessionId).update(sessionData);
+                    // merge:true also upgrades legacy docs saved in pilatesYogaSessions
+                    await db.collection('events').doc(sessionId).set(eventData, { merge: true });
                     showToast('Session updated successfully', 'success');
                 } else {
-                    sessionData.createdAt = firebase.firestore.FieldValue.serverTimestamp();
-                    sessionData.participants = [];
-                    await db.collection('pilatesYogaSessions').add(sessionData);
+                    eventData.createdAt = firebase.firestore.FieldValue.serverTimestamp();
+                    eventData.participants = [];
+                    await db.collection('events').add(eventData);
                     showToast('Session created successfully', 'success');
                 }
 
@@ -7464,7 +7599,6 @@
                 if (modal) modal.hide();
 
                 await loadPilatesYogaData();
-
             } catch (error) {
                 console.error('Error saving Pilates & Yoga session:', error);
                 showToast('Error saving session: ' + error.message, 'danger');
@@ -7473,13 +7607,14 @@
 
         async function editPilatesYogaSession(sessionId) {
             try {
-                const doc = await db.collection('pilatesYogaSessions').doc(sessionId).get();
-                if (!doc.exists) {
-                    showToast('Session not found', 'danger');
-                    return;
+                let session = allSessions.find(s => s.id === sessionId);
+
+                if (!session) {
+                    const doc = await db.collection('events').doc(sessionId).get();
+                    if (!doc.exists) { showToast('Session not found', 'danger'); return; }
+                    session = mapEventToSession(doc.id, doc.data());
                 }
-                const data = doc.data();
-                openPilatesYogaModal(sessionId, data);
+                openPilatesYogaModal(sessionId, session);
             } catch (error) {
                 console.error('Error loading session for edit:', error);
                 showToast('Error loading session data', 'danger');
@@ -7488,22 +7623,22 @@
 
         async function viewPilatesYogaSession(sessionId) {
             try {
-                const doc = await db.collection('pilatesYogaSessions').doc(sessionId).get();
-                if (!doc.exists) {
-                    showToast('Session not found', 'danger');
-                    return;
+                let session = allSessions.find(s => s.id === sessionId);
+
+                if (!session) {
+                    const doc = await db.collection('events').doc(sessionId).get();
+                    if (!doc.exists) { showToast('Session not found', 'danger'); return; }
+                    session = mapEventToSession(doc.id, doc.data());
                 }
-                const session = doc.data();
-                const dateStr = session.sessionDate ? session.sessionDate.toDate().toLocaleDateString('en-US', {
-                    weekday: 'long',
-                    month: 'long',
-                    day: 'numeric',
-                    year: 'numeric'
-                }) : 'N/A';
+
+                const dateStr = session.sessionDate
+                    ? session.sessionDate.toLocaleDateString('en-US', {
+                        weekday: 'long', month: 'long', day: 'numeric', year: 'numeric'
+                    })
+                    : 'N/A';
                 const typeLabel = session.type === 'pilates' ? 'Pilates' : 'Yoga';
                 const typeClass = session.type === 'pilates' ? 'session-type-pilates' : 'session-type-yoga';
-                const statusLabel = (session.status || 'upcoming').charAt(0).toUpperCase() + (session.status || 'upcoming')
-                    .slice(1);
+                const statusLabel = (session.status || 'upcoming').charAt(0).toUpperCase() + (session.status || 'upcoming').slice(1);
                 const participantsCount = session.participants ? session.participants.length : 0;
                 const maxCap = session.maxParticipants || 'Unlimited';
 
@@ -7529,7 +7664,8 @@
                                                     <div class="col-md-6"><p><strong>Time:</strong><br>${session.startTime || 'N/A'} - ${session.endTime || 'N/A'}</p></div>
                                                     <div class="col-md-6"><p><strong>Price:</strong><br>RM${parseFloat(session.price || 0).toFixed(2)}</p></div>
                                                     <div class="col-md-6"><p><strong>Capacity:</strong><br>${participantsCount} / ${maxCap}</p></div>
-                                                    <div class="col-md-6"><p><strong>Status:</strong><br>${statusLabel}</p></div>
+                                                    <div class="col-md-6"><p><strong>Location:</strong><br>${session.location || 'N/A'}${session.district ? ', ' + session.district : ''}${session.state ? ', ' + session.state : ''}</p></div>
+                                                    <div class="col-md-6"><p><strong>Contact:</strong><br>${session.contactInfo || 'N/A'}</p></div>
                                                 </div>
                                                 ${session.description ? `<div class="mt-3"><p><strong>Description:</strong></p><p>${session.description}</p></div>` : ''}
                                                 ${session.participants && session.participants.length > 0 ? `
@@ -7552,7 +7688,7 @@
                 document.body.insertAdjacentHTML('beforeend', modalHTML);
                 const modal = new bootstrap.Modal(document.getElementById('viewPilatesYogaModal'));
                 modal.show();
-                document.getElementById('viewPilatesYogaModal').addEventListener('hidden.bs.modal', function() {
+                document.getElementById('viewPilatesYogaModal').addEventListener('hidden.bs.modal', function () {
                     this.remove();
                     forceRemoveBackdrop();
                 });
@@ -7564,15 +7700,15 @@
 
         async function deletePilatesYogaSession(sessionId) {
             try {
-                const doc = await db.collection('pilatesYogaSessions').doc(sessionId).get();
-                if (!doc.exists) {
-                    showToast('Session not found', 'danger');
-                    return;
-                }
-                const name = doc.data().name || 'Unnamed session';
+                const session = allSessions.find(s => s.id === sessionId);
+                const name = session?.name || 'Unnamed session';
+
                 if (!confirm(`Are you sure you want to delete the session "${name}"? This action cannot be undone.`)) return;
 
-                await db.collection('pilatesYogaSessions').doc(sessionId).delete();
+                await db.collection('events').doc(sessionId).delete();
+                // Clean up legacy doc too, if one exists
+                await db.collection('pilatesYogaSessions').doc(sessionId).delete().catch(() => {});
+
                 showToast(`Session "${name}" deleted successfully`, 'success');
                 await loadPilatesYogaData();
             } catch (error) {

@@ -760,6 +760,17 @@
       color: #084298 !important;
     }
 
+    /* Anchor highlight for range selection */
+    .time-slot.anchor {
+      outline: 3px solid rgba(13, 110, 253, 0.45);
+      outline-offset: 2px;
+      animation: pulseAnchor 1.4s ease-in-out infinite;
+    }
+    @keyframes pulseAnchor {
+      0%, 100% { outline-color: rgba(13, 110, 253, 0.45); }
+      50%      { outline-color: rgba(13, 110, 253, 0.15); }
+    }
+
     /* Coach Card */
     .coach-card {
       border: 1px solid #dee2e6;
@@ -1671,6 +1682,19 @@
     .toast-body {
       font-size: 17px;
     }
+
+    /* Multi-slot selection */
+    .time-slot.selected {
+      background-color: #cce5ff !important;
+      border-color: #0d6efd !important;
+      color: #084298 !important;
+      transform: scale(1.03);
+      box-shadow: 0 2px 8px rgba(13, 110, 253, 0.3);
+    }
+
+    #slotSelectionSummary {
+      border-left: 4px solid #0d6efd;
+    }
   </style>
 </head>
 
@@ -1919,7 +1943,8 @@
     // Booking process variables
     let selectedFacility = null;
     let selectedDate = null;
-    let selectedTimeSlot = null;
+    let selectedTimeSlots = [];       // array of slot strings, e.g. ["08:00-08:30", "08:30-09:00"]
+    let selectionAnchor = null;       // remembers first click for range selection
     let selectedCourt = null;
     let selectedCoach = null;
     let selectedSnacks = [];
@@ -1948,6 +1973,254 @@
     let isRescheduleMode = false;
     let rescheduleBookingId = null;
     let originalBookingData = null;
+
+    /* ============================================================
+       MULTI-SLOT HELPERS (30-min slots, range selection)
+       ============================================================ */
+
+    // "08:00" -> 480
+    function slotToMinutes(slot) {
+      if (!slot) return NaN;
+      const parts = String(slot).trim().split(':');
+      return parseInt(parts[0], 10) * 60 + (parseInt(parts[1], 10) || 0);
+    }
+
+    // 480 -> "08:00"
+    function minutesToSlot(m) {
+      const h = Math.floor(m / 60) % 24;
+      const mm = m % 60;
+      return `${String(h).padStart(2, '0')}:${String(mm).padStart(2, '0')}`;
+    }
+
+    // "08:00-08:30" -> { start:"08:00", end:"08:30", startMin:480, endMin:510, duration:30 }
+    // "08:00"       -> 30-min slot
+    function parseSlot(slot) {
+      const s = String(slot).trim();
+      const parts = s.split(/\s*[-\u2013]\s*/).filter(Boolean);
+      if (parts.length === 2 &&
+          /^\d{1,2}:\d{2}$/.test(parts[0]) &&
+          /^\d{1,2}:\d{2}$/.test(parts[1])) {
+        const startMin = slotToMinutes(parts[0]);
+        const endMin   = slotToMinutes(parts[1]);
+        return {
+          start: parts[0].padStart(5, '0'),
+          end:   parts[1].padStart(5, '0'),
+          startMin,
+          endMin,
+          duration: endMin - startMin
+        };
+      }
+      const startMin = slotToMinutes(s);
+      return {
+        start: s,
+        end: minutesToSlot(startMin + 30),
+        startMin,
+        endMin: startMin + 30,
+        duration: 30
+      };
+    }
+
+    // Sort by start time
+    function sortSlots(slots) {
+      return [...slots].sort((a, b) => parseSlot(a).startMin - parseSlot(b).startMin);
+    }
+
+    // True if prev.end == next.start for all consecutive pairs
+    function areSlotsContinuous(slots) {
+      if (slots.length <= 1) return true;
+      const sorted = sortSlots(slots);
+      for (let i = 1; i < sorted.length; i++) {
+        const prev = parseSlot(sorted[i - 1]);
+        const curr = parseSlot(sorted[i]);
+        if (prev.endMin !== curr.startMin) return false;
+      }
+      return true;
+    }
+
+    // Longest contiguous block
+    function trimToContinuous(slots) {
+      if (slots.length <= 1) return slots;
+      const sorted = sortSlots(slots);
+      let best = [];
+      let current = [sorted[0]];
+      for (let i = 1; i < sorted.length; i++) {
+        const prev = parseSlot(sorted[i - 1]);
+        const curr = parseSlot(sorted[i]);
+        if (prev.endMin === curr.startMin) {
+          current.push(sorted[i]);
+        } else {
+          if (current.length > best.length) best = current;
+          current = [sorted[i]];
+        }
+      }
+      if (current.length > best.length) best = current;
+      return best;
+    }
+
+    // "08:00 - 10:00"  ← from a set of slots (start of first, end of last)
+    function formatSlotRange(slots) {
+      if (!slots || slots.length === 0) return '-';
+      const sorted = sortSlots(slots);
+      const first = parseSlot(sorted[0]);
+      const last  = parseSlot(sorted[sorted.length - 1]);
+      return `${first.start} - ${last.end}`;
+    }
+
+    // Total hours across the given slots (handles 30-min and 60-min slots)
+    function calculateSlotsDuration(slots) {
+      if (!slots || slots.length === 0) return 0;
+      let totalMin = 0;
+      slots.forEach(s => {
+        const p = parseSlot(s);
+        totalMin += (p.endMin - p.startMin);
+      });
+      return totalMin / 60;
+    }
+
+    // "1 hour" / "1.5 hours" / "2 hours"
+    function formatHours(hours) {
+      const h = Number((hours || 0).toFixed(2));
+      if (h <= 0) return '0 hours';
+      return h === 1 ? '1 hour' : `${h} hours`;
+    }
+
+    // Expand a stored `time` value into slot strings.
+    // "08:00-08:30"    -> ["08:00-08:30"]
+    // "08:00 - 10:00"  -> ["08:00-08:30","08:30-09:00","09:00-09:30","09:30-10:00"]
+    function expandTimeRange(timeStr) {
+      if (!timeStr) return [];
+      const s = String(timeStr).trim();
+      const parts = s.split(/\s*[-\u2013]\s*/).filter(Boolean);
+      if (parts.length === 2 &&
+          /^\d{1,2}:\d{2}$/.test(parts[0]) &&
+          /^\d{1,2}:\d{2}$/.test(parts[1])) {
+        const startMin = slotToMinutes(parts[0]);
+        const endMin   = slotToMinutes(parts[1]);
+        if (endMin - startMin === 30) return [s];             // already a 30-min slot
+        const out = [];
+        for (let m = startMin; m < endMin; m += 30) {
+          out.push(`${minutesToSlot(m)}-${minutesToSlot(m + 30)}`);
+        }
+        return out;
+      }
+      return [s];
+    }
+
+    // Return the slot strings between anchor and target (in DOM order).
+    // Returns null if any booked slot is in between (can't span a booked slot).
+    function getSlotsBetween(anchor, target) {
+      const container = document.getElementById('timeSlotSelection');
+      if (!container) return [target];
+      const all = Array.from(container.querySelectorAll('.time-slot'));
+      const aIdx = all.findIndex(el => el.dataset.time === anchor);
+      const tIdx = all.findIndex(el => el.dataset.time === target);
+      if (aIdx === -1 || tIdx === -1) return [target];
+      const from = Math.min(aIdx, tIdx);
+      const to   = Math.max(aIdx, tIdx);
+      const out = [];
+      for (let i = from; i <= to; i++) {
+        if (all[i].classList.contains('booked')) return null;
+        out.push(all[i].dataset.time);
+      }
+      return out;
+    }
+
+    function refreshSlotSelectionUI() {
+      document.querySelectorAll('#timeSlotSelection .time-slot').forEach(el => {
+        el.classList.toggle('selected', selectedTimeSlots.includes(el.dataset.time));
+        el.classList.toggle('anchor', selectionAnchor === el.dataset.time);
+      });
+    }
+
+    function updateSlotSelectionSummary() {
+      const el = document.getElementById('slotSelectionSummary');
+      if (!el) return;
+      if (selectedTimeSlots.length === 0) {
+        el.style.display = 'none';
+        el.innerHTML = '';
+        return;
+      }
+      const hours   = calculateSlotsDuration(selectedTimeSlots);
+      const hourly  = Number(selectedFacility?.price) || 0;
+      const fee     = hourly * hours;
+      const hint    = selectionAnchor
+        ? `<span class="text-muted ms-2 d-inline-block"><i class="fas fa-info-circle me-1"></i>Click another slot to fill the range, or click the same slot to deselect.</span>`
+        : '';
+
+      el.style.display = 'block';
+      el.innerHTML = `
+        <i class="fas fa-check-circle me-2"></i>
+        <strong>Selected:</strong> ${formatSlotRange(selectedTimeSlots)}
+        &nbsp;•&nbsp; <strong>${formatHours(hours)}</strong>
+        &nbsp;•&nbsp; <strong>RM ${fee.toFixed(2)}</strong>
+        ${hint}
+        <button type="button" class="btn btn-sm btn-outline-secondary ms-3" onclick="clearSlotSelection()">
+          <i class="fas fa-times"></i> Clear
+        </button>`;
+    }
+
+    function clearSlotSelection() {
+      selectedTimeSlots = [];
+      selectionAnchor = null;
+      refreshSlotSelectionUI();
+      updateSlotSelectionSummary();
+      const nextBtn = document.getElementById('nextToStep3');
+      if (nextBtn) nextBtn.disabled = true;
+    }
+    window.clearSlotSelection = clearSlotSelection;
+
+    /* ============================================================
+       Range-aware toggle. Two-click model:
+       - First click selects a slot and remembers it as the anchor.
+       - Second click on a DIFFERENT slot fills the range between them.
+       - Second click on the SAME slot deselects it.
+       - Third click starts a new anchor.
+       ============================================================ */
+    function toggleTimeSlotSelection(court, slot, element) {
+      if (selectedCourt !== court) {
+        selectedCourt = court;
+        selectedTimeSlots = [];
+        selectionAnchor = null;
+      }
+
+      if (selectionAnchor === null) {
+        // First click: toggle single
+        const idx = selectedTimeSlots.indexOf(slot);
+        if (idx > -1) {
+          selectedTimeSlots.splice(idx, 1);
+        } else {
+          selectedTimeSlots.push(slot);
+          selectionAnchor = slot;
+        }
+      } else {
+        // Second click
+        if (slot === selectionAnchor) {
+          // Same slot -> deselect
+          selectedTimeSlots = selectedTimeSlots.filter(s => s !== slot);
+          selectionAnchor = null;
+        } else {
+          const range = getSlotsBetween(selectionAnchor, slot);
+          if (range === null) {
+            // Blocked by a booked slot in between
+            showToast('Cannot span across booked slots. Range reset.', 'warning');
+            selectedTimeSlots = [slot];
+            selectionAnchor = slot;
+          } else {
+            range.forEach(s => {
+              if (!selectedTimeSlots.includes(s)) selectedTimeSlots.push(s);
+            });
+            selectionAnchor = null;
+          }
+        }
+      }
+
+      selectedTimeSlots = sortSlots(selectedTimeSlots);
+      refreshSlotSelectionUI();
+      updateSlotSelectionSummary();
+
+      const nextBtn = document.getElementById('nextToStep3');
+      if (nextBtn) nextBtn.disabled = selectedTimeSlots.length === 0;
+    }
 
     // Authentication state observer
     auth.onAuthStateChanged((user) => {
@@ -3172,9 +3445,9 @@
               <div class="row">
                 <div class="col-md-3">
                   <div class="form-group">
-                    <label class="form-label">Court Type</label>
+                    <label class="form-label">Sport Type</label>
                     <select class="form-select" id="sportType">
-                      <option value="all">All Courts</option>
+                      <option value="all">All Sports</option>
                     </select>
                   </div>
                 </div>
@@ -3283,13 +3556,17 @@
               <h4>Select a Court</h4>
               <div id="courtSelection" class="mb-3"></div>
 
-              <h4>Select Time Slot</h4>
+              <h4>Select Time Slot(s)</h4>
+              <small class="text-muted d-block mb-2">
+                <i class="fas fa-info-circle me-1"></i>
+                Click the first slot, then click the last slot of your desired range — everything in between will be selected automatically. You can also click slots one by one.
+              </small>
               <div id="timeSlotSelection" class="d-flex flex-wrap gap-2"></div>
               <div id="noSlotsMessage" class="alert alert-info mt-3" style="display: none;">
                 <i class="fas fa-info-circle me-2"></i>No available time slots for this court on the selected date.
               </div>
 
-              <div class="text-center mb-3">
+              <div class="text-center mb-3 mt-3">
                 <button class="btn btn-outline-info" id="viewCourtLayoutBtn">
                   <i class="fas fa-image"></i> View Court Layout
                 </button>
@@ -3471,6 +3748,7 @@
         popup.style.display = 'none';
       }
     }
+    window.closeCourtLayoutZoom = closeCourtLayoutZoom;
 
     document.addEventListener('click', (e) => {
       const popup = document.getElementById('courtLayoutZoomPopup');
@@ -3742,7 +4020,13 @@
           slots.forEach(slot => {
             const normalizedSlot = String(slot).trim();
             if (courtsForDate.length === 0) {
-              const isBooked = bookings.some(b => String(b.time || '').trim() === normalizedSlot);
+              const isBooked = bookings.some(b => {
+                let bSlots = [];
+                if (Array.isArray(b.slots) && b.slots.length) bSlots = b.slots.map(x => String(x).trim());
+                else if (b.time) bSlots = expandTimeRange(b.time);
+                else if (b.timeSlot) bSlots = [String(b.timeSlot).trim()];
+                return bSlots.includes(normalizedSlot);
+              });
               if (!isBooked) availableSlots.add(normalizedSlot);
               return;
             }
@@ -3750,8 +4034,12 @@
               const courtName = String(court.name || '').trim();
               const isBooked = bookings.some(b => {
                 const bookingCourt = String(b.court || '').trim();
-                const bookingTime = String(b.time || '').trim();
-                return bookingCourt === courtName && bookingTime === normalizedSlot;
+                if (bookingCourt !== courtName) return false;
+                let bSlots = [];
+                if (Array.isArray(b.slots) && b.slots.length) bSlots = b.slots.map(x => String(x).trim());
+                else if (b.time) bSlots = expandTimeRange(b.time);
+                else if (b.timeSlot) bSlots = [String(b.timeSlot).trim()];
+                return bSlots.includes(normalizedSlot);
               });
               return !isBooked;
             });
@@ -3867,6 +4155,7 @@
       updateSelectedFiltersDisplay();
       searchFacilities();
     }
+    window.clearSingleFilter = clearSingleFilter;
 
     async function clearAllFilters() {
       document.getElementById('sportType').value = 'all';
@@ -3966,8 +4255,12 @@
               if (!hasCourtDate) continue;
               const isBooked = validBookings.some(b => {
                 const bookingCourt = String(b.court || '').trim();
-                const bookingTime = String(b.time || '').trim();
-                return bookingCourt === court.name && bookingTime === slot;
+                if (bookingCourt !== court.name) return false;
+                let bSlots = [];
+                if (Array.isArray(b.slots) && b.slots.length) bSlots = b.slots.map(x => String(x).trim());
+                else if (b.time) bSlots = expandTimeRange(b.time);
+                else if (b.timeSlot) bSlots = [String(b.timeSlot).trim()];
+                return bSlots.includes(slot);
               });
               if (!isBooked) { slotAvailable = true; break; }
             }
@@ -4076,7 +4369,8 @@
         selectedFacility = { id: facilityId, ...facilityDoc.data() };
         selectedFacilityData = facilityDoc.data();
         selectedCourt = null;
-        selectedTimeSlot = null;
+        selectedTimeSlots = [];
+        selectionAnchor = null;
         selectedPromo = null;
         const promoSnapshot = await db.collection('promos')
           .where('status', '==', 'active')
@@ -4378,7 +4672,8 @@
       timeSlotSelection.innerHTML = '';
       noSlotsMsg.style.display = 'none';
       selectedCourt = null;
-      selectedTimeSlot = null;
+      selectedTimeSlots = [];
+      selectionAnchor = null;
       document.getElementById('nextToStep3').disabled = true;
 
       const courts = selectedFacility.courts || [];
@@ -4423,28 +4718,25 @@
         document.getElementById('nextToStep3').disabled = true;
       }
 
-      // If in reschedule mode, pre-select the original court and time
+      // If in reschedule mode, pre-select the original court and time(s)
       if (isRescheduleMode && originalBookingData) {
         const originalCourt = originalBookingData.court;
-        const originalTime = originalBookingData.time;
         if (originalCourt) {
-          // Find and select the matching court radio
           const radios = courtSelection.querySelectorAll('.court-radio');
           radios.forEach(radio => {
             if (radio.value === originalCourt) {
               radio.checked = true;
               selectedCourt = originalCourt;
-              // Load time slots and then select the original time
               setTimeout(() => {
                 loadTimeSlotsForCourt(originalCourt);
-                // After loading, select the original time if available
                 setTimeout(() => {
-                  const timeSlots = timeSlotSelection.querySelectorAll('.time-slot');
-                  timeSlots.forEach(slot => {
-                    if (slot.dataset.time === originalTime && !slot.classList.contains(
-                        'booked')) {
-                      slot.click();
-                    }
+                  const originalSlots =
+                    (Array.isArray(originalBookingData.slots) && originalBookingData.slots.length)
+                      ? originalBookingData.slots
+                      : expandTimeRange(originalBookingData.time);
+                  originalSlots.forEach(s => {
+                    const el = document.querySelector(`#timeSlotSelection .time-slot[data-time="${s}"]`);
+                    if (el && !el.classList.contains('booked')) el.click();
                   });
                 }, 300);
               }, 100);
@@ -4460,35 +4752,33 @@
       timeSlotSelection.innerHTML = '';
       noSlotsMsg.style.display = 'none';
       document.getElementById('nextToStep3').disabled = true;
+      selectedTimeSlots = [];                       // reset on (re)render
+      selectionAnchor = null;
 
       if (!selectedDate) {
         timeSlotSelection.innerHTML = '<div class="alert alert-warning">Please select a date first.</div>';
         return;
       }
+
       let bookingDate;
       try {
-        if (selectedDate && typeof selectedDate.toDate === 'function') {
-          bookingDate = selectedDate.toDate();
-        } else if (selectedDate instanceof Date) {
-          bookingDate = new Date(selectedDate);
-        } else {
-          bookingDate = new Date(selectedDate);
-        }
+        if (selectedDate && typeof selectedDate.toDate === 'function') bookingDate = selectedDate.toDate();
+        else bookingDate = new Date(selectedDate);
         if (isNaN(bookingDate.getTime())) throw new Error('Invalid selected date');
-      } catch (error) {
+      } catch {
         timeSlotSelection.innerHTML = '<div class="alert alert-danger">Invalid booking date.</div>';
         return;
       }
-      const year = bookingDate.getFullYear();
-      const month = String(bookingDate.getMonth() + 1).padStart(2, '0');
-      const day = String(bookingDate.getDate()).padStart(2, '0');
-      const formattedDate = `${year}-${month}-${day}`;
+
+      const formattedDate =
+        `${bookingDate.getFullYear()}-${String(bookingDate.getMonth() + 1).padStart(2, '0')}-${String(bookingDate.getDate()).padStart(2, '0')}`;
 
       const court = selectedFacility.courts.find(c => String(c.name || '').trim() === String(courtName || '').trim());
       if (!court) {
         timeSlotSelection.innerHTML = `<div class="alert alert-danger">Court "${courtName}" not found.</div>`;
         return;
       }
+
       const hasCourtDate = court.dates && court.dates.includes(formattedDate);
       const hasFacilityDate = selectedFacility.availableDates && selectedFacility.availableDates.includes(formattedDate);
       if (!hasCourtDate && !hasFacilityDate) {
@@ -4497,22 +4787,18 @@
       }
 
       let bookedSlots = [];
-      try {
-        bookedSlots = await getBookedSlotsForCourt(courtName, bookingDate);
-      } catch (error) {
-        bookedSlots = [];
-      }
-      const bookedSet = new Set(bookedSlots.map(slot => String(slot).trim()).filter(Boolean));
+      try { bookedSlots = await getBookedSlotsForCourt(courtName, bookingDate); } catch { bookedSlots = []; }
+      const bookedSet = new Set(bookedSlots.map(s => String(s).trim()).filter(Boolean));
 
       let slots = selectedFacility.slots || [];
       if (slots.length === 0) {
         timeSlotSelection.innerHTML = '<div class="alert alert-info">No time slots configured for this facility.</div>';
         return;
       }
-      slots = [...new Set(slots.map(slot => String(slot).trim()))];
-      slots.sort();
-      let availableCount = 0,
-        bookedCount = 0;
+
+      slots = [...new Set(slots.map(s => String(s).trim()))].sort();
+
+      let availableCount = 0, bookedCount = 0;
 
       slots.forEach(slot => {
         const normalizedSlot = String(slot).trim();
@@ -4522,6 +4808,7 @@
         slotEl.dataset.time = normalizedSlot;
         slotEl.dataset.court = courtName;
         slotEl.textContent = normalizedSlot;
+
         if (isBooked) {
           bookedCount++;
           slotEl.classList.add('booked');
@@ -4534,32 +4821,37 @@
         } else {
           availableCount++;
           slotEl.classList.add('available');
-          slotEl.addEventListener('click', function() {
+          slotEl.addEventListener('click', function () {
             if (bookedSet.has(normalizedSlot)) {
-              if (typeof showToast === 'function') showToast('This slot has already been booked.', 'warning');
+              showToast('This slot has already been booked.', 'warning');
               return;
             }
-            selectCourtAndTimeSlot(courtName, normalizedSlot, slotEl);
+            toggleTimeSlotSelection(courtName, normalizedSlot, slotEl);
           });
         }
         timeSlotSelection.appendChild(slotEl);
       });
 
+      // stats row
       const summary = document.createElement('div');
-      summary.className = 'mt-3 small text-muted';
+      summary.className = 'mt-3 small text-muted w-100';
       summary.innerHTML = `<strong>${courtName}</strong><br>${availableCount} available &nbsp;|&nbsp; ${bookedCount} booked`;
       timeSlotSelection.appendChild(summary);
+
+      // live selection summary
+      const selSummary = document.createElement('div');
+      selSummary.id = 'slotSelectionSummary';
+      selSummary.className = 'alert alert-info mt-3 w-100';
+      selSummary.style.display = 'none';
+      timeSlotSelection.appendChild(selSummary);
 
       if (availableCount === 0) {
         if (noSlotsMsg) noSlotsMsg.style.display = 'block';
         const message = document.createElement('div');
-        message.className = 'alert alert-warning mt-3';
-        message.innerHTML =
-          `<i class="fas fa-calendar-times me-2"></i>All time slots for <strong>${courtName}</strong> are booked on this date.`;
+        message.className = 'alert alert-warning mt-3 w-100';
+        message.innerHTML = `<i class="fas fa-calendar-times me-2"></i>All time slots for <strong>${courtName}</strong> are booked on this date.`;
         timeSlotSelection.appendChild(message);
         document.getElementById('nextToStep3').disabled = true;
-      } else {
-        document.getElementById('nextToStep3').disabled = !selectedTimeSlot;
       }
     }
 
@@ -4579,36 +4871,30 @@
         const validStatuses = ['approved', 'confirmed', 'pending', 'active'];
         snapshot.forEach(doc => {
           const data = doc.data();
-          // If reschedule mode, skip the current booking
-          if (isRescheduleMode && rescheduleBookingId && doc.id === rescheduleBookingId) {
-            return;
-          }
+
+          if (isRescheduleMode && rescheduleBookingId && doc.id === rescheduleBookingId) return;
+
           const bookingCourt = String(data.court || '').trim();
-          const requestedCourt = String(courtName || '').trim();
-          if (bookingCourt !== requestedCourt) return;
+          if (bookingCourt !== String(courtName || '').trim()) return;
+
           const bookingStatus = String(data.status || '').trim().toLowerCase();
           if (!validStatuses.includes(bookingStatus)) return;
-          if (data.time) {
-            const bookedTime = String(data.time).trim();
-            if (bookedTime) bookedSlots.push(bookedTime);
+
+          let slotsForBooking = [];
+          if (Array.isArray(data.slots) && data.slots.length > 0) {
+            slotsForBooking = data.slots.map(s => String(s).trim()).filter(Boolean);
+          } else if (data.time) {
+            slotsForBooking = expandTimeRange(data.time);
           } else if (data.timeSlot) {
-            const bookedTime = String(data.timeSlot).trim();
-            if (bookedTime) bookedSlots.push(bookedTime);
+            slotsForBooking = [String(data.timeSlot).trim()];
           }
+          slotsForBooking.forEach(s => bookedSlots.push(s));
         });
         return [...new Set(bookedSlots)];
       } catch (error) {
         console.error('getBookedSlotsForCourt ERROR:', error);
         return [];
       }
-    }
-
-    function selectCourtAndTimeSlot(court, slot, element) {
-      selectedCourt = court;
-      selectedTimeSlot = slot;
-      document.querySelectorAll('#timeSlotSelection .time-slot').forEach(el => el.classList.remove('selected'));
-      if (element) element.classList.add('selected');
-      document.getElementById('nextToStep3').disabled = false;
     }
 
     // ===================== COACHES, SNACKS, TERMS =====================
@@ -4692,20 +4978,23 @@
     // ===================== SUMMARY & NAVIGATION =====================
 
     function updateBookingSummary() {
-      const courtFee = selectedFacility?.price || 0;
-      const coachFee = selectedCoach?.rate || 0;
-      const snacksFee = selectedSnacks?.reduce((total, snack) => total + (snack?.price || 0), 0) || 0;
+      const hours     = calculateSlotsDuration(selectedTimeSlots) || 1;
+      const courtFee  = (Number(selectedFacility?.price) || 0) * hours;
+      const coachFee  = Number(selectedCoach?.rate) || 0;
+      const snacksFee = (selectedSnacks || []).reduce((t, s) => t + (Number(s?.price) || 0), 0);
       const amenitiesTotal = calculateAmenitiesTotal();
+
       let discount = 0;
       if (selectedPromo && selectedPromo.status === "active") {
         if (!selectedPromo.minPurchase || courtFee >= selectedPromo.minPurchase) {
           if (selectedPromo.type === "percentage") {
-            discount = courtFee * (selectedPromo.discountValue / 100);
+            discount = courtFee * (Number(selectedPromo.discountValue) / 100);
           } else if (selectedPromo.type === "fixed") {
-            discount = selectedPromo.discountValue;
+            discount = Number(selectedPromo.discountValue) || 0;
           }
         }
       }
+
       const subtotalBeforeLoyalty = courtFee + coachFee + snacksFee + amenitiesTotal - discount;
       let loyaltyDiscount = 0;
       let loyaltyPointsUsed = 0;
@@ -4715,9 +5004,13 @@
         loyaltyDiscount = loyaltyPointsUsed * 0.1;
       }
       const total = subtotalBeforeLoyalty - loyaltyDiscount;
+
       document.getElementById('summaryFacility').textContent = selectedFacility?.name || '-';
       document.getElementById('summaryDate').textContent = selectedDate ? selectedDate.toLocaleDateString() : '-';
-      document.getElementById('summaryTime').textContent = selectedTimeSlot || '-';
+      document.getElementById('summaryTime').textContent =
+        selectedTimeSlots.length
+          ? `${formatSlotRange(selectedTimeSlots)} (${formatHours(hours)})`
+          : '-';
       document.getElementById('summaryCourt').textContent = selectedCourt || '-';
       document.getElementById('summaryCourtFee').textContent = `RM ${courtFee.toFixed(2)}`;
       document.getElementById('summaryCoach').textContent = selectedCoach ? `${selectedCoach.name} (RM${coachFee.toFixed(2)})` :
@@ -4751,7 +5044,8 @@
     function resetBookingProcess() {
       selectedFacility = null;
       selectedDate = null;
-      selectedTimeSlot = null;
+      selectedTimeSlots = [];
+      selectionAnchor = null;
       selectedCourt = null;
       selectedCoach = null;
       selectedSnacks = [];
@@ -4788,7 +5082,7 @@
 
     function canProceedToStep(stepNumber) {
       if (stepNumber >= 2 && !selectedDate) return false;
-      if (stepNumber >= 3 && (!selectedCourt || !selectedTimeSlot)) return false;
+      if (stepNumber >= 3 && (!selectedCourt || selectedTimeSlots.length === 0)) return false;
       return true;
     }
 
@@ -4818,7 +5112,8 @@
         document.getElementById('facilitiesList').style.display = 'block';
         selectedFacility = null;
         selectedDate = null;
-        selectedTimeSlot = null;
+        selectedTimeSlots = [];
+        selectionAnchor = null;
         selectedCourt = null;
         selectedCoach = null;
         selectedSnacks = [];
@@ -4852,7 +5147,10 @@
         selectedDate = originalBookingData.date.toDate ? originalBookingData.date.toDate() : new Date(originalBookingData
           .date);
         selectedCourt = originalBookingData.court;
-        selectedTimeSlot = originalBookingData.time;
+        selectedTimeSlots = (Array.isArray(originalBookingData.slots) && originalBookingData.slots.length)
+          ? [...originalBookingData.slots]
+          : expandTimeRange(originalBookingData.time);
+        selectionAnchor = null;
 
         // Set coach if exists
         if (originalBookingData.coach) {
@@ -4917,7 +5215,7 @@
 
     async function submitBooking() {
       try {
-        if (!selectedFacility || !selectedDate || !selectedTimeSlot || !selectedCourt) {
+        if (!selectedFacility || !selectedDate || selectedTimeSlots.length === 0 || !selectedCourt) {
           showToast('Please complete all booking steps', 'warning');
           return;
         }
@@ -4926,8 +5224,9 @@
         if (!isRescheduleMode) {
           const latestBooked = await getBookedSlotsForCourt(selectedCourt, selectedDate);
           const latestSet = new Set(latestBooked.map(s => String(s).trim()));
-          if (latestSet.has(String(selectedTimeSlot).trim())) {
-            showToast('This slot has just been booked. Please choose another.', 'danger');
+          const conflict = selectedTimeSlots.find(s => latestSet.has(String(s).trim()));
+          if (conflict) {
+            showToast(`Slot ${conflict} has just been booked. Please choose another.`, 'danger');
             await loadTimeSlotsForCourt(selectedCourt);
             return;
           }
@@ -4939,10 +5238,16 @@
           return;
         }
 
-        const courtFee = Number(selectedFacility.price) || 0;
+        const hours         = calculateSlotsDuration(selectedTimeSlots) || 1;
+        const sortedSlots   = sortSlots(selectedTimeSlots);
+        const timeDisplay   = formatSlotRange(sortedSlots);
+        const durationLabel = formatHours(hours);
+
+        const courtFee = (Number(selectedFacility.price) || 0) * hours;
         const coachFee = selectedCoach ? Number(selectedCoach.rate) || 0 : 0;
         const snacksFee = selectedSnacks.reduce((t, s) => t + (Number(s.price) || 0), 0);
         const amenitiesFee = selectedAmenities.reduce((t, a) => t + (Number(a.amenityPrice) || 0), 0);
+
         let discount = 0;
         if (selectedPromo && selectedPromo.status === 'active') {
           const minPurchase = Number(selectedPromo.minPurchase) || 0;
@@ -4977,7 +5282,9 @@
           const bookingRef = db.collection('bookings').doc(rescheduleBookingId);
           const updateData = {
             date: selectedDate,
-            time: String(selectedTimeSlot).trim(),
+            time: timeDisplay,
+            slots: sortedSlots,
+            duration: durationLabel,
             court: String(selectedCourt).trim(),
             coach: coachData,
             snacks: selectedSnacks.length ? selectedSnacks : null,
@@ -5013,7 +5320,7 @@
               coachData.id || 'admin',
               'booking_rescheduled',
               'Booking Rescheduled',
-              `Your booking with ${currentUser.displayName || 'User'} at ${selectedFacility.name} has been rescheduled to ${selectedDate.toLocaleDateString()} at ${selectedTimeSlot}`,
+              `Your booking with ${currentUser.displayName || 'User'} at ${selectedFacility.name} has been rescheduled to ${selectedDate.toLocaleDateString()} at ${timeDisplay}`,
               { bookingId: rescheduleBookingId, facilityName: selectedFacility.name }
             );
           }
@@ -5041,7 +5348,7 @@
           createdAt: firebase.firestore.FieldValue.serverTimestamp(),
           date: selectedDate,
           description: selectedFacility.description || '',
-          duration: '1 hour',
+          duration: durationLabel,
           facilityId: selectedFacility.id,
           facilityName: selectedFacility.name,
           imageUrl: selectedFacility.imageUrl || '',
@@ -5054,9 +5361,10 @@
           price: Number(selectedFacility.price) || 0,
           promo: selectedFacility.promo || '',
           snacks: selectedSnacks.length ? selectedSnacks : null,
+          slots: sortedSlots,
           sportType: selectedFacility.type || 'Tennis Court',
           status: 'approved',
-          time: String(selectedTimeSlot).trim(),
+          time: timeDisplay,
           type: selectedFacility.type || 'Tennis Court',
           updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
           userEmail: currentUser.email,
@@ -5239,8 +5547,8 @@
       const nextToStep3Btn = document.getElementById('nextToStep3');
       if (nextToStep3Btn) {
         nextToStep3Btn.addEventListener('click', function(e) {
-          if (!selectedCourt || !selectedTimeSlot) {
-            showToast('Please select a court and time slot', 'warning');
+          if (!selectedCourt || selectedTimeSlots.length === 0) {
+            showToast('Please select a court and at least one time slot', 'warning');
             return;
           }
           goToStep(3);
@@ -5610,6 +5918,7 @@
     let currentFilter = 'all';
     let currentSearch = '';
     let quickViewUserId = null;
+    let friendCurrentPage = 1;
 
     // ============================================
     // INITIALIZATION
@@ -5681,7 +5990,7 @@
 
     function applyFiltersAndRender() {
       // Reset page
-      currentPage = 1;
+      friendCurrentPage = 1;
 
       // Start with all users
       let users = [...allUsers];
@@ -5750,7 +6059,7 @@
       allUsersList.innerHTML = '';
 
       // Calculate pagination
-      const startIndex = (currentPage - 1) * USERS_PER_PAGE;
+      const startIndex = (friendCurrentPage - 1) * USERS_PER_PAGE;
       const endIndex = startIndex + USERS_PER_PAGE;
       const pageUsers = filteredUsers.slice(startIndex, endIndex);
 
@@ -6619,7 +6928,7 @@
     }
 
     function loadMoreUsers() {
-      currentPage++;
+      friendCurrentPage++;
       renderUserList();
 
       // Smooth scroll to show new users
@@ -7218,6 +7527,7 @@
       const imageModal = new bootstrap.Modal(document.getElementById('imageModal'));
       imageModal.show();
     }
+    window.openImageModal = openImageModal;
 
     // ============================================
     // DELETE CHAT FUNCTION
@@ -7463,7 +7773,8 @@
           }
 
           const facilityName = booking.facilityName || booking.facility?.name || booking.name || 'Facility';
-          const time = booking.time || booking.slot || (booking.slots && booking.slots.length > 0 ? booking.slots[0] :
+          const time = booking.time || booking.slot || (booking.slots && booking.slots.length > 0 ?
+            formatSlotRange(booking.slots) :
             'Time not set');
 
           let statusClass = 'badge-pending';
@@ -7671,7 +7982,8 @@
         }
 
         const facilityName = booking.facilityName || booking.facility?.name || booking.name || 'Facility';
-        const time = booking.time || booking.slot || (booking.slots && booking.slots.length > 0 ? booking.slots[0] :
+        const time = booking.time || booking.slot || (booking.slots && booking.slots.length > 0 ?
+          formatSlotRange(booking.slots) :
           'Time not set');
         const location = booking.location || booking.facility?.location || 'Location not specified';
         const sportType = booking.sportType || booking.facility?.sportType || 'Not specified';
@@ -7990,7 +8302,8 @@
           console.error('Error formatting dates:', error);
         }
 
-        const timeSlot = booking.time || booking.slot || (booking.slots && booking.slots.length > 0 ? booking.slots[0] :
+        const timeSlot = booking.time || booking.slot || (booking.slots && booking.slots.length > 0 ?
+          formatSlotRange(booking.slots) :
           'Time not set');
         const printDate = new Date().toLocaleDateString('en-US', {
           year: 'numeric',
@@ -8156,6 +8469,7 @@
         showToast('Error generating print document: ' + error.message, 'danger');
       }
     }
+    window.printBookingDetails = printBookingDetails;
 
     //Marketplace page
     function loadMarketplacePage() {
@@ -8402,6 +8716,7 @@
         pause: true
       });
     }
+    window.openProductModal = openProductModal;
 
     function loadMessages(chatId) {
       db.collection("marketplace_chats")
@@ -8814,21 +9129,24 @@
 
     function addMarketplaceEventListeners() {
       document.querySelectorAll('.buy-item-btn').forEach(btn => {
-        btn.addEventListener('click', function() {
+        btn.addEventListener('click', function(e) {
+          e.stopPropagation();
           const itemId = this.getAttribute('data-id');
           buyItem(itemId);
         });
       });
 
       document.querySelectorAll('.mark-sold-btn').forEach(btn => {
-        btn.addEventListener('click', function() {
+        btn.addEventListener('click', function(e) {
+          e.stopPropagation();
           const itemId = this.getAttribute('data-id');
           markItemAsSold(itemId);
         });
       });
 
       document.querySelectorAll('.delete-item-btn').forEach(btn => {
-        btn.addEventListener('click', function() {
+        btn.addEventListener('click', function(e) {
+          e.stopPropagation();
           const itemId = this.getAttribute('data-id');
           deleteItem(itemId);
         });
@@ -9282,6 +9600,7 @@
       if (!doc.exists) return;
       openPostModal({ id: doc.id, ...doc.data() });
     }
+    window.openPostModalById = openPostModalById;
 
     function openPostModal(post) {
       const modalUser = document.getElementById("postModalUser");
@@ -10322,6 +10641,7 @@
       preview.style.display = 'none';
       preview.src = '';
     }
+    window.clearEventForm = clearEventForm;
 
     // Create new event
     async function createEvent() {
@@ -11067,7 +11387,11 @@
         });
 
         showToast('Successfully registered for the event!', 'success');
-        await loadEvents();
+
+        await Promise.all([
+          loadAllEvents(),
+          loadRegisteredEvents()
+        ]);
 
       } catch (error) {
         console.error('Error registering for event:', error);
@@ -11235,45 +11559,13 @@
       }
     }
 
-    // Update register function to refresh appropriate views
-    async function registerForEventFromList(eventId) {
-      try {
-        const eventDoc = await db.collection('events').doc(eventId).get();
-        if (!eventDoc.exists) {
-          showToast('Event not found', 'danger');
-          return;
-        }
-
-        const event = eventDoc.data();
-
-        if (event.participants && event.participants.includes(currentUser.uid)) {
-          showToast('You are already registered for this event', 'warning');
-          return;
-        }
-
-        if (event.maxParticipants && event.participants &&
-          event.participants.length >= event.maxParticipants) {
-          showToast('This event is already full', 'warning');
-          return;
-        }
-
-        await db.collection('events').doc(eventId).update({
-          participants: firebase.firestore.FieldValue.arrayUnion(currentUser.uid),
-          updatedAt: firebase.firestore.FieldValue.serverTimestamp()
-        });
-
-        showToast('Successfully registered for the event!', 'success');
-
-        await Promise.all([
-          loadAllEvents(),
-          loadRegisteredEvents()
-        ]);
-
-      } catch (error) {
-        console.error('Error registering for event:', error);
-        showToast('Error registering for event: ' + error.message, 'danger');
-      }
+    // Register from modal
+    async function registerForEventFromModal(eventId) {
+      await registerForEventFromList(eventId);
+      const modal = bootstrap.Modal.getInstance(document.getElementById('eventDetailsModal'));
+      if (modal) modal.hide();
     }
+    window.registerForEventFromModal = registerForEventFromModal;
 
     // Update unregister function
     async function unregisterFromEvent(eventId) {
@@ -11301,6 +11593,7 @@
         showToast('Error unregistering from event', 'danger');
       }
     }
+    window.unregisterFromEvent = unregisterFromEvent;
 
     // Update delete function
     async function deleteEvent(eventId) {
@@ -11323,6 +11616,7 @@
         showToast('Error deleting event', 'danger');
       }
     }
+    window.deleteEvent = deleteEvent;
 
     // Filter events based on active tab
     async function filterEvents(activeTabId) {
