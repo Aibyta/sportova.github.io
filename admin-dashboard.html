@@ -1132,6 +1132,31 @@
             font-style: italic;
         }
 
+        /* ===== PER-COURT CARD (each court has its own slots) ===== */
+        .court-card {
+            border: 1px solid #d8def7;
+            border-radius: 10px;
+            padding: 12px 14px;
+            margin-bottom: 10px;
+            background: #fbfcff;
+        }
+        .court-card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+        .court-slots-panel {
+            margin-top: 12px;
+        }
+        .empty-court-box {
+            color: #adb5bd;
+            font-size: 0.85rem;
+            font-style: italic;
+            padding: 8px 0;
+        }
+
         /* ===== UNIFIED COURT & SLOT INFO ===== */
         .unified-info-box {
             background: #f0f4ff;
@@ -1416,11 +1441,11 @@
         let allProducts = [];
         let amenities = [];
         let foods = [];
-        let courts = [];
+        let courts = [];                 // CREATE: [{ name, slots: [], _open }]
         let courtLayoutImageUrl = "";
         let editAmenities = [];
         let editFoods = [];
-        let editCourts = [];
+        let editCourts = [];             // EDIT:   [{ name, slots: [], _open }]
         let editCourtLayoutImageUrl = "";
         let editCourtLayouts = [];
         let editPDFUrl = "";
@@ -1435,13 +1460,13 @@
         window.statusFilter = 'all';
         window.colorMode = 'sport';
 
-        // Track selected time slots for create and edit (UNIFIED - applied to ALL courts)
-        let selectedTimeSlotsCreate = [];
-        let selectedTimeSlotsEdit = [];
-
-        // Track court names (just strings, no per-court dates/slots)
+        // Legacy globals kept for backwards compatibility (no longer used for court names)
         let courtNames = [];
         let editCourtNames = [];
+
+        // Track selected time slots for the LEGACY unified picker (kept for compatibility)
+        let selectedTimeSlotsCreate = [];
+        let selectedTimeSlotsEdit = [];
 
         // DOM refs
         const sidebar = document.getElementById('sidebar');
@@ -1455,24 +1480,19 @@
         const adminAvatar = document.getElementById('adminAvatar');
 
         // =========================================================================
-        // 3.5 TIME SLOT PICKER - VISUAL COMPONENT (UNIFIED)
+        // 3.5 TIME SLOT PICKER - 1 HOUR SLOTS
         // =========================================================================
-
+        // ✅ CHANGED: now generates 1-hour slots (07:00-08:00 ... 21:00-22:00)
+        //            instead of 30-minute slots.
+        // =========================================================================
         function generateAllTimeSlots() {
             const slots = [];
             const startHour = 7,
                 endHour = 22;
             for (let h = startHour; h < endHour; h++) {
-                for (let m = 0; m < 60; m += 30) {
-                    const start = `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
-                    let endH = h,
-                        endM = m + 30;
-                    if (endM >= 60) { endH++;
-                        endM = 0; }
-                    if (endH > endHour) break;
-                    const end = `${String(endH).padStart(2, '0')}:${String(endM).padStart(2, '0')}`;
-                    slots.push(`${start}-${end}`);
-                }
+                const start = `${String(h).padStart(2, '0')}:00`;
+                const end = `${String(h + 1).padStart(2, '0')}:00`;
+                slots.push(`${start}-${end}`);
             }
             return slots;
         }
@@ -1760,63 +1780,231 @@
             }
         }
 
-        // --- COURT MANAGEMENT (UNIFIED - just names) ---
+        // =========================================================================
+        // 3.6 COURT MANAGEMENT — EACH COURT HAS ITS OWN TIME SLOTS
+        // =========================================================================
 
-        function renderCourtTags(containerId, courtList, onRemove) {
+        function getCourtList(scope) {
+            return scope === 'edit' ? editCourts : courts;
+        }
+
+        function getCourtContainerId(scope) {
+            return scope === 'edit' ? 'editCourtListContainer' : 'courtListContainer';
+        }
+
+        /* Render the full list of court cards for the given scope */
+        function renderCourtList(containerId, scope) {
             const container = document.getElementById(containerId);
             if (!container) return;
 
-            if (courtList.length === 0) {
-                container.innerHTML = '<span class="empty-court">No courts added yet. Add a court below.</span>';
+            const list = getCourtList(scope);
+
+            if (!list.length) {
+                container.innerHTML =
+                    '<div class="empty-court-box"><i class="fas fa-info-circle me-1"></i>No courts added yet. Add a court above, then set its own time slots.</div>';
                 return;
             }
 
-            container.innerHTML = courtList.map((name, index) => `
-                    <span class="court-tag">
-                        ${name}
-                        <span class="remove-court" onclick="(${onRemove})(index)">&times;</span>
-                    </span>
+            container.innerHTML = list.map((court, index) => `
+                    <div class="court-card">
+                        <div class="court-card-header">
+                            <div class="d-flex align-items-center flex-wrap">
+                                <i class="fas fa-chess-board text-primary me-2"></i>
+                                <strong>${court.name}</strong>
+                                <span class="badge bg-secondary ms-2" id="court-count-${scope}-${index}">${(court.slots || []).length} slot(s)</span>
+                            </div>
+                            <div class="d-flex gap-1">
+                                <button type="button" class="btn btn-sm btn-outline-primary"
+                                        onclick="toggleCourtSlotPanel('${scope}', ${index})">
+                                    <i class="fas fa-clock me-1"></i> Time Slots
+                                </button>
+                                <button type="button" class="btn btn-sm btn-danger"
+                                        onclick="removeCourt('${scope}', ${index})">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="court-slots-panel" id="court-panel-${scope}-${index}"
+                             style="display:${court._open ? 'block' : 'none'};">
+                            ${renderCourtSlotPickerHTML(scope, index, court.slots || [])}
+                        </div>
+                    </div>
                 `).join('');
         }
 
-        // --- Add / Remove courts (Create) ---
+        /* The 1-hour slot grid for ONE court */
+        function renderCourtSlotPickerHTML(scope, index, selectedSlots) {
+            const allSlots = generateAllTimeSlots();
+            const selectedSet = new Set(selectedSlots || []);
+
+            let html = `
+                    <div class="slot-picker-container">
+                        <div class="slot-picker-header">
+                            <span class="slot-count">
+                                <i class="fas fa-clock me-1"></i>
+                                <strong id="court-picker-count-${scope}-${index}">${selectedSet.size}</strong> slot(s) selected
+                                <span class="text-muted ms-2">(1-hour slots — click to toggle)</span>
+                            </span>
+                            <div class="d-flex gap-1">
+                                <button type="button" class="btn btn-outline-primary btn-sm"
+                                        onclick="courtSelectAll('${scope}', ${index})">
+                                    <i class="fas fa-check-double me-1"></i> All
+                                </button>
+                                <button type="button" class="btn btn-outline-danger btn-sm"
+                                        onclick="courtClearAll('${scope}', ${index})">
+                                    <i class="fas fa-times me-1"></i> Clear
+                                </button>
+                            </div>
+                        </div>
+                        <div class="slot-grid" id="court-grid-${scope}-${index}">
+                `;
+
+            allSlots.forEach(slot => {
+                const isSel = selectedSet.has(slot);
+                html += `
+                        <button type="button"
+                                class="slot-btn ${isSel ? 'selected' : ''}"
+                                data-slot="${slot}"
+                                onclick="toggleCourtSlot('${scope}', ${index}, '${slot}')">
+                            <span class="slot-check"><i class="fas fa-check"></i></span>
+                            ${slot.replace('-', ' – ')}
+                        </button>
+                    `;
+            });
+
+            html += `
+                        </div>
+                        <div class="slot-picker-actions">
+                            <button type="button" class="btn btn-outline-success btn-sm"
+                                    onclick="courtSelectRange('${scope}', ${index}, 9, 17)">
+                                <i class="fas fa-chart-line me-1"></i> Peak (9am-5pm)
+                            </button>
+                            <button type="button" class="btn btn-outline-info btn-sm"
+                                    onclick="courtSelectRange('${scope}', ${index}, 7, 12)">
+                                <i class="fas fa-sun me-1"></i> Morning (7am-12pm)
+                            </button>
+                            <button type="button" class="btn btn-outline-warning btn-sm"
+                                    onclick="courtSelectRange('${scope}', ${index}, 12, 18)">
+                                <i class="fas fa-cloud-sun me-1"></i> Afternoon (12pm-6pm)
+                            </button>
+                        </div>
+                    </div>
+                `;
+
+            return html;
+        }
+
+        function toggleCourtSlotPanel(scope, index) {
+            const list = getCourtList(scope);
+            const court = list[index];
+            if (!court) return;
+            court._open = !court._open;
+            const panel = document.getElementById(`court-panel-${scope}-${index}`);
+            if (panel) panel.style.display = court._open ? 'block' : 'none';
+        }
+
+        function toggleCourtSlot(scope, index, slot) {
+            const list = getCourtList(scope);
+            const court = list[index];
+            if (!court) return;
+            if (!Array.isArray(court.slots)) court.slots = [];
+
+            const i = court.slots.indexOf(slot);
+            if (i === -1) court.slots.push(slot);
+            else court.slots.splice(i, 1);
+            court.slots.sort();
+
+            const grid = document.getElementById(`court-grid-${scope}-${index}`);
+            if (grid) {
+                const btn = grid.querySelector(`[data-slot="${slot}"]`);
+                if (btn) btn.classList.toggle('selected');
+            }
+            updateCourtSlotCounts(scope, index);
+        }
+
+        function updateCourtSlotCounts(scope, index) {
+            const list = getCourtList(scope);
+            const court = list[index];
+            if (!court) return;
+            const n = (court.slots || []).length;
+            const badge = document.getElementById(`court-count-${scope}-${index}`);
+            if (badge) badge.textContent = `${n} slot(s)`;
+            const pickerCount = document.getElementById(`court-picker-count-${scope}-${index}`);
+            if (pickerCount) pickerCount.textContent = n;
+        }
+
+        function courtSelectAll(scope, index) {
+            const list = getCourtList(scope);
+            const court = list[index];
+            if (!court) return;
+            court.slots = generateAllTimeSlots();
+            court._open = true;
+            renderCourtList(getCourtContainerId(scope), scope);
+            showToast(`All slots selected for ${court.name}`, 'info');
+        }
+
+        function courtClearAll(scope, index) {
+            const list = getCourtList(scope);
+            const court = list[index];
+            if (!court) return;
+            court.slots = [];
+            court._open = true;
+            renderCourtList(getCourtContainerId(scope), scope);
+            showToast(`Slots cleared for ${court.name}`, 'info');
+        }
+
+        function courtSelectRange(scope, index, startHour, endHour) {
+            const list = getCourtList(scope);
+            const court = list[index];
+            if (!court) return;
+            court.slots = generateAllTimeSlots().filter(s => {
+                const h = parseInt(s.split('-')[0].split(':')[0], 10);
+                return h >= startHour && h < endHour;
+            });
+            court._open = true;
+            renderCourtList(getCourtContainerId(scope), scope);
+            showToast(`${court.slots.length} slot(s) selected for ${court.name}`, 'success');
+        }
+
+        /* --- Add / Remove courts (Create) --- */
         function addCourtName() {
             const input = document.getElementById('courtNameInput');
             if (!input) return;
             const name = input.value.trim();
             if (!name) { showToast('Please enter a court name', 'warning'); return; }
-            if (courtNames.includes(name)) { showToast(`Court "${name}" already exists`, 'warning'); return; }
-            courtNames.push(name);
+            if (courts.some(c => c.name.toLowerCase() === name.toLowerCase())) {
+                showToast(`Court "${name}" already exists`, 'warning');
+                return;
+            }
+            courts.push({ name: name, slots: [], _open: true });
             input.value = '';
-            renderCourtTags('courtListContainer', courtNames, 'removeCourtName');
-            showToast(`Court "${name}" added`, 'success');
+            renderCourtList('courtListContainer', 'create');
+            showToast(`Court "${name}" added — now choose its time slots`, 'success');
         }
 
-        function removeCourtName(index) {
-            const removed = courtNames[index];
-            courtNames.splice(index, 1);
-            renderCourtTags('courtListContainer', courtNames, 'removeCourtName');
-            showToast(`Court "${removed}" removed`, 'info');
-        }
-
-        // --- Add / Remove courts (Edit) ---
+        /* --- Add / Remove courts (Edit) --- */
         function addEditCourtName() {
             const input = document.getElementById('editCourtNameInput');
             if (!input) return;
             const name = input.value.trim();
             if (!name) { showToast('Please enter a court name', 'warning'); return; }
-            if (editCourtNames.includes(name)) { showToast(`Court "${name}" already exists`, 'warning'); return; }
-            editCourtNames.push(name);
+            if (editCourts.some(c => c.name.toLowerCase() === name.toLowerCase())) {
+                showToast(`Court "${name}" already exists`, 'warning');
+                return;
+            }
+            editCourts.push({ name: name, slots: [], _open: true });
             input.value = '';
-            renderCourtTags('editCourtListContainer', editCourtNames, 'removeEditCourtName');
-            showToast(`Court "${name}" added`, 'success');
+            renderCourtList('editCourtListContainer', 'edit');
+            showToast(`Court "${name}" added — now choose its time slots`, 'success');
         }
 
-        function removeEditCourtName(index) {
-            const removed = editCourtNames[index];
-            editCourtNames.splice(index, 1);
-            renderCourtTags('editCourtListContainer', editCourtNames, 'removeEditCourtName');
-            showToast(`Court "${removed}" removed`, 'info');
+        function removeCourt(scope, index) {
+            const list = getCourtList(scope);
+            const removed = list[index];
+            if (!removed) return;
+            list.splice(index, 1);
+            renderCourtList(getCourtContainerId(scope), scope);
+            showToast(`Court "${removed.name}" removed`, 'info');
         }
 
         // Expose to global scope
@@ -1830,10 +2018,16 @@
         window.updateSlotUI = updateSlotUI;
         window.getSelectedSlots = getSelectedSlots;
         window.initTimeSlotPickers = initTimeSlotPickers;
+        window.renderCourtList = renderCourtList;
+        window.renderCourtSlotPickerHTML = renderCourtSlotPickerHTML;
+        window.toggleCourtSlotPanel = toggleCourtSlotPanel;
+        window.toggleCourtSlot = toggleCourtSlot;
+        window.courtSelectAll = courtSelectAll;
+        window.courtClearAll = courtClearAll;
+        window.courtSelectRange = courtSelectRange;
         window.addCourtName = addCourtName;
-        window.removeCourtName = removeCourtName;
         window.addEditCourtName = addEditCourtName;
-        window.removeEditCourtName = removeEditCourtName;
+        window.removeCourt = removeCourt;
 
         // =========================================================================
         // 4. FLATPICKR INITIALIZATION
@@ -1877,10 +2071,10 @@
                         createPicker.setDate([today, tomorrow]);
                         updateDateCountDisplay('create');
                     }
+                    // Reset courts (each court holds its own slots)
+                    courts = [];
                     selectedTimeSlotsCreate = [];
-                    courtNames = [];
-                    renderCourtTags('courtListContainer', courtNames, 'removeCourtName');
-                    initTimeSlotPickers();
+                    renderCourtList('courtListContainer', 'create');
                 }, 300);
             }
 
@@ -1897,31 +2091,9 @@
                             updateDateCountDisplay('edit');
                         }
                     }
-                    const facilityId = document.querySelector('input[name="facilityId"]').value;
-                    const facility = adminFacilities.find(f => f.id === facilityId);
-                    if (facility && facility.slots) {
-                        selectedTimeSlotsEdit = [...facility.slots];
-                    } else {
-                        selectedTimeSlotsEdit = [];
-                    }
-                    // Load courts as names
-                    if (facility && facility.courts) {
-                        if (Array.isArray(facility.courts)) {
-                            // If courts are objects with name, extract names
-                            if (facility.courts.length > 0 && typeof facility.courts[0] === 'object') {
-                                editCourtNames = facility.courts.map(c => c.name || c.courtName || String(c));
-                            } else {
-                                editCourtNames = facility.courts.map(c => String(c));
-                            }
-                        } else {
-                            editCourtNames = [];
-                        }
-                    } else {
-                        editCourtNames = [];
-                    }
-                    renderCourtTags('editCourtListContainer', editCourtNames, 'removeEditCourtName');
-                    initTimeSlotPickers();
-                }, 400);
+                    // Courts are already prepared by editFacility() — just (re)render them
+                    renderCourtList('editCourtListContainer', 'edit');
+                }, 200);
             }
         });
 
@@ -2048,11 +2220,15 @@
             const formData = new FormData();
             formData.append("file", pdfFile);
             formData.append("upload_preset", UPLOAD_PRESET);
-            formData.append("type", "upload");
-            formData.append("resource_type", "raw");
-            formData.append("access_mode", "public");
+                
             const res = await fetch(url, { method: "POST", body: formData });
             const data = await res.json();
+                
+            // Cloudinary returns { error: {...} } when the preset does not allow raw uploads
+            if (!res.ok || !data.secure_url) {
+                console.error("Cloudinary PDF upload failed:", data);
+                throw new Error(data?.error?.message || "Cloudinary rejected the PDF upload");
+            }
             return data.secure_url;
         }
 
@@ -2842,24 +3018,33 @@
         }
 
         // =========================================================================
-        // 10. FACILITY MANAGEMENT (UNIFIED COURTS)
+        // 10. FACILITY MANAGEMENT (PER-COURT TIME SLOTS)
         // =========================================================================
         async function loadFacilityManagementPage() {
             let facilitiesHTML = '';
             if (adminFacilities.length === 0) {
-                facilitiesHTML = '<tr><td colspan="6" class="text-center py-4">No facilities found</td></tr>';
+                facilitiesHTML = '<tr><td colspan="7" class="text-center py-4">No facilities found</td></tr>';
             } else {
                 adminFacilities.forEach(facility => {
-                    const courtList = Array.isArray(facility.courts) ? facility.courts.map(c =>
-                        typeof c === 'object' ? (c.name || c.courtName || 'Court') : String(c)
-                    ).join(', ') : 'No courts';
+                    // ✅ CHANGED: show each court with its own slot count
+                    const facilityLevelSlots = Array.isArray(facility.slots) ? facility.slots.length : 0;
+                    let courtList = 'No courts';
+                    if (Array.isArray(facility.courts) && facility.courts.length > 0) {
+                        courtList = facility.courts.map(c => {
+                            const name = (c && typeof c === 'object') ? (c.name || c.courtName || 'Court') :
+                                String(c);
+                            const slotCount = (c && typeof c === 'object' && Array.isArray(c.slots)) ?
+                                c.slots.length : facilityLevelSlots;
+                            return `${name} <span class="badge bg-light text-dark">${slotCount} slots</span>`;
+                        }).join('<br>');
+                    }
                     facilitiesHTML += `
                             <tr>
                                 <td>${facility.name || 'N/A'}</td>
                                 <td>${facility.type || 'N/A'}</td>
                                 <td>${facility.location || ''},${facility.state || ''}, ${facility.district || ''}</td>
                                 <td>RM${facility.price || '0'}</td>
-                                <td><span class="badge bg-secondary">${courtList || 'No courts'}</span></td>
+                                <td><div class="small">${courtList}</div></td>
                                 <td>${facility.status || 'Active'}</td>
                                 <td>
                                     <div class="btn-group" role="group">
@@ -2883,7 +3068,7 @@
                     <div class="table-card">
                         <div class="table-responsive">
                             <table class="table table-hover">
-                                <thead><tr><th>Facility Name</th><th>Type</th><th>Location</th><th>Price</th><th>Courts</th><th>Status</th><th>Actions</th></tr></thead>
+                                <thead><tr><th>Facility Name</th><th>Type</th><th>Location</th><th>Price</th><th>Courts &amp; Slots</th><th>Status</th><th>Actions</th></tr></thead>
                                 <tbody>${facilitiesHTML}</tbody>
                             </table>
                         </div>
@@ -2922,7 +3107,7 @@
                                             <div class="col-md-6"><div class="form-group"><label class="form-label">Capacity</label><input type="number" class="form-control" name="capacity" min="1" required></div></div>
                                         </div>
 
-                                        <!-- ===== UNIFIED DATE RANGE ===== -->
+                                        <!-- ===== SHARED DATE RANGE ===== -->
                                         <div class="row mt-3">
                                             <div class="col-12">
                                                 <div class="form-group">
@@ -2942,26 +3127,11 @@
                                                     </div>
                                                 </div>
 
-                                                <!-- ===== UNIFIED TIME SLOTS ===== -->
-                                                <div class="form-group mt-3">
-                                                    <label class="form-label fw-bold">
-                                                        <i class="fas fa-clock me-2"></i>Time Slots
-                                                        <span class="text-muted fw-normal">(Applied to ALL courts &amp; all selected dates)</span>
-                                                    </label>
-                                                    <div id="timeSlotsContainer">
-                                                        <!-- Visual time slot picker will be rendered here -->
-                                                    </div>
-                                                    <div class="unified-info-box mt-2">
-                                                        <i class="fas fa-info-circle info-icon"></i>
-                                                        <span class="info-text">These time slots apply to <strong>all courts</strong> in this facility on <strong>all selected dates</strong>.</span>
-                                                    </div>
-                                                </div>
-
-                                                <!-- ===== UNIFIED COURTS (just names) ===== -->
+                                                <!-- ===== COURTS WITH THEIR OWN TIME SLOTS ===== -->
                                                 <div class="form-group mt-4">
                                                     <label class="form-label fw-bold">
-                                                        <i class="fas fa-chess-board me-2"></i>Courts
-                                                        <span class="text-muted fw-normal">(Add court names)</span>
+                                                        <i class="fas fa-chess-board me-2"></i>Courts &amp; Their Time Slots
+                                                        <span class="text-muted fw-normal">(each court can have different timings)</span>
                                                     </label>
                                                     <div class="border p-3 rounded">
                                                         <div class="row align-items-end">
@@ -2975,12 +3145,10 @@
                                                                 </button>
                                                             </div>
                                                         </div>
-                                                        <div class="mt-3 court-list-container" id="courtListContainer">
-                                                            <span class="empty-court">No courts added yet. Add a court above.</span>
-                                                        </div>
+                                                        <div class="mt-3" id="courtListContainer"></div>
                                                         <small class="text-muted mt-2 d-block">
                                                             <i class="fas fa-info-circle me-1"></i>
-                                                            All courts share the same dates and time slots set above.
+                                                            Each court keeps its own 1-hour time slots. The available date range above is shared by all courts.
                                                         </small>
                                                     </div>
                                                 </div>
@@ -3023,10 +3191,18 @@
                 `;
         }
 
-        // --- Facility CRUD (UPDATED for unified courts) ---
+        // --- Facility CRUD (per-court slots) ---
 
         async function saveFacility() {
             try {
+                // ---- validate courts & their slots first (before any uploads) ----
+                if (courts.length === 0) { showToast('Please add at least one court', 'warning'); return; }
+                const courtWithNoSlots = courts.find(c => !c.slots || c.slots.length === 0);
+                if (courtWithNoSlots) {
+                    showToast(`Please select time slots for "${courtWithNoSlots.name}"`, 'warning');
+                    return;
+                }
+
                 const cloudName = "dagqzn57w";
                 let termsPDFUrl = "";
                 const termsPDF = document.getElementById("termsPDF").files[0];
@@ -3060,14 +3236,16 @@
                     courtLayoutUrl = data.secure_url;
                 }
 
-                // Get all dates from range
+                // Get all dates from range (shared by every court)
                 const availableDates = getCreateSelectedDates();
 
-                // Get selected time slots from visual picker
-                const slots = selectedTimeSlotsCreate || [];
-
-                // Courts are just names (strings) - unified across all courts
-                const courtsData = courtNames.map(name => ({ name: name }));
+                // ✅ Each court carries its own 1-hour slots
+                const courtsData = courts.map(c => ({
+                    name: c.name,
+                    slots: [...c.slots].sort()
+                }));
+                // Union of all court slots — kept on the facility for backwards compatibility
+                const slots = [...new Set(courtsData.flatMap(c => c.slots))].sort();
 
                 const facilityData = {
                     name: formData.get("name"),
@@ -3099,8 +3277,8 @@
                 form.reset();
                 document.getElementById("imagePreview").style.display = "none";
                 document.getElementById("courtLayoutPreview").style.display = "none";
-                courtNames = [];
-                renderCourtTags('courtListContainer', courtNames, 'removeCourtName');
+                courts = [];
+                renderCourtList('courtListContainer', 'create');
                 selectedTimeSlotsCreate = [];
                 amenities = [];
                 foods = [];
@@ -3119,24 +3297,31 @@
 
                 const doc = await db.collection("facilities").doc(id).get();
                 const facilityy = doc.data();
+                // ✅ Preserve the existing PDF URL so it isn't wiped when no new file is chosen
+                editPDFUrl = facilityy.termsPDF || "";
 
-                // Set edit time slots from facility data
-                selectedTimeSlotsEdit = facilityy.slots || [];
-
-                // Load courts as names
-                if (facilityy.courts) {
-                    if (Array.isArray(facilityy.courts)) {
-                        if (facilityy.courts.length > 0 && typeof facilityy.courts[0] === 'object') {
-                            editCourtNames = facilityy.courts.map(c => c.name || c.courtName || String(c));
+                // ✅ Build editCourts — each court keeps its own slots.
+                //    Legacy documents (courts stored as plain strings) inherit the facility-level slots.
+                const facilitySlots = Array.isArray(facilityy.slots) ? facilityy.slots : [];
+                editCourts = [];
+                if (Array.isArray(facilityy.courts)) {
+                    facilityy.courts.forEach(c => {
+                        if (c && typeof c === 'object') {
+                            editCourts.push({
+                                name: c.name || c.courtName || 'Court',
+                                slots: (Array.isArray(c.slots) && c.slots.length) ? [...c.slots] : [...facilitySlots],
+                                _open: false
+                            });
                         } else {
-                            editCourtNames = facilityy.courts.map(c => String(c));
+                            editCourts.push({
+                                name: String(c),
+                                slots: [...facilitySlots],
+                                _open: false
+                            });
                         }
-                    } else {
-                        editCourtNames = [];
-                    }
-                } else {
-                    editCourtNames = [];
+                    });
                 }
+                selectedTimeSlotsEdit = [...facilitySlots];
 
                 // Load amenities and foods
                 editAmenities = facilityy.amenities || [];
@@ -3177,7 +3362,7 @@
                                                 <div class="col-md-6"><div class="form-group"><label class="form-label">Capacity</label><input type="number" class="form-control" name="capacity" value="${facility.capacity || 1}" min="1" required></div></div>
                                             </div>
 
-                                            <!-- ===== UNIFIED DATE RANGE (EDIT) ===== -->
+                                            <!-- ===== SHARED DATE RANGE (EDIT) ===== -->
                                             <div class="row mt-3">
                                                 <div class="col-12">
                                                     <div class="form-group">
@@ -3197,26 +3382,11 @@
                                                         </div>
                                                     </div>
 
-                                                    <!-- ===== UNIFIED TIME SLOTS (EDIT) ===== -->
-                                                    <div class="form-group mt-3">
-                                                        <label class="form-label fw-bold">
-                                                            <i class="fas fa-clock me-2"></i>Time Slots
-                                                            <span class="text-muted fw-normal">(Applied to ALL courts &amp; all selected dates)</span>
-                                                        </label>
-                                                        <div id="editTimeSlotsContainer">
-                                                            <!-- Visual time slot picker will be rendered here -->
-                                                        </div>
-                                                        <div class="unified-info-box mt-2">
-                                                            <i class="fas fa-info-circle info-icon"></i>
-                                                            <span class="info-text">These time slots apply to <strong>all courts</strong> in this facility on <strong>all selected dates</strong>.</span>
-                                                        </div>
-                                                    </div>
-
-                                                    <!-- ===== UNIFIED COURTS (EDIT) ===== -->
+                                                    <!-- ===== COURTS WITH THEIR OWN TIME SLOTS (EDIT) ===== -->
                                                     <div class="form-group mt-4">
                                                         <label class="form-label fw-bold">
-                                                            <i class="fas fa-chess-board me-2"></i>Courts
-                                                            <span class="text-muted fw-normal">(Add court names)</span>
+                                                            <i class="fas fa-chess-board me-2"></i>Courts &amp; Their Time Slots
+                                                            <span class="text-muted fw-normal">(each court can have different timings)</span>
                                                         </label>
                                                         <div class="border p-3 rounded">
                                                             <div class="row align-items-end">
@@ -3230,12 +3400,10 @@
                                                                     </button>
                                                                 </div>
                                                             </div>
-                                                            <div class="mt-3 court-list-container" id="editCourtListContainer">
-                                                                <span class="empty-court">No courts added yet. Add a court above.</span>
-                                                            </div>
+                                                            <div class="mt-3" id="editCourtListContainer"></div>
                                                             <small class="text-muted mt-2 d-block">
                                                                 <i class="fas fa-info-circle me-1"></i>
-                                                                All courts share the same dates and time slots set above.
+                                                                Each court keeps its own 1-hour time slots. The available date range above is shared by all courts.
                                                             </small>
                                                         </div>
                                                     </div>
@@ -3284,10 +3452,10 @@
                 document.body.insertAdjacentHTML('beforeend', editModalHTML);
                 editingFacilityId = id;
 
-                // Render amenities, foods, courts
+                // Render amenities, foods, and per-court slot pickers
                 renderEditAmenities();
                 renderEditFoods();
-                renderCourtTags('editCourtListContainer', editCourtNames, 'removeEditCourtName');
+                renderCourtList('editCourtListContainer', 'edit');
 
                 // Image preview
                 document.getElementById("editFacilityImage").addEventListener("change", function(e) {
@@ -3320,6 +3488,14 @@
 
         async function updateFacility(id) {
             try {
+                // ---- validate courts & their slots first ----
+                if (editCourts.length === 0) { showToast('Please add at least one court', 'warning'); return; }
+                const courtWithNoSlots = editCourts.find(c => !c.slots || c.slots.length === 0);
+                if (courtWithNoSlots) {
+                    showToast(`Please select time slots for "${courtWithNoSlots.name}"`, 'warning');
+                    return;
+                }
+
                 const form = document.getElementById('editFacilityForm');
                 const formData = new FormData(form);
                 let imageUrl = document.getElementById("existingEditImageUrl").value;
@@ -3330,19 +3506,29 @@
                 const newCourtLayoutFile = document.getElementById("editCourtLayoutImage").files[0];
                 if (newCourtLayoutFile) courtLayoutUrl = await uploadToCloudinary(newCourtLayoutFile);
 
-                // PDF handling
+                // PDF handling — preserve existing, or upload the newly chosen file
                 const pdfFile = document.getElementById("edit_termsPDF").files[0];
-                let termsPDFUrl = editPDFUrl;
-                if (pdfFile) termsPDFUrl = await uploadPDFToCloudinary(pdfFile);
+                let termsPDFUrl = editPDFUrl || "";
+                if (pdfFile) {
+                    try {
+                        showToast("Uploading Terms PDF…", "info");
+                        termsPDFUrl = await uploadPDFToCloudinary(pdfFile);
+                    } catch (err) {
+                        console.error("Terms PDF upload error:", err);
+                        showToast("Terms PDF upload failed: " + err.message, "danger");
+                        return; // stop saving so the old data isn't overwritten
+                    }
+                }
 
-                // Get all dates from range
+                // Get all dates from range (shared by every court)
                 const availableDates = getEditSelectedDates();
 
-                // Get selected time slots from visual picker
-                const slots = selectedTimeSlotsEdit || [];
-
-                // Courts are just names (strings) - unified
-                const courtsData = editCourtNames.map(name => ({ name: name }));
+                // ✅ Each court carries its own 1-hour slots
+                const courtsData = editCourts.map(c => ({
+                    name: c.name,
+                    slots: [...c.slots].sort()
+                }));
+                const slots = [...new Set(courtsData.flatMap(c => c.slots))].sort();
 
                 const facilityData = {
                     name: formData.get("name"),
@@ -3370,7 +3556,7 @@
                 showToast('Facility updated successfully', 'success');
                 bootstrap.Modal.getInstance(document.getElementById('editFacilityModal')).hide();
                 selectedTimeSlotsEdit = [];
-                editCourtNames = [];
+                editCourts = [];
                 await loadAdminFacilities();
                 loadPageContent("facility-management");
             } catch (error) {
@@ -3407,10 +3593,22 @@
                     facility.amenities.map(a => `
                             <span class="badge bg-secondary me-1 mb-1">${a.amenity}${a.amenityPrice && a.amenityPrice !== "0" ? `(RM${a.amenityPrice})` : ''}</span>
                         `).join('') : '';
+
+                // ✅ CHANGED: show each court together with its own slot list
+                const facilitySlots = Array.isArray(facility.slots) ? facility.slots : [];
                 const courtsHtml = Array.isArray(facility.courts) ?
                     facility.courts.map(c => {
-                        const name = typeof c === 'object' ? (c.name || c.courtName || 'Court') : String(c);
-                        return `<span class="badge bg-primary me-1 mb-1">${name}</span>`;
+                        const name = (c && typeof c === 'object') ? (c.name || c.courtName || 'Court') : String(c);
+                        const cSlots = (c && typeof c === 'object' && Array.isArray(c.slots)) ? c.slots :
+                            facilitySlots;
+                        return `
+                                <div class="mb-2">
+                                    <span class="badge bg-primary">${name}</span>
+                                    <div class="small text-muted mt-1">
+                                        ${cSlots.length ? cSlots.map(s => s.replace('-', ' – ')).join(' • ') : 'No slots set'}
+                                    </div>
+                                </div>
+                            `;
                     }).join('') : 'No courts';
 
                 const modalContent = `
@@ -3427,10 +3625,10 @@
                                                 <p><strong>Location:</strong> ${facility.location || 'N/A'},${facility.state || 'N/A'},${facility.district || ''}</p>
                                                 <p><strong>Price:</strong> RM${facility.price || '0'}</p>
                                                 <p><strong>Capacity:</strong> ${facility.capacity || 'N/A'} people</p>
-                                                <p><strong>Courts:</strong> ${courtsHtml}</p>
                                                 <p><strong>Status:</strong> <span class="badge ${facility.status === 'Active' ? 'bg-success' : facility.status === 'Maintenance' ? 'bg-warning' : 'bg-secondary'}">${facility.status || 'Active'}</span></p>
                                             </div>
                                         </div>
+                                        <div class="mt-3"><h6>Courts &amp; Time Slots</h6>${courtsHtml}</div>
                                         ${facility.description ? `<div class="mt-3"><h6>Description</h6><p>${facility.description}</p></div>` : ''}
                                         ${amenitiesHtml ? `<div class="mt-3"><h6>Amenities</h6><div>${amenitiesHtml}</div></div>` : ''}
                                     </div>
@@ -3743,7 +3941,7 @@
                                     <div class="modal-header"><h5 class="modal-title">Booking Details</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
                                     <div class="modal-body">
                                         <div class="row">
-                                            <div class="col-md-6"><h6>Booking Information</h6><p><strong>User:</strong> ${booking.userEmail || booking.userName || 'Unknown'}</p><p><strong>Facility:</strong> ${booking.facilityName || 'Unknown'}</p><p><strong>Date:</strong> ${date}</p><p><strong>Time:</strong> ${booking.time || booking.Time || 'N/A'}</p><p><strong>Duration:</strong> ${booking.duration || '1 hour(s)'}</p></div>
+                                            <div class="col-md-6"><h6>Booking Information</h6><p><strong>User:</strong> ${booking.userEmail || booking.userName || 'Unknown'}</p><p><strong>Facility:</strong> ${booking.facilityName || 'Unknown'}</p><p><strong>Court:</strong> ${booking.courtName || booking.court || 'N/A'}</p><p><strong>Date:</strong> ${date}</p><p><strong>Time:</strong> ${booking.time || booking.Time || 'N/A'}</p><p><strong>Duration:</strong> ${booking.duration || '1 hour(s)'}</p></div>
                                             <div class="col-md-6"><h6>Payment & Status</h6><p><strong>Amount:</strong> RM${parseFloat(booking.amount || 0).toFixed(2)}</p><p><strong>Status:</strong> <span class="badge badge-status badge-${booking.status || 'pending'}">${booking.status || 'pending'}</span></p><p><strong>Payment Method:</strong> ${booking.paymentMethod || 'Online'}</p></div>
                                         </div>
                                         ${booking.notes ? `<div class="mt-3"><h6>Additional Notes</h6><p>${booking.notes}</p></div>` : ''}
@@ -3876,7 +4074,26 @@
             try {
                 const facilitySnap = await db.collection("facilities").doc(facilityId).get();
                 if (!facilitySnap.exists) { slotSelect.innerHTML = `<option>No facility found</option>`; return; }
-                const allSlots = facilitySnap.data().slots || [];
+                const facilityData = facilitySnap.data();
+
+                // ✅ CHANGED: prefer the booked court's own slot list, fall back to the facility union
+                let allSlots = Array.isArray(facilityData.slots) ? facilityData.slots : [];
+                try {
+                    const bookingSnap = await db.collection("bookings").doc(bookingId).get();
+                    if (bookingSnap.exists) {
+                        const bData = bookingSnap.data();
+                        const courtName = bData.courtName || bData.court || null;
+                        if (courtName && Array.isArray(facilityData.courts)) {
+                            const court = facilityData.courts.find(c =>
+                                ((c && typeof c === 'object') ? (c.name || c.courtName) : String(c)) === courtName
+                            );
+                            if (court && typeof court === 'object' && Array.isArray(court.slots) && court.slots.length) {
+                                allSlots = court.slots;
+                            }
+                        }
+                    }
+                } catch (e) { /* ignore, fall back to facility slots */ }
+
                 const start = new Date(dateInput);
                 start.setHours(0, 0, 0, 0);
                 const end = new Date(dateInput);
@@ -6817,6 +7034,7 @@
                             'User Name': booking.userName || 'Unknown',
                             'User Email': booking.userEmail || 'Unknown',
                             'Facility Name': booking.facilityName || 'Unknown',
+                            'Court': booking.courtName || booking.court || 'N/A',
                             'Booking Created At': booking.createdAt ? booking.createdAt.toDate().toLocaleString() :
                                 'N/A',
                             'Time Slot': booking.time || 'N/A',
@@ -6828,8 +7046,9 @@
                         });
                     });
                 }
-                const headers = ['Booking ID', 'User Name', 'User Email', 'Facility Name', 'Booking Created At',
-                    'Time Slot', 'Price', 'Status', 'Payment Method', 'Booking Date', 'Duration'
+                const headers = ['Booking ID', 'User Name', 'User Email', 'Facility Name', 'Court',
+                    'Booking Created At', 'Time Slot', 'Price', 'Status', 'Payment Method', 'Booking Date',
+                    'Duration'
                 ];
                 exportToCSV(bookings, `bookings_export_${new Date().toISOString().split('T')[0]}.csv`, headers);
             } catch (error) {
@@ -6937,22 +7156,37 @@
 
         async function exportFacilities() {
             try {
-                const facilitiesData = adminFacilities.map(facility => ({
-                    'Facility ID': facility.id,
-                    'Name': facility.name || 'N/A',
-                    'Type': facility.type || 'N/A',
-                    'Location': facility.location || 'N/A',
-                    'locationLink': facility.locationLink || '',
-                    'Price': `RM${facility.price || '0'}`,
-                    'Capacity': facility.capacity || 'N/A',
-                    'Status': facility.status || 'Active',
-                    'Description': facility.description || '',
-                    'Amenities': facility.amenities ? facility.amenities.join('; ') : '',
-                    'Created Date': facility.createdAt ? facility.createdAt.toDate().toLocaleDateString() :
-                        'N/A'
-                }));
-                const headers = ['Facility ID', 'Name', 'Type', 'Location', 'Price', 'Capacity', 'Status',
-                    'Description', 'Amenities', 'Created Date'
+                const facilitiesData = adminFacilities.map(facility => {
+                    // ✅ CHANGED: include per-court slot information
+                    let courtInfo = '';
+                    if (Array.isArray(facility.courts)) {
+                        courtInfo = facility.courts.map(c => {
+                            const name = (c && typeof c === 'object') ? (c.name || c.courtName || 'Court') :
+                                String(c);
+                            const slots = (c && typeof c === 'object' && Array.isArray(c.slots)) ? c
+                                .slots.join(' | ') : (Array.isArray(facility.slots) ? facility.slots.join(
+                                ' | ') : '');
+                            return `${name}: ${slots}`;
+                        }).join(' || ');
+                    }
+                    return {
+                        'Facility ID': facility.id,
+                        'Name': facility.name || 'N/A',
+                        'Type': facility.type || 'N/A',
+                        'Location': facility.location || 'N/A',
+                        'locationLink': facility.locationLink || '',
+                        'Price': `RM${facility.price || '0'}`,
+                        'Capacity': facility.capacity || 'N/A',
+                        'Status': facility.status || 'Active',
+                        'Description': facility.description || '',
+                        'Courts & Slots': courtInfo,
+                        'Amenities': facility.amenities ? facility.amenities.join('; ') : '',
+                        'Created Date': facility.createdAt ? facility.createdAt.toDate().toLocaleDateString() :
+                            'N/A'
+                    };
+                });
+                const headers = ['Facility ID', 'Name', 'Type', 'Location', 'locationLink', 'Price', 'Capacity',
+                    'Status', 'Description', 'Courts & Slots', 'Amenities', 'Created Date'
                 ];
                 exportToCSV(facilitiesData, `facilities_export_${new Date().toISOString().split('T')[0]}.csv`, headers);
             } catch (error) {
@@ -7812,7 +8046,7 @@
         window.viewPilatesYogaSession = viewPilatesYogaSession;
         window.deletePilatesYogaSession = deletePilatesYogaSession;
 
-        console.log('✅ Sportova Admin Portal loaded with unified court management');
+        console.log('✅ Sportova Admin Portal loaded with per-court 1-hour time slots');
         console.log('🔒 Right-click, inspect, and keyboard shortcuts are disabled for security');
     </script>
 

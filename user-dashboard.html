@@ -3690,7 +3690,12 @@
                 </div>
               </div>
               <div class="form-card mb-4">
-                <h5>Terms & Conditions</h5>
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                  <h5 class="mb-0">Terms &amp; Conditions</h5>
+                  <button type="button" class="btn btn-sm btn-outline-primary d-none" id="viewTermsPdfBtn">
+                    <i class="fas fa-file-pdf me-1"></i> View Full PDF
+                  </button>
+                </div>
                 <div class="terms-content mb-3" id="termsContent" style="max-height: 200px; overflow-y: auto; padding: 15px; background-color: #f8f9fa; border-radius: 5px;">
                   <p id="termsText">Loading terms and conditions...</p>
                 </div>
@@ -4965,10 +4970,33 @@
       try {
         const doc = await db.collection("facilities").doc(facilityId).get();
         if (!doc.exists) return;
-        const facilityy = doc.data();
+      
+        const facilityData = doc.data();
+      
+        // 1) Populate the text content
         const termsTextEl = document.getElementById("termsText");
         if (termsTextEl) {
-          termsTextEl.textContent = facilityy.termsText || "Please review the full terms and conditions document.";
+          termsTextEl.textContent =
+            facilityData.termsText ||
+            "Please review the full terms and conditions document.";
+        }
+      
+        // 2) Store the PDF URL globally (used by the View PDF button)
+        window.currentTermsPDFUrl = facilityData.termsPDF || "";
+      
+        // 3) Show / hide the PDF button based on availability
+        const pdfBtn = document.getElementById("viewTermsPdfBtn");
+        if (pdfBtn) {
+          if (window.currentTermsPDFUrl) {
+            pdfBtn.classList.remove("d-none");
+            // Re-bind click each time (safe if called multiple times)
+            pdfBtn.onclick = () => {
+              window.open(window.currentTermsPDFUrl, "_blank", "noopener,noreferrer");
+            };
+          } else {
+            pdfBtn.classList.add("d-none");
+            pdfBtn.onclick = null;
+          }
         }
       } catch (err) {
         console.error("Error loading facility terms:", err);
