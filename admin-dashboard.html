@@ -1460,6 +1460,40 @@
         window.statusFilter = 'all';
         window.colorMode = 'sport';
 
+        // =========================================================================
+        // ✅ NEW: Per-facility commission display helpers
+        // Each facility document may have: showPriceWithoutCommission: true|false
+        // =========================================================================
+        function getFacilityCommissionMode(facilityId) {
+            if (!facilityId) return false;
+            const facility = adminFacilities.find(f => f.id === facilityId);
+            return facility ? facility.showPriceWithoutCommission === true : false;
+        }
+
+        // Amount to actually DISPLAY to the admin
+        // If the facility has "without commission" enabled → show full amount
+        // Otherwise → show amount minus 5% commission (current default behaviour)
+        function applyCommissionDisplay(amount, facilityId) {
+            const amt = parseFloat(amount) || 0;
+            if (getFacilityCommissionMode(facilityId)) return amt;
+            return amt - amt * 0.05;
+        }
+
+        // Commission to actually DISPLAY (0 when the facility is set to "without commission")
+        function getCommissionDisplay(amount, facilityId) {
+            const amt = parseFloat(amount) || 0;
+            if (getFacilityCommissionMode(facilityId)) return 0;
+            return amt * 0.05;
+        }
+
+        // Small badge used in the facility management table
+        function getCommissionModeBadge(facility) {
+            if (facility && facility.showPriceWithoutCommission === true) {
+                return ' <i class="fas fa-eye-slash text-success" title="Admins see this facility\'s prices WITHOUT the 5% commission"></i>';
+            }
+            return '';
+        }
+
         // Legacy globals kept for backwards compatibility (no longer used for court names)
         let courtNames = [];
         let editCourtNames = [];
@@ -2799,7 +2833,8 @@
                 bookingsSnapshot.forEach(doc => {
                     const booking = doc.data();
                     if (booking.userId) customerIds.add(booking.userId);
-                    if (booking.amount) totalRevenue += booking.amount - booking.amount * 0.05;
+                    // ✅ Per-facility commission display
+                    if (booking.amount) totalRevenue += applyCommissionDisplay(booking.amount, booking.facilityId);
                     recentBookings.push({ id: doc.id, ...booking, rawDate: booking.date });
                 });
                 document.getElementById('totalCustomers').textContent = customerIds.size;
@@ -3038,12 +3073,14 @@
                             return `${name} <span class="badge bg-light text-dark">${slotCount} slots</span>`;
                         }).join('<br>');
                     }
+                    // ✅ NEW: per-facility commission mode badge
+                    const commissionBadge = getCommissionModeBadge(facility);
                     facilitiesHTML += `
                             <tr>
                                 <td>${facility.name || 'N/A'}</td>
                                 <td>${facility.type || 'N/A'}</td>
                                 <td>${facility.location || ''},${facility.state || ''}, ${facility.district || ''}</td>
-                                <td>RM${facility.price || '0'}</td>
+                                <td>RM${facility.price || '0'}${commissionBadge}</td>
                                 <td><div class="small">${courtList}</div></td>
                                 <td>${facility.status || 'Active'}</td>
                                 <td>
@@ -3611,6 +3648,11 @@
                             `;
                     }).join('') : 'No courts';
 
+                // ✅ NEW: per-facility commission mode pill
+                const commissionModeHtml = facility.showPriceWithoutCommission === true
+                    ? '<span class="badge bg-success"><i class="fas fa-eye-slash me-1"></i>Admins see price WITHOUT commission</span>'
+                    : '<span class="badge bg-warning text-dark"><i class="fas fa-eye me-1"></i>Admins see price WITH commission</span>';
+
                 const modalContent = `
                         <div class="modal fade" id="viewFacilityModal" tabindex="-1">
                             <div class="modal-dialog modal-lg">
@@ -3626,6 +3668,7 @@
                                                 <p><strong>Price:</strong> RM${facility.price || '0'}</p>
                                                 <p><strong>Capacity:</strong> ${facility.capacity || 'N/A'} people</p>
                                                 <p><strong>Status:</strong> <span class="badge ${facility.status === 'Active' ? 'bg-success' : facility.status === 'Maintenance' ? 'bg-warning' : 'bg-secondary'}">${facility.status || 'Active'}</span></p>
+                                                <p><strong>Commission Mode:</strong><br>${commissionModeHtml}</p>
                                             </div>
                                         </div>
                                         <div class="mt-3"><h6>Courts &amp; Time Slots</h6>${courtsHtml}</div>
@@ -3853,6 +3896,11 @@
                             `;
                     });
                 }
+                // ✅ Per-facility commission display
+                const totalRevenueDisplayed = bookings
+                    .reduce((sum, booking) => sum + applyCommissionDisplay(booking.amount || 0, booking.facilityId), 0)
+                    .toFixed(2);
+
                 return `
                         <div class="d-flex justify-content-between align-items-center mb-4">
                             <h3>Booking Management</h3>
@@ -3864,7 +3912,7 @@
                         <div class="row mb-4">
                             <div class="col-md-3"><div class="stats-card"><i class="fas fa-calendar-check"></i><div class="number">${bookings.length}</div><div class="label">Total Bookings</div></div></div>
                             <div class="col-md-3"><div class="stats-card"><i class="fas fa-check-circle"></i><div class="number">${bookings.filter(b => b.status === 'approved' || b.status === 'confirmed').length}</div><div class="label">Approved</div></div></div>
-                            <div class="col-md-3"><div class="stats-card"><i class="fas fa-dollar-sign"></i><div class="number">RM${bookings.reduce((sum, booking) => sum + parseFloat(booking.amount - booking.amount * 0.05 || 0), 0).toFixed(2)}</div><div class="label">Total Revenue</div></div></div>
+                            <div class="col-md-3"><div class="stats-card"><i class="fas fa-dollar-sign"></i><div class="number">RM${totalRevenueDisplayed}</div><div class="label">Total Revenue</div></div></div>
                         </div>
                         <div class="table-card">
                             <div class="table-responsive">
@@ -4824,9 +4872,10 @@
                     .where("status", "==", "approved").get();
                 bookingsSnapshot.forEach(doc => {
                     const booking = doc.data();
-                    const commission = booking.amount * 0.05;
-                    const netamount = booking.amount - commission;
                     if (booking.amount) {
+                        // ✅ Per-facility commission display
+                        const commission = getCommissionDisplay(booking.amount, booking.facilityId);
+                        const netamount = applyCommissionDisplay(booking.amount, booking.facilityId);
                         totalRevenue += parseFloat(netamount);
                         payments.push({ id: doc.id, ...booking, commission: commission, netamount: netamount,
                             paymentDate: booking.createdAt });
@@ -5594,9 +5643,9 @@
                     const bookingsSnapshot = await db.collection("bookings").where("facilityId", "in", facilityIds).get();
                     bookingsSnapshot.forEach(doc => {
                         const booking = doc.data();
-                        const commission = booking.amount * 0.05;
                         bookings.push({ id: doc.id, ...booking });
-                        if (booking.amount) totalRevenue += (parseFloat(booking.amount) - (commission || 0));
+                        // ✅ Per-facility commission display
+                        if (booking.amount) totalRevenue += applyCommissionDisplay(booking.amount, booking.facilityId);
                         if (booking.time) {
                             const timeSlot = booking.time.split('-')[0];
                             const hour = timeSlot.includes(':') ? timeSlot.split(':')[0] : timeSlot;
@@ -5607,8 +5656,8 @@
                         if (booking.createdAt && booking.createdAt.toDate) {
                             const month = booking.createdAt.toDate().toLocaleString('default', { month: 'short',
                                 year: 'numeric' });
-                            const price = parseFloat(booking.amount) || 0;
-                            monthlyRevenue[month] = (monthlyRevenue[month] || 0) + (price - price * 0.05);
+                            // ✅ Per-facility commission display
+                            monthlyRevenue[month] = (monthlyRevenue[month] || 0) + applyCommissionDisplay(booking.amount, booking.facilityId);
                         }
                         if (booking.facilityName) {
                             if (!facilityPerformance[booking.facilityName]) {
@@ -6909,22 +6958,23 @@
                     const statusDistribution = {};
                     bookingsSnapshot.forEach(doc => {
                         const booking = doc.data();
-                        if (booking.amount) reportsData.totalRevenue += booking.amount - booking.amount * 0.05;
+                        // ✅ Per-facility commission display
+                        if (booking.amount) reportsData.totalRevenue += applyCommissionDisplay(booking.amount, booking.facilityId);
                         if (booking.userId) customerIds.add(booking.userId);
                         if (booking.createdAt && booking.createdAt.toDate) {
                             const month = booking.createdAt.toDate().toLocaleString('default', { month: 'short',
                                 year: 'numeric' });
                             if (!monthlyStats[month]) monthlyStats[month] = { bookings: 0, revenue: 0 };
                             monthlyStats[month].bookings++;
-                            if (booking.amount) monthlyStats[month].revenue += booking.amount - booking.amount *
-                                0.05;
+                            // ✅ Per-facility commission display
+                            if (booking.amount) monthlyStats[month].revenue += applyCommissionDisplay(booking.amount, booking.facilityId);
                         }
                         const facilityName = booking.facilityName || 'Unknown';
                         if (!facilityStats[facilityName]) facilityStats[facilityName] = { bookings: 0,
                             revenue: 0 };
                         facilityStats[facilityName].bookings++;
-                        if (booking.amount) facilityStats[facilityName].revenue += booking.amount - booking.amount *
-                            0.05;
+                        // ✅ Per-facility commission display
+                        if (booking.amount) facilityStats[facilityName].revenue += applyCommissionDisplay(booking.amount, booking.facilityId);
                         const status = booking.status || 'pending';
                         statusDistribution[status] = (statusDistribution[status] || 0) + 1;
                     });
@@ -8046,7 +8096,7 @@
         window.viewPilatesYogaSession = viewPilatesYogaSession;
         window.deletePilatesYogaSession = deletePilatesYogaSession;
 
-        console.log('✅ Sportova Admin Portal loaded with per-court 1-hour time slots');
+        console.log('✅ Sportova Admin Portal loaded with per-facility commission display');
         console.log('🔒 Right-click, inspect, and keyboard shortcuts are disabled for security');
     </script>
 

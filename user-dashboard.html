@@ -2084,6 +2084,23 @@
       return h === 1 ? '1 hour' : `${h} hours`;
     }
 
+    /* ============================================================
+       ✅ FACILITY PRICE HELPERS (per-facility display price)
+       Each facility can waive the platform fee for its bookings.
+       - showPriceWithoutCommission === true  → user pays base price
+       - otherwise (default)                  → user pays base price
+                                                plus a platform service
+                                                fee (5%)
+       The user never sees the term "commission" — they just see
+       one hourly price on the card and one total in the summary.
+       ============================================================ */
+    function getFacilityDisplayPrice(facility) {
+      const base = Number(facility?.price) || 0;
+      if (facility?.showPriceWithoutCommission === true) return base;
+      return base * 1.05;
+    }
+    window.getFacilityDisplayPrice = getFacilityDisplayPrice;
+
     // Expand a stored `time` value into slot strings.
     // "08:00-08:30"    -> ["08:00-08:30"]
     // "08:00 - 10:00"  -> ["08:00-08:30","08:30-09:00","09:00-09:30","09:30-10:00"]
@@ -2141,7 +2158,7 @@
         return;
       }
       const hours   = calculateSlotsDuration(selectedTimeSlots);
-      const hourly  = Number(selectedFacility?.price) || 0;
+      const hourly  = Number(getFacilityDisplayPrice(selectedFacility));
       const fee     = hourly * hours;
       const hint    = selectionAnchor
         ? `<span class="text-muted ms-2 d-inline-block"><i class="fas fa-info-circle me-1"></i>Click another slot to fill the range, or click the same slot to deselect.</span>`
@@ -4316,6 +4333,8 @@
         const promoBadge = facility.promo ? `<div class="promo-badge">${facility.promo}</div>` : '';
         const availabilityStatus = getAvailabilityStatus(facility);
         const statusBadge = `<span class="badge ${availabilityStatus.class} float-end">${availabilityStatus.text}</span>`;
+        // ✅ Display price uses the per-facility helper — hidden platform fee when waived
+        const displayPrice = getFacilityDisplayPrice(facility);
         col.innerHTML = `
           <div class="facility-card card h-100">
             ${promoBadge}
@@ -4331,7 +4350,7 @@
               <div class="mb-2">${amenitiesHtml}</div>
               <div class="mt-auto">
                 <div class="d-flex justify-content-between align-items-center">
-                  <span class="badge bg-primary">RM${facility.price || '0'}/hour</span>
+                  <span class="badge bg-primary">RM${displayPrice.toFixed(2)}/hour</span>
                   <button class="btn btn-sm btn-outline-primary book-facility-btn" data-id="${facility.id}">Book Now</button>
                 </div>
               </div>
@@ -5007,7 +5026,9 @@
 
     function updateBookingSummary() {
       const hours     = calculateSlotsDuration(selectedTimeSlots) || 1;
-      const courtFee  = (Number(selectedFacility?.price) || 0) * hours;
+      // ✅ Hourly rate uses the per-facility helper (includes hidden platform fee when not waived)
+      const hourlyRate = getFacilityDisplayPrice(selectedFacility);
+      const courtFee  = Number((hourlyRate * hours).toFixed(2));
       const coachFee  = Number(selectedCoach?.rate) || 0;
       const snacksFee = (selectedSnacks || []).reduce((t, s) => t + (Number(s?.price) || 0), 0);
       const amenitiesTotal = calculateAmenitiesTotal();
@@ -5271,7 +5292,9 @@
         const timeDisplay   = formatSlotRange(sortedSlots);
         const durationLabel = formatHours(hours);
 
-        const courtFee = (Number(selectedFacility.price) || 0) * hours;
+        // ✅ Hourly rate uses per-facility helper (matches what the user was shown)
+        const hourlyRate = getFacilityDisplayPrice(selectedFacility);
+        const courtFee = Number((hourlyRate * hours).toFixed(2));
         const coachFee = selectedCoach ? Number(selectedCoach.rate) || 0 : 0;
         const snacksFee = selectedSnacks.reduce((t, s) => t + (Number(s.price) || 0), 0);
         const amenitiesFee = selectedAmenities.reduce((t, a) => t + (Number(a.amenityPrice) || 0), 0);

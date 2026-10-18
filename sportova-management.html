@@ -1063,6 +1063,36 @@
         .bg-danger.bg-opacity-10 {
             background-color: rgba(231, 76, 60, 0.1);
         }
+
+        /* ===== NEW: Per-facility commission toggle styles ===== */
+        .facility-commission-cell { min-width: 160px; }
+        .facility-commission-cell .form-check { margin: 0; padding-left: 2.6em; }
+        .facility-commission-cell .form-check-input {
+            cursor: pointer;
+            width: 2.2em;
+            height: 1.15em;
+        }
+        .facility-commission-cell .form-check-input:checked {
+            background-color: var(--success);
+            border-color: var(--success);
+        }
+        .commission-status-label {
+            display: inline-block;
+            font-size: 0.7rem;
+            font-weight: 700;
+            padding: 2px 8px;
+            border-radius: 10px;
+            margin-top: 4px;
+            letter-spacing: 0.3px;
+        }
+        .commission-status-label.without-commission {
+            background: #e8f5e9;
+            color: #27ae60;
+        }
+        .commission-status-label.with-commission {
+            background: #fff3e0;
+            color: #e67e22;
+        }
     </style>
 </head>
 <body>
@@ -1443,6 +1473,8 @@
                                     <th>Location</th>
                                     <th>Price/Hour</th>
                                     <th>Status</th>
+                                    <!-- ✅ NEW: per-facility toggle column -->
+                                    <th>Admins See Price</th>
                                     <th>Actions</th>
                                 </tr>
                             </thead>
@@ -2320,7 +2352,7 @@
                     checkUserRole(user);
                 } else {
                     // Redirect to login page
-                    window.location.href = "login-owner.html";
+                    window.location.href = "login.html";
                 }
             });
 
@@ -2328,7 +2360,7 @@
             $('#logout-btn').click(function(e) {
                 e.preventDefault();
                 auth.signOut().then(() => {
-                    window.location.href = "login-owner.html";
+                    window.location.href = "login.html";
                 });
             });
 
@@ -2460,6 +2492,49 @@
 
             $('#export-facilities').click(function() {
                 exportFacilities();
+            });
+
+            // ============================================================
+            // ✅ NEW: Per-facility commission toggle handler (event delegation)
+            // ============================================================
+            $(document).on('change', '.facility-commission-toggle', async function () {
+                const $toggle = $(this);
+                const facilityId = $toggle.data('facility-id');
+                const enabled = $toggle.is(':checked');
+                const $label = $toggle.closest('.facility-commission-cell').find('.commission-status-label');
+
+                // Optimistic UI update
+                $label
+                    .text(enabled ? 'Without commission' : 'With commission')
+                    .removeClass('with-commission without-commission')
+                    .addClass(enabled ? 'without-commission' : 'with-commission');
+
+                try {
+                    await db.collection('facilities').doc(facilityId).update({
+                        showPriceWithoutCommission: enabled,
+                        updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+                    });
+
+                    const facility = allFacilities.find(f => f.id === facilityId);
+                    if (facility) facility.showPriceWithoutCommission = enabled;
+
+                    const name = facility?.name || 'this facility';
+                    showToast(
+                        enabled
+                            ? `Admins will now see ${name}'s prices WITHOUT the 5% commission.`
+                            : `Admins will now see ${name}'s prices WITH the 5% commission applied.`,
+                        'success'
+                    );
+                } catch (err) {
+                    console.error('Error saving per-facility commission setting:', err);
+                    showToast('Failed to save setting: ' + err.message, 'danger');
+                    // Revert UI
+                    $toggle.prop('checked', !enabled);
+                    $label
+                        .text(!enabled ? 'Without commission' : 'With commission')
+                        .removeClass('with-commission without-commission')
+                        .addClass(!enabled ? 'without-commission' : 'with-commission');
+                }
             });
 
             $('#generate-report').click(function() {
@@ -2688,7 +2763,7 @@
                 bookingsSnap.forEach(doc => {
                     const booking = doc.data();
                     // Only count confirmed bookings for revenue
-                    if (booking.status === 'completed') {
+                    if (booking.status === 'completed' || booking.status === 'approved') {
                         const amount = booking.amount || booking.Amount || booking.price || 0;
                         totalRevenue += amount;
                     }
@@ -2754,7 +2829,7 @@
                     const amount = booking.bookingAmount || booking.totalAmount || 0;
                     
                     const row = bookingsTableBody.insertRow();
-                    const statusClass = booking.status === 'completed' ? 'status-active' : 
+                    const statusClass = booking.status === 'completed' || booking.status === 'approved' ? 'status-active' : 
                                        booking.status === 'pending' ? 'status-pending' : 'status-suspended';
                     
                     row.innerHTML = `
@@ -3245,7 +3320,9 @@
                         maxPlayers: facilityData.maxPlayers,
                         minPlayers: facilityData.minPlayers,
                         promo: facilityData.promo,
-                        slots: facilityData.slots || []
+                        slots: facilityData.slots || [],
+                        // ✅ NEW: per-facility commission display flag
+                        showPriceWithoutCommission: facilityData.showPriceWithoutCommission === true
                     });
                 }
             
@@ -3351,6 +3428,12 @@
                     ? facility.amenities.slice(0, 2).join(', ') + (facility.amenities.length > 2 ? '...' : '')
                     : 'No amenities';
 
+                // ✅ NEW: per-facility commission toggle state
+                const isHidden = facility.showPriceWithoutCommission === true;
+                const toggleChecked = isHidden ? 'checked' : '';
+                const labelText = isHidden ? 'Without commission' : 'With commission';
+                const labelClass = isHidden ? 'without-commission' : 'with-commission';
+
                 const row = `
                     <tr>
                         <td>
@@ -3366,6 +3449,17 @@
                         <td>${facility.location || 'N/A'}</td>
                         <td><strong>RM${facility.price || facility.pricePerHour || '0.00'}</strong></td>
                         <td><span class="status ${statusClass}">${statusText}</span></td>
+                        <td class="facility-commission-cell">
+                            <div class="form-check form-switch">
+                                <input class="form-check-input facility-commission-toggle"
+                                       type="checkbox"
+                                       id="commission-toggle-${facility.id}"
+                                       data-facility-id="${facility.id}"
+                                       ${toggleChecked}>
+                                <label class="form-check-label" for="commission-toggle-${facility.id}"></label>
+                            </div>
+                            <span class="commission-status-label ${labelClass}">${labelText}</span>
+                        </td>
                         <td>
                             <div class="action-buttons">
                                 <div class="action-btn view-btn" title="View Details" onclick="viewFacility('${facility.id}')">
@@ -3578,7 +3672,7 @@
                 
                 monthBookingsSnap.forEach(doc => {
                     const booking = doc.data();
-                    if (booking.status === 'completed') {
+                    if (booking.status === 'completed' || booking.status === 'approved') {
                         const amount = booking.amount || booking.price || 0;
                         monthlyRevenue += amount;
                         confirmedBookings++;
@@ -3589,6 +3683,11 @@
                 const amenitiesDisplay = Array.isArray(facility.amenities) 
                     ? facility.amenities.join(', ')
                     : facility.amenities || 'None listed';
+            
+                // ✅ NEW: commission mode pill
+                const commissionModeHtml = facility.showPriceWithoutCommission
+                    ? '<span class="status status-active"><i class="fas fa-eye-slash me-1"></i>Admins see price WITHOUT commission</span>'
+                    : '<span class="status status-suspended"><i class="fas fa-eye me-1"></i>Admins see price WITH commission</span>';
             
                 // Prepare details HTML
                 const detailsHTML = `
@@ -3601,6 +3700,7 @@
                             <span class="status ${facility.status?.toLowerCase() === 'active' ? 'status-active' : 'status-inactive'}">
                                 ${facility.status || 'Active'}
                             </span>
+                            <div class="mt-2">${commissionModeHtml}</div>
                         </div>
                     </div>
                 
@@ -3754,7 +3854,7 @@
                     let statusClass = 'status-suspended'; // default for pending/unknown
                     let statusText = booking.status || 'pending';
 
-                    if (booking.status === 'confirmed') {
+                    if (booking.status === 'confirmed' || booking.status === 'completed' || booking.status === 'approved') {
                         statusClass = 'status-active';
                     } else if (booking.status === 'cancelled') {
                         statusClass = 'status-inactive';
@@ -3795,7 +3895,7 @@
             let csvContent = "data:text/csv;charset=utf-8,";
 
             // Add headers
-            csvContent += "Name,Type,Description,Location,Price/Hour,Capacity,Opening Hours,Closing Hours,Status,Today's Bookings,Total Revenue,Phone,Amenities\n";
+            csvContent += "Name,Type,Description,Location,Price/Hour,Capacity,Opening Hours,Closing Hours,Status,Commission Display,Today's Bookings,Total Revenue,Phone,Amenities\n";
 
             // Add facility data
             filteredFacilities.forEach(facility => {
@@ -3810,8 +3910,9 @@
                 };
 
                 const typeName = typeNames[facility.type] || facility.type || 'Unknown';
+                const commissionDisplay = facility.showPriceWithoutCommission ? 'Without Commission' : 'With Commission';
 
-                csvContent += `"${facility.name || ''}","${typeName}","${facility.description || ''}","${facility.location || ''}",${facility.pricePerHour || 0},${facility.capacity || 0},"${facility.openingTime || ''}","${facility.closingTime || ''}","${facility.status || ''}",${facility.todayBookings || 0},${facility.totalRevenue || 0},"${facility.phone || ''}","${facility.amenities || ''}"\n`;
+                csvContent += `"${facility.name || ''}","${typeName}","${facility.description || ''}","${facility.location || ''}",${facility.pricePerHour || 0},${facility.capacity || 0},"${facility.openingTime || ''}","${facility.closingTime || ''}","${facility.status || ''}","${commissionDisplay}",${facility.todayBookings || 0},${facility.totalRevenue || 0},"${facility.phone || ''}","${facility.amenities || ''}"\n`;
             });
 
             // Create download link
@@ -4245,7 +4346,7 @@
                     minute: '2-digit'
                 });
 
-                const statusClass = transaction.status === 'completed' ? 'status-active' : 
+                const statusClass = transaction.status === 'completed' || transaction.status === 'approved' ? 'status-active' : 
                                   transaction.status === 'pending' ? 'status-suspended' : 'status-inactive';
 
                 const row = `
@@ -4375,7 +4476,7 @@
                             </tr>
                             <tr>
                                 <td><strong>Status:</strong></td>
-                                <td class="text-end"><span class="status ${transaction.status === 'completed' ? 'status-active' : 'status-suspended'}">${transaction.status}</span></td>
+                                <td class="text-end"><span class="status ${transaction.status === 'completed' || transaction.status === 'approved' ? 'status-active' : 'status-suspended'}">${transaction.status}</span></td>
                             </tr>
                         </table>
                     </div>
@@ -4498,7 +4599,7 @@
 
             pageData.forEach(b => {
                 const statusClass =
-                    b.status === "completed" ? "status-active" :
+                    b.status === "completed" || b.status === "approved" ? "status-active" :
                     b.status === "pending" ? "status-suspended" :
                     "status-inactive";
 
@@ -4575,7 +4676,7 @@
                             <p class="text-muted">ID: #${booking.id.substring(0, 12)}</p>
                         </div>
                         <div class="col-md-4 text-end">
-                            <span class="status ${booking.status === 'completed' ? 'status-active' : 'status-suspended'}">
+                            <span class="status ${booking.status === 'completed' || booking.status === 'approved' ? 'status-active' : 'status-suspended'}">
                                 ${booking.status || 'pending'}
                             </span>
                         </div>
