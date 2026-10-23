@@ -1093,6 +1093,32 @@
             background: #fff3e0;
             color: #e67e22;
         }
+        /* Modern bookings and revenue views */
+        :root { --primary:#4658d8; --secondary:#3444b8; --success:#18a779; --warning:#efa93a; --danger:#df5b67; }
+        body { background:#f4f6fb; color:#202b3e; font-family:Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif; }
+        #bookings-content .filter-bar,#financial-content .filter-bar { display:flex; align-items:center; flex-wrap:wrap; gap:12px; padding:16px; margin-bottom:18px; border:1px solid #e8edf4; border-radius:15px; background:#fff; box-shadow:0 5px 18px rgba(31,45,75,.04); }
+        #bookings-content .search-box { flex:1 1 300px; min-width:220px; position:relative; }
+        #bookings-content .search-box input { width:100%; min-height:42px; padding:9px 13px 9px 40px; border:1px solid #dfe5ef; border-radius:10px; }
+        #bookings-content .search-box i { position:absolute; top:50%; left:14px; transform:translateY(-50%); color:#7a879c; }
+        #bookings-content .filter-select,#financial-content select,#financial-content input { min-height:42px; border:1px solid #dfe5ef; border-radius:10px; padding:8px 12px; background:#fff; }
+        #bookings-content .table-container,#financial-content .table-container { padding:0; overflow:hidden; border:1px solid #e8edf4; border-radius:16px; background:#fff; box-shadow:0 6px 22px rgba(31,45,75,.045); }
+        #bookings-content .table-header,#financial-content .table-header { display:flex; justify-content:space-between; align-items:center; gap:14px; padding:18px 22px; border-bottom:1px solid #edf0f5; background:#fff; }
+        #bookings-content .table-title,#financial-content .table-title { color:#1e2a40; font-size:1.08rem; font-weight:700; }
+        #all-bookings-table,#financial-table,#bookings-table { width:100%; margin:0; border-collapse:separate; border-spacing:0; }
+        #all-bookings-table thead th,#financial-table thead th,#bookings-table thead th { padding:13px 14px; color:#748098; background:#f8f9fc; font-size:.73rem; font-weight:700; text-transform:uppercase; letter-spacing:.045em; border-bottom:1px solid #e8edf4; white-space:nowrap; }
+        #all-bookings-table tbody td,#financial-table tbody td,#bookings-table tbody td { padding:13px 14px; color:#34435b; border-bottom:1px solid #f0f2f6; vertical-align:middle; }
+        #all-bookings-table tbody tr:hover,#financial-table tbody tr:hover,#bookings-table tbody tr:hover { background:#f9faff; }
+        .booking-id-chip { display:inline-flex; align-items:center; border:1px solid #e3e7f0; border-radius:7px; padding:4px 8px; background:#f8f9fc; color:#5d6981; font-size:.78rem; font-weight:650; }
+        #bookings-content .pagination-container { padding:14px 20px; border-top:1px solid #edf0f5; }
+        #bookings-content .pagination .page-link { margin:0 3px; border:0; border-radius:8px; color:#59677e; }
+        #bookings-content .pagination .active .page-link { background:#4658d8; color:#fff; }
+        #financial-content .user-stat-card,#financial-content .card { border:1px solid #e8edf4; border-radius:15px; box-shadow:0 5px 18px rgba(31,45,75,.04); }
+        #financial-content .user-stat-value { color:#273758; letter-spacing:-.035em; }
+        #financial-content .card-header { background:#fff; border-bottom:1px solid #edf0f5; }
+        #bookings-content .btn,#financial-content .btn { border-radius:9px; font-weight:600; }
+        #bookings-content .btn-success,#financial-content .btn-success { background:#4658d8; border-color:#4658d8; }
+        .status { border-radius:999px; padding:5px 10px; font-size:.76rem; font-weight:650; }
+        @media(max-width:768px) { #bookings-content .table-header { align-items:flex-start; flex-direction:column; } #all-bookings-table,#financial-table,#bookings-table { min-width:850px; } #bookings-content .table-container,#financial-content .table-container { overflow-x:auto; } }
     </style>
 </head>
 <body>
@@ -1260,7 +1286,7 @@
                                     <th>User</th>
                                     <th>Facility</th>
                                     <th>Time</th>
-                                    <th>Amount</th>
+                                    <th>Amount paid</th>
                                     <th>Status</th>
                                     <th>Actions</th>
                                 </tr>
@@ -1471,10 +1497,9 @@
                                     <th>Facility</th>
                                     <th>Type</th>
                                     <th>Location</th>
-                                    <th>Price/Hour</th>
+                                    <th>Hourly rate / customer price</th>
                                     <th>Status</th>
-                                    <!-- ✅ NEW: per-facility toggle column -->
-                                    <th>Admins See Price</th>
+                                    <th>Admin finance view</th>
                                     <th>Actions</th>
                                 </tr>
                             </thead>
@@ -1622,7 +1647,7 @@
                                     <th>Transaction ID</th>
                                     <th>User</th>
                                     <th>Facility</th>
-                                    <th>Amount</th>
+                                    <th>Amount paid</th>
                                     <th>Commission</th>
                                     <th>Status</th>
                                     <th>Actions</th>
@@ -2234,6 +2259,7 @@
                                 <div class="form-group">
                                     <label class="form-label">Price per Hour (RM) *</label>
                                     <input type="number" class="form-control" id="facility-price-input" min="0" step="0.01" required>
+                                    <small class="form-text text-muted">Customers see the hourly rate plus a 5% fee. For example, RM50 becomes RM52.50 per hour.</small>
                                 </div>
                             </div>
                             <div class="col-md-6">
@@ -2505,7 +2531,7 @@
 
                 // Optimistic UI update
                 $label
-                    .text(enabled ? 'Without commission' : 'With commission')
+                    .text(enabled ? 'Hours only' : 'Amounts shown')
                     .removeClass('with-commission without-commission')
                     .addClass(enabled ? 'without-commission' : 'with-commission');
 
@@ -2521,8 +2547,8 @@
                     const name = facility?.name || 'this facility';
                     showToast(
                         enabled
-                            ? `Admins will now see ${name}'s prices WITHOUT the 5% commission.`
-                            : `Admins will now see ${name}'s prices WITH the 5% commission applied.`,
+                            ? `The admin portal will show booked hours for ${name}. Customer prices still include the 5% fee.`
+                            : `The admin portal will show booking amounts for ${name}. Customer prices still include the 5% fee.`,
                         'success'
                     );
                 } catch (err) {
@@ -2531,7 +2557,7 @@
                     // Revert UI
                     $toggle.prop('checked', !enabled);
                     $label
-                        .text(!enabled ? 'Without commission' : 'With commission')
+                        .text(!enabled ? 'Hours only' : 'Amounts shown')
                         .removeClass('with-commission without-commission')
                         .addClass(!enabled ? 'without-commission' : 'with-commission');
                 }
@@ -2754,25 +2780,23 @@
                 // Load ALL facilities (owner has access to all)
                 const facilitiesSnap = await db.collection("facilities").get();
                 document.getElementById("facilityCount").innerText = facilitiesSnap.size;
+                const commissionWaivedIds = new Set(facilitiesSnap.docs.filter(d => d.data().showPriceWithoutCommission === true).map(d => d.id));
 
                 // Load ALL bookings to calculate total revenue
                 const bookingsSnap = await db.collection("bookings").get();
                 let totalRevenue = 0;
-                
-                // Sum up all booking amounts
+                let commission = 0;
                 bookingsSnap.forEach(doc => {
                     const booking = doc.data();
-                    // Only count confirmed bookings for revenue
-                    if (booking.status === 'completed' || booking.status === 'approved') {
-                        const amount = booking.amount || booking.Amount || booking.price || 0;
+                    if (['completed','approved','confirmed'].includes(String(booking.status||'').toLowerCase())) {
+                        const amount = managementBookingAmount(booking);
                         totalRevenue += amount;
+                        if (!commissionWaivedIds.has(booking.facilityId)) commission += amount * 0.05;
                     }
                 });
 
                 document.getElementById("totalRevenue").innerText = `RM${totalRevenue.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
-                
-                // Calculate commission as 5% of total revenue
-                const commission = totalRevenue * 0.05;
+
                 document.getElementById("commissionEarned").innerText = `RM${commission.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
 
                 // Load ALL users (owner has access to all user data)
@@ -2787,78 +2811,51 @@
             }
         }
 
+        function parseManagementDate(value) {
+            if (!value) return null;
+            if (value instanceof Date) return Number.isNaN(value.getTime()) ? null : value;
+            if (typeof value.toDate === 'function') { const date=value.toDate(); return Number.isNaN(date.getTime())?null:date; }
+            if (typeof value === 'object' && Number.isFinite(value.seconds)) return new Date(value.seconds * 1000);
+            if (typeof value === 'number') return new Date(value < 1000000000000 ? value * 1000 : value);
+            if (typeof value === 'string') {
+                const day=value.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+                if(day)return new Date(Number(day[1]),Number(day[2])-1,Number(day[3]));
+                const slash=value.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+                if(slash)return new Date(Number(slash[3]),Number(slash[1])-1,Number(slash[2]));
+            }
+            const date=new Date(value);return Number.isNaN(date.getTime())?null:date;
+        }
+        function managementBookingDate(booking) { return parseManagementDate(booking?.date) || parseManagementDate(booking?.timestamp) || parseManagementDate(booking?.createdAt); }
+        function managementDateKey(value) { const date=parseManagementDate(value);return date?`${date.getFullYear()}-${String(date.getMonth()+1).padStart(2,'0')}-${String(date.getDate()).padStart(2,'0')}`:''; }
+        function managementBookingAmount(booking) { return Number(booking?.amount ?? booking?.bookingAmount ?? booking?.totalAmount ?? booking?.Amount ?? booking?.price ?? 0) || 0; }
+        function formatManagementDate(value) { const date=parseManagementDate(value);return date?date.toLocaleDateString('en-MY',{day:'numeric',month:'short',year:'numeric'}):'Date unavailable'; }
+
         async function loadRecentBookings() {
+            const tbody=document.querySelector('#bookings-table tbody');
+            if(!tbody)return;
             try {
-                const bookingsTableBody = document.getElementById("bookings-table").getElementsByTagName('tbody')[0];
-                bookingsTableBody.innerHTML = '';
-
-                // Get today's date in YYYY-MM-DD format
-                const today = new Date();
-                const todayString = today.toISOString().split('T')[0];
-
-                // Fetch ALL bookings for today (owner has access to all)
-                const bookingsSnap = await db.collection("bookings")
-                    .where("date", "==", todayString)
-                    .orderBy("timestamp", "desc")
-                    .limit(10)
-                    .get();
-
-                if (bookingsSnap.empty) {
-                    bookingsTableBody.innerHTML = '<tr><td colspan="7" class="text-center py-4">No bookings for today</td></tr>';
-                    return;
-                }
-
-                // Get ALL user details (owner has access to all users)
-                const usersSnap = await db.collection("users").get();
-                const usersMap = {};
-                usersSnap.forEach(doc => {
-                    usersMap[doc.id] = doc.data();
-                });
-
-                // Get ALL facility details (owner has access to all facilities)
-                const facilitiesSnap = await db.collection("facilities").get();
-                const facilitiesMap = {};
-                facilitiesSnap.forEach(doc => {
-                    facilitiesMap[doc.id] = doc.data();
-                });
-
-                bookingsSnap.forEach(doc => {
-                    const booking = doc.data();
-                    const user = usersMap[booking.userId] || { name: 'Unknown User', email: 'N/A' };
-                    const facility = facilitiesMap[booking.facilityId] || { name: 'Unknown Facility' };
-                    const amount = booking.bookingAmount || booking.totalAmount || 0;
-                    
-                    const row = bookingsTableBody.insertRow();
-                    const statusClass = booking.status === 'completed' || booking.status === 'approved' ? 'status-active' : 
-                                       booking.status === 'pending' ? 'status-pending' : 'status-suspended';
-                    
-                    row.innerHTML = `
-                        <td>#${doc.id.substring(0, 8)}</td>
-                        <td>
-                            <div>${user.name || 'Unknown User'}</div>
-                            <small class="text-muted">${user.email || 'N/A'}</small>
-                        </td>
-                        <td>${facility.name}</td>
-                        <td>${booking.slot || 'N/A'}</td>
-                        <td>$${amount.toFixed(2)}</td>
-                        <td><span class="status ${statusClass}">${booking.status || 'pending'}</span></td>
-                        <td>
-                            <div class="action-buttons">
-                                <div class="action-btn view-btn" title="View Details">
-                                    <i class="fas fa-eye"></i>
-                                </div>
-                                <div class="action-btn edit-btn" title="Edit Booking">
-                                    <i class="fas fa-edit"></i>
-                                </div>
-                            </div>
-                        </td>
-                    `;
-                });
-
-            } catch (error) {
-                console.error("Error loading recent bookings:", error);
-                const bookingsTableBody = document.getElementById("bookings-table").getElementsByTagName('tbody')[0];
-                bookingsTableBody.innerHTML = '<tr><td colspan="7" class="text-center py-4">Error loading bookings</td></tr>';
+                tbody.innerHTML='<tr><td colspan="7" class="text-center py-4"><span class="spinner-border spinner-border-sm me-2"></span>Loading today’s bookings…</td></tr>';
+                const todayKey=managementDateKey(new Date());
+                const [bookingsSnap,usersSnap,facilitiesSnap]=await Promise.all([
+                    db.collection('bookings').get(),db.collection('users').get(),db.collection('facilities').get()
+                ]);
+                const usersMap=Object.fromEntries(usersSnap.docs.map(doc=>[doc.id,doc.data()]));
+                const facilitiesMap=Object.fromEntries(facilitiesSnap.docs.map(doc=>[doc.id,doc.data()]));
+                const bookings=bookingsSnap.docs.map(doc=>({id:doc.id,...doc.data()}))
+                    .filter(booking=>managementDateKey(managementBookingDate(booking))===todayKey)
+                    .sort((a,b)=>(parseManagementDate(b.createdAt||b.timestamp)||managementBookingDate(b)||0)-(parseManagementDate(a.createdAt||a.timestamp)||managementBookingDate(a)||0))
+                    .slice(0,10);
+                if(!bookings.length){tbody.innerHTML='<tr><td colspan="7" class="text-center py-4 text-muted">No bookings for today</td></tr>';return;}
+                tbody.innerHTML=bookings.map(booking=>{
+                    const user=usersMap[booking.userId]||{},facility=facilitiesMap[booking.facilityId]||{};
+                    const amount=managementBookingAmount(booking),status=String(booking.status||'pending');
+                    const statusClass=['completed','approved','confirmed'].includes(status.toLowerCase())?'status-active':status.toLowerCase()==='pending'?'status-pending':'status-suspended';
+                    const time=booking.time||booking.slot||booking.timeSlot||'N/A';
+                    return `<tr><td><span class="booking-id-chip">#${booking.id.slice(0,8)}</span></td><td><div class="fw-semibold">${user.name||booking.userName||'Unknown User'}</div><small class="text-muted">${user.email||booking.userEmail||'N/A'}</small></td><td><div class="fw-semibold">${facility.name||booking.facilityName||'Unknown Facility'}</div><small class="text-muted">${facility.sportType||facility.type||''}</small></td><td>${time}</td><td><strong>RM${amount.toFixed(2)}</strong></td><td><span class="status ${statusClass}">${status}</span></td><td><button class="btn btn-sm btn-light border" title="View booking" onclick="viewBookingDetails('${booking.id}')"><i class="fas fa-arrow-up-right-from-square"></i></button></td></tr>`;
+                }).join('');
+            } catch(error) {
+                console.error('Error loading recent bookings:',error);
+                tbody.innerHTML='<tr><td colspan="7" class="text-center py-4 text-danger">Could not load today’s bookings. Refresh to try again.</td></tr>';
             }
         }
 
@@ -3268,30 +3265,26 @@
                 console.log(`Found ${facilitiesSnap.size} facilities in Firestore`);
 
                 // Get today's date for booking counts
-                const today = new Date();
-                const todayString = today.toISOString().split('T')[0];
+                const todayKey = managementDateKey(new Date());
 
                 for (const doc of facilitiesSnap.docs) {
                     const facilityData = doc.data();
                     console.log(`Facility ${doc.id}:`, facilityData);
 
-                    // Get today's bookings for this facility
-                    const todayBookingsSnap = await db.collection("bookings")
-                        .where("facilityId", "==", doc.id)
-                        .where("date", "==", todayString)
-                        .get();
-
-                    // Get total revenue for this facility (only confirmed bookings)
+                    // Read once, then normalize date fields because older bookings may store date as a Firestore Timestamp.
                     const allBookingsSnap = await db.collection("bookings")
-                        .where("facilityId", "==", doc.id)
-                        .where("status", "==", "completed")  // Only count confirmed bookings
-                        .get();
+                        .where("facilityId", "==", doc.id).get();
 
                     let totalRevenue = 0;
+                    let totalBookedHours = 0;
+                    let todayBookings = 0;
                     allBookingsSnap.forEach(bookingDoc => {
                         const booking = bookingDoc.data();
-                        const amount = booking.amount || booking.price || 0;
-                        totalRevenue += amount;
+                        if (managementDateKey(managementBookingDate(booking)) === todayKey) todayBookings++;
+                        if (!['completed', 'approved', 'confirmed'].includes(String(booking.status || '').toLowerCase())) return;
+                        totalRevenue += managementBookingAmount(booking);
+                        const durationMatch = String(booking.duration || '').match(/[0-9]+(?:\.[0-9]+)?/);
+                        totalBookedHours += Number(booking.durationHours) || (Array.isArray(booking.slots) ? booking.slots.length * 0.5 : Number(durationMatch?.[0]) || 1);
                     });
 
                     // Map your data structure to our expected format
@@ -3312,8 +3305,9 @@
                         createdAt: facilityData.createdAt,
                         updatedAt: facilityData.updatedAt,
                         ownerId: facilityData.userId,  // Changed to userId
-                        todayBookings: todayBookingsSnap.size,
-                        totalRevenue: totalRevenue,
+                        todayBookings,
+                        totalRevenue,
+                        totalBookedHours,
                         // Additional fields from your data
                         imageUrl: facilityData.imageUrl,
                         maxBookings: facilityData.maxBookings,
@@ -3322,7 +3316,9 @@
                         promo: facilityData.promo,
                         slots: facilityData.slots || [],
                         // ✅ NEW: per-facility commission display flag
-                        showPriceWithoutCommission: facilityData.showPriceWithoutCommission === true
+                        showPriceWithoutCommission: facilityData.showPriceWithoutCommission === true,
+                        pricingBands: facilityData.pricingBands || [],
+                        courts: facilityData.courts || []
                     });
                 }
             
@@ -3381,6 +3377,24 @@
             displayFacilities();
         }
 
+        function formatManagementFacilityRates(facility) {
+            const courtRates = (facility.courts || []).flatMap(court =>
+                (Array.isArray(court?.pricingBands) ? court.pricingBands : []).map(band => ({
+                    ...band, courtName: court?.name || court?.courtName || 'Court'
+                }))
+            );
+            const rates = courtRates.length ? courtRates : (Array.isArray(facility.pricingBands) && facility.pricingBands.length
+                ? facility.pricingBands
+                : [{ start: '', end: '', rate: Number(facility.price ?? facility.pricePerHour) || 0 }]);
+            return rates.map(rate => {
+                const base = Number(rate.rate) || 0;
+                const customer = base * 1.05;
+                const period = rate.start && rate.end ? `${rate.start}–${rate.end}` : 'Hourly rate';
+                const court = rate.courtName ? `<span class="text-muted">${rate.courtName} · </span>` : '';
+                return `<div class="small mb-2">${court}<span>${period}</span><div><strong>RM${base.toFixed(2)}/hour</strong><span class="text-muted ms-1">set rate</span></div><div class="text-primary">Customer pays RM${customer.toFixed(2)}/hour</div></div>`;
+            }).join('');
+        }
+
         function displayFacilities() {
             const tableBody = $('#facilities-table tbody');
             tableBody.empty();
@@ -3431,7 +3445,7 @@
                 // ✅ NEW: per-facility commission toggle state
                 const isHidden = facility.showPriceWithoutCommission === true;
                 const toggleChecked = isHidden ? 'checked' : '';
-                const labelText = isHidden ? 'Without commission' : 'With commission';
+                const labelText = isHidden ? 'Hours only' : 'Amounts shown';
                 const labelClass = isHidden ? 'without-commission' : 'with-commission';
 
                 const row = `
@@ -3447,7 +3461,7 @@
                         </td>
                         <td><span class="role-badge role-facility-owner">${typeName}</span></td>
                         <td>${facility.location || 'N/A'}</td>
-                        <td><strong>RM${facility.price || facility.pricePerHour || '0.00'}</strong></td>
+                        <td>${formatManagementFacilityRates(facility)}</td>
                         <td><span class="status ${statusClass}">${statusText}</span></td>
                         <td class="facility-commission-cell">
                             <div class="form-check form-switch">
@@ -3458,7 +3472,7 @@
                                        ${toggleChecked}>
                                 <label class="form-check-label" for="commission-toggle-${facility.id}"></label>
                             </div>
-                            <span class="commission-status-label ${labelClass}">${labelText}</span>
+                            <span class="commission-status-label ${labelClass}" title="Controls whether the admin portal shows booked hours or booking amounts">${labelText}</span>
                         </td>
                         <td>
                             <div class="action-buttons">
@@ -3656,25 +3670,19 @@
                 const firstDayOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
                 const lastDayOfMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0);
                 
-                const firstDayStr = firstDayOfMonth.toISOString().split('T')[0];
-                const lastDayStr = lastDayOfMonth.toISOString().split('T')[0];
-            
-                // Get bookings for this month
-                const monthBookingsSnap = await db.collection("bookings")
-                    .where("facilityId", "==", facilityId)
-                    .where("date", ">=", firstDayStr)
-                    .where("date", "<=", lastDayStr)
-                    .get();
+                const monthBookingsSnap = await db.collection('bookings').where('facilityId','==',facilityId).get();
             
                 // Calculate monthly revenue (only confirmed bookings)
                 let monthlyRevenue = 0;
+                let monthlyBookedHours = 0;
                 let confirmedBookings = 0;
                 
                 monthBookingsSnap.forEach(doc => {
                     const booking = doc.data();
-                    if (booking.status === 'completed' || booking.status === 'approved') {
-                        const amount = booking.amount || booking.price || 0;
-                        monthlyRevenue += amount;
+                    const bookingDate=managementBookingDate(booking);
+                    if (bookingDate && bookingDate >= firstDayOfMonth && bookingDate <= lastDayOfMonth && ['completed','approved','confirmed'].includes(String(booking.status||'').toLowerCase())) {
+                        monthlyRevenue += managementBookingAmount(booking);
+                        monthlyBookedHours += Number(booking.durationHours) || (Array.isArray(booking.slots) ? booking.slots.length * 0.5 : 1);
                         confirmedBookings++;
                     }
                 });
@@ -3686,8 +3694,8 @@
             
                 // ✅ NEW: commission mode pill
                 const commissionModeHtml = facility.showPriceWithoutCommission
-                    ? '<span class="status status-active"><i class="fas fa-eye-slash me-1"></i>Admins see price WITHOUT commission</span>'
-                    : '<span class="status status-suspended"><i class="fas fa-eye me-1"></i>Admins see price WITH commission</span>';
+                    ? '<span class="status status-active"><i class="fas fa-clock me-1"></i>Admin portal: hours only</span>'
+                    : '<span class="status status-suspended"><i class="fas fa-receipt me-1"></i>Admin portal: amounts shown</span>';
             
                 // Prepare details HTML
                 const detailsHTML = `
@@ -3710,11 +3718,12 @@
                         </div>
                     </div>
                 
+                    <div class="mb-4"><h6>Hourly pricing</h6><p class="small text-muted">Rates below are the configured facility rates. Customer prices include the additional 5% fee regardless of the admin finance setting.</p>${formatManagementFacilityRates(facility)}</div>
                     <div class="row mb-4">
                         <div class="col-md-6">
                             <h6>Facility Information</h6>
                             <p><strong>Capacity:</strong> ${facility.capacity || 'Not specified'} persons</p>
-                            <p><strong>Price per Hour:</strong> RM${facility.price?.toFixed(2) || facility.pricePerHour?.toFixed(2) || '0.00'}</p>
+                            <p><strong>Configured base rate:</strong> RM${(Number(facility.price ?? facility.pricePerHour) || 0).toFixed(2)}/hour</p>
                             <p><strong>Min Players:</strong> ${facility.minPlayers || 'Not specified'}</p>
                             <p><strong>Max Players:</strong> ${facility.maxPlayers || 'Not specified'}</p>
                         </div>
@@ -3928,173 +3937,62 @@
         // Financial Management Functions
         async function loadFinancialData() {
             try {
-                console.log("Loading financial data...");
-
-                // Show loading state
-                $('#financial-table tbody').html('<tr><td colspan="8" class="text-center py-4"><div class="spinner-border spinner-border-sm"></div> Loading transactions...</td></tr>');
-
-                // Get selected period
-                const period = $('#report-period').val();
-                let startDate, endDate;
-
-                const today = new Date();
-                today.setHours(0, 0, 0, 0);
-
-                switch(period) {
-                    case 'today':
-                        startDate = new Date(today);
-                        endDate = new Date(today);
-                        endDate.setHours(23, 59, 59, 999);
-                        break;
-                    case 'week':
-                        startDate = new Date(today);
-                        startDate.setDate(today.getDate() - today.getDay());
-                        endDate = new Date(today);
-                        endDate.setDate(today.getDate() + (6 - today.getDay()));
-                        endDate.setHours(23, 59, 59, 999);
-                        break;
-                    case 'month':
-                        startDate = new Date(today.getFullYear(), today.getMonth(), 1);
-                        endDate = new Date(today.getFullYear(), today.getMonth() + 1, 0);
-                        endDate.setHours(23, 59, 59, 999);
-                        break;
-                    case 'quarter':
-                        const quarter = Math.floor(today.getMonth() / 3);
-                        startDate = new Date(today.getFullYear(), quarter * 3, 1);
-                        endDate = new Date(today.getFullYear(), (quarter + 1) * 3, 0);
-                        endDate.setHours(23, 59, 59, 999);
-                        break;
-                    case 'year':
-                        startDate = new Date(today.getFullYear(), 0, 1);
-                        endDate = new Date(today.getFullYear(), 11, 31);
-                        endDate.setHours(23, 59, 59, 999);
-                        break;
-                    case 'custom':
-                        const fromDate = $('#date-from').val();
-                        const toDate = $('#date-to').val();
-                        if (!fromDate || !toDate) {
-                            alert('Please select both start and end dates');
-                            return;
-                        }
-                        startDate = new Date(fromDate);
-                        endDate = new Date(toDate);
-                        endDate.setHours(23, 59, 59, 999);
-                        break;
+                $('#financial-table tbody').html('<tr><td colspan="8" class="text-center py-4"><span class="spinner-border spinner-border-sm me-2"></span>Loading transactions…</td></tr>');
+                const period=$('#report-period').val();
+                const today=new Date();today.setHours(0,0,0,0);
+                let startDate,endDate;
+                switch(period){
+                    case 'today': startDate=new Date(today);endDate=new Date(today);endDate.setHours(23,59,59,999);break;
+                    case 'week': startDate=new Date(today);startDate.setDate(today.getDate()-today.getDay());endDate=new Date(startDate);endDate.setDate(startDate.getDate()+6);endDate.setHours(23,59,59,999);break;
+                    case 'month': startDate=new Date(today.getFullYear(),today.getMonth(),1);endDate=new Date(today.getFullYear(),today.getMonth()+1,0,23,59,59,999);break;
+                    case 'quarter': { const q=Math.floor(today.getMonth()/3);startDate=new Date(today.getFullYear(),q*3,1);endDate=new Date(today.getFullYear(),q*3+3,0,23,59,59,999);break; }
+                    case 'year': startDate=new Date(today.getFullYear(),0,1);endDate=new Date(today.getFullYear(),11,31,23,59,59,999);break;
+                    case 'custom': {
+                        const from=$('#date-from').val(),to=$('#date-to').val();
+                        if(!from||!to){showToast('Select both start and end dates.','warning');return;}
+                        startDate=parseManagementDate(from);endDate=parseManagementDate(to);
+                        if(!startDate||!endDate){showToast('The selected date range is invalid.','warning');return;}
+                        startDate.setHours(0,0,0,0);endDate.setHours(23,59,59,999);break;
+                    }
+                    default: startDate=new Date(today.getFullYear(),today.getMonth(),1);endDate=new Date(today.getFullYear(),today.getMonth()+1,0,23,59,59,999);
                 }
-
-                console.log(`Loading transactions from ${startDate.toLocaleDateString()} to ${endDate.toLocaleDateString()}`);
-
-                // Load all bookings for the period
-                const bookingsSnap = await db.collection("bookings")
-                    .where("timestamp", ">=", startDate)
-                    .where("timestamp", "<=", endDate)
-                    .orderBy("timestamp", "desc")
-                    .get();
-
-                allTransactions = [];
-                let totalRevenue = 0;
-                let totalCommission = 0;
-                let monthlyRevenue = 0;
-
-                // Get current month for monthly calculation
-                const currentMonthStart = new Date(today.getFullYear(), today.getMonth(), 1);
-                const currentMonthEnd = new Date(today.getFullYear(), today.getMonth() + 1, 0);
-                currentMonthEnd.setHours(23, 59, 59, 999);
-
-                // Group data for charts
-                const dailyRevenue = {};
-                const facilityTypeRevenue = {};
-
-                for (const doc of bookingsSnap.docs) {
-                    const booking = doc.data();
-                    const bookingDate = booking.timestamp ? new Date(booking.timestamp.seconds * 1000) : new Date();
-
-                    // Get user details
-                    let userName = 'Unknown User';
-                    let userEmail = 'N/A';
-
-                    try {
-                        if (booking.userId) {
-                            const userDoc = await db.collection("users").doc(booking.userId).get();
-                            if (userDoc.exists) {
-                                const userData = userDoc.data();
-                                userName = userData.name || userData.email || 'Unknown User';
-                                userEmail = userData.email || 'N/A';
-                            }
-                        }
-                    } catch (error) {
-                        console.error("Error fetching user:", error);
-                    }
-
-                    // Get facility details
-                    let facilityName = 'Unknown Facility';
-                    let facilityType = 'Unknown';
-
-                    try {
-                        if (booking.facilityId) {
-                            const facilityDoc = await db.collection("facilities").doc(booking.facilityId).get();
-                            if (facilityDoc.exists) {
-                                const facilityData = facilityDoc.data();
-                                facilityName = facilityData.name || 'Unknown Facility';
-                                facilityType = facilityData.sportType || facilityData.type || 'Unknown';
-                            }
-                        }
-                    } catch (error) {
-                        console.error("Error fetching facility:", error);
-                    }
-
-                    const amount = booking.amount || booking.price || 0;
-                    const commission = amount * 0.05; // 5% commission
-
-                    // Add to totals
-                    totalRevenue += amount;
-                    totalCommission += commission;
-
-                    // Check if booking is in current month
-                    if (bookingDate >= currentMonthStart && bookingDate <= currentMonthEnd) {
-                        monthlyRevenue += amount;
-                    }
-
-                    // Add to daily revenue for chart
-                    const dateKey = bookingDate.toISOString().split('T')[0];
-                    dailyRevenue[dateKey] = (dailyRevenue[dateKey] || 0) + amount;
-
-                    // Add to facility type revenue
-                    facilityTypeRevenue[facilityType] = (facilityTypeRevenue[facilityType] || 0) + amount;
-
-                    allTransactions.push({
-                        id: doc.id,
-                        date: bookingDate,
-                        userName,
-                        userEmail,
-                        facilityName,
-                        facilityType,
-                        amount,
-                        commission,
-                        status: booking.status || 'pending',
-                        bookingData: booking
-                    });
-                }
-
-                // Update statistics
-                updateFinancialStatistics(totalRevenue, totalCommission, monthlyRevenue);
-
-                // Update charts
-                updateRevenueChart(dailyRevenue);
-                updatePieChart(facilityTypeRevenue);
-
-                // Update summary
-                updateSummary(allTransactions, totalRevenue);
-
-                // Update top facilities
-                updateTopFacilities(allTransactions);
-
-                // Display transactions
-                filterTransactions();
-
-            } catch (error) {
-                console.error("Error loading financial data:", error);
-                $('#financial-table tbody').html('<tr><td colspan="8" class="text-center py-4">Error loading transactions: ' + error.message + '</td></tr>');
+                const [bookingsSnap,usersSnap,facilitiesSnap]=await Promise.all([
+                    db.collection('bookings').get(),db.collection('users').get(),db.collection('facilities').get()
+                ]);
+                const users=Object.fromEntries(usersSnap.docs.map(doc=>[doc.id,doc.data()]));
+                const facilities=Object.fromEntries(facilitiesSnap.docs.map(doc=>[doc.id,doc.data()]));
+                const selectedBookings=bookingsSnap.docs.map(doc=>({id:doc.id,...doc.data(),reportDate:managementBookingDate(doc.data())}))
+                    .filter(b=>b.reportDate&&b.reportDate>=startDate&&b.reportDate<=endDate)
+                    .sort((a,b)=>b.reportDate-a.reportDate);
+                allTransactions=[];
+                let totalRevenue=0,totalCommission=0,monthlyRevenue=0;
+                const currentMonthStart=new Date(today.getFullYear(),today.getMonth(),1);
+                const currentMonthEnd=new Date(today.getFullYear(),today.getMonth()+1,0,23,59,59,999);
+                const dailyRevenue={},facilityTypeRevenue={};
+                selectedBookings.forEach(booking=>{
+                    const user=users[booking.userId]||{};
+                    const facility=facilities[booking.facilityId]||{};
+                    const facilityName=facility.name||booking.facilityName||'Unknown Facility';
+                    const facilityType=facility.sportType||facility.type||booking.sportType||booking.type||'Unknown';
+                    const noCommissionFacility=facility.showPriceWithoutCommission===true;
+                    const durationMatch=String(booking.duration||'').match(/[0-9]+(?:\.[0-9]+)?/);
+                    const bookedHours=Number(booking.durationHours)||(Array.isArray(booking.slots)?booking.slots.length*.5:Number(durationMatch?.[0])||1);
+                    const amount=managementBookingAmount(booking);
+                    const commission=noCommissionFacility?0:amount*.05;
+                    const date=booking.reportDate;
+                    totalRevenue+=amount;totalCommission+=commission;
+                    if(date>=currentMonthStart&&date<=currentMonthEnd)monthlyRevenue+=amount;
+                    const dateKey=managementDateKey(date);
+                    dailyRevenue[dateKey]=(dailyRevenue[dateKey]||0)+amount;
+                    facilityTypeRevenue[facilityType]=(facilityTypeRevenue[facilityType]||0)+amount;
+                    allTransactions.push({id:booking.id,date,userName:user.name||user.email||booking.userName||'Unknown User',userEmail:user.email||booking.userEmail||'N/A',facilityName,facilityType,amount,commission,bookedHours,noCommissionFacility,status:booking.status||'pending',bookingData:booking});
+                });
+                updateFinancialStatistics(totalRevenue,totalCommission,monthlyRevenue);
+                updateRevenueChart(dailyRevenue);updatePieChart(facilityTypeRevenue);
+                updateSummary(allTransactions,totalRevenue);updateTopFacilities(allTransactions);filterTransactions();
+            } catch(error) {
+                console.error('Error loading financial data:',error);
+                $('#financial-table tbody').html(`<tr><td colspan="8" class="text-center py-4 text-danger">Could not load transactions: ${error.message}</td></tr>`);
             }
         }
 
@@ -4243,7 +4141,8 @@
         function updateSummary(transactions, totalRevenue) {
             const totalBookings = transactions.length;
             const avgBookingValue = totalBookings > 0 ? totalRevenue / totalBookings : 0;
-            const netRevenue = totalRevenue - (totalRevenue * 0.05); // Subtract 5% commission
+            const totalCommission = transactions.reduce((sum, transaction) => sum + (Number(transaction.commission) || 0), 0);
+            const netRevenue = totalRevenue - totalCommission;
 
             $('#total-bookings').text(totalBookings);
             $('#avg-booking-value').text(`RM${avgBookingValue.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}`);
@@ -4364,8 +4263,8 @@
                             <div class="user-name">${transaction.facilityName}</div>
                             <small class="text-muted">${transaction.facilityType}</small>
                         </td>
-                        <td class="fw-bold">RM${transaction.amount.toFixed(2)}</td>
-                        <td class="text-success">RM${transaction.commission.toFixed(2)}</td>
+                        <td class="fw-bold">RM${Number(transaction.amount || 0).toFixed(2)}</td>
+                        <td class="text-success">${transaction.noCommissionFacility ? "—" : `RM${transaction.commission.toFixed(2)}`}</td>
                         <td><span class="status ${statusClass}">${transaction.status}</span></td>
                         <td>
                             <div class="action-buttons">
@@ -4461,24 +4360,7 @@
                     </div>
                     <div class="col-md-6">
                         <h5>Financial Details</h5>
-                        <table class="table table-sm">
-                            <tr>
-                                <td><strong>Booking Amount:</strong></td>
-                                <td class="text-end">RM${transaction.amount.toFixed(2)}</td>
-                            </tr>
-                            <tr>
-                                <td><strong>Commission (5%):</strong></td>
-                                <td class="text-end text-success">RM${transaction.commission.toFixed(2)}</td>
-                            </tr>
-                            <tr class="table-active">
-                                <td><strong>Net Amount:</strong></td>
-                                <td class="text-end fw-bold">RM${(transaction.amount - transaction.commission).toFixed(2)}</td>
-                            </tr>
-                            <tr>
-                                <td><strong>Status:</strong></td>
-                                <td class="text-end"><span class="status ${transaction.status === 'completed' || transaction.status === 'approved' ? 'status-active' : 'status-suspended'}">${transaction.status}</span></td>
-                            </tr>
-                        </table>
+                        <table class="table table-sm"><tr><td><strong>Booking Amount:</strong></td><td class="text-end">RM${Number(transaction.amount || 0).toFixed(2)}</td></tr><tr><td><strong>Commission:</strong></td><td class="text-end text-success">${transaction.noCommissionFacility ? 'Waived' : `RM${Number(transaction.commission || 0).toFixed(2)}`}</td></tr><tr class="table-active"><td><strong>Net Amount:</strong></td><td class="text-end fw-bold">RM${(Number(transaction.amount || 0)-Number(transaction.commission || 0)).toFixed(2)}</td></tr><tr><td><strong>Status:</strong></td><td class="text-end">${transaction.status}</td></tr></table>
                     </div>
                 </div>
 
@@ -4505,7 +4387,7 @@
             let csvContent = "data:text/csv;charset=utf-8,";
 
             // Add headers
-            csvContent += "Date,Time,Transaction ID,User,User Email,Facility,Facility Type,Amount (RM),Commission (RM),Status\n";
+            csvContent += "Date,Time,Transaction ID,User,User Email,Facility,Facility Type,Amount / Hours,Commission,Status\n";
 
             // Add transaction data
             filteredTransactions.forEach(transaction => {
@@ -4517,7 +4399,7 @@
                     second: '2-digit'
                 });
 
-                csvContent += `"${dateStr}","${timeStr}","${transaction.id}","${transaction.userName}","${transaction.userEmail}","${transaction.facilityName}","${transaction.facilityType}",${transaction.amount.toFixed(2)},${transaction.commission.toFixed(2)},"${transaction.status}"\n`;
+                csvContent += `"${dateStr}","${timeStr}","${transaction.id}","${transaction.userName}","${transaction.userEmail}","${transaction.facilityName}","${transaction.facilityType}","RM${Number(transaction.amount || 0).toFixed(2)}",${transaction.noCommissionFacility ? 'Waived' : 'RM' + Number(transaction.commission || 0).toFixed(2)},"${transaction.status}"\n`;
             });
 
             // Add summary
@@ -4551,30 +4433,12 @@
                 });
 
                 // Load bookings with your data structure
-                const bookingsSnap = await db.collection("bookings").orderBy("createdAt", "desc").get();
-                allBookings = [];
-
-                bookingsSnap.forEach(doc => {
-                    const data = doc.data();
-                    // Convert timestamp to Date object if it exists
-                    const createdAt = data.createdAt ? 
-                        (data.createdAt.toDate ? data.createdAt.toDate() : new Date(data.createdAt)) : 
-                        new Date();
-
-                    allBookings.push({
-                        id: doc.id,
-                        ...data,
-                        createdAt: createdAt,
-                        // Use the actual fields from your data
-                        userName: data.userName || "Unknown User",
-                        userEmail: data.userEmail || "N/A",
-                        facilityName: data.facilityName || "Unknown Facility",
-                        amount: data.amount || data.price || 0,
-                        sportType: data.sportType || data.type || "Unknown",
-                        location: data.location || "N/A",
-                        duration: data.duration || "1 hour"
-                    });
-                });
+                const bookingsSnap = await db.collection('bookings').get();
+                allBookings = bookingsSnap.docs.map(doc => {
+                    const data=doc.data();
+                    const bookingDate=managementBookingDate(data);
+                    return {id:doc.id,...data,bookingDate,createdAt:parseManagementDate(data.createdAt)||parseManagementDate(data.timestamp),userName:data.userName||'Unknown User',userEmail:data.userEmail||'N/A',facilityName:data.facilityName||facilities[data.facilityId]?.name||'Unknown Facility',amount:managementBookingAmount(data),sportType:data.sportType||data.type||'Unknown',location:data.location||'N/A',duration:data.duration||'1 hour'};
+                }).sort((a,b)=>(b.createdAt||b.bookingDate||0)-(a.createdAt||a.bookingDate||0));
 
                 filteredBookings = [...allBookings];
                 renderBookingsTable();
@@ -4604,21 +4468,8 @@
                     "status-inactive";
 
                 // Format date for display
-                const bookingDate = b.createdAt ? 
-                    b.createdAt.toLocaleDateString('en-US', { 
-                        year: 'numeric', 
-                        month: 'short', 
-                        day: 'numeric' 
-                    }) : 
-                    (b.date || "N/A");
-                
-                // Format time for display
-                const bookingTime = b.createdAt ? 
-                    b.createdAt.toLocaleTimeString('en-US', { 
-                        hour: '2-digit', 
-                        minute: '2-digit' 
-                    }) : 
-                    (b.time || "N/A");
+                const bookingDate = formatManagementDate(b.bookingDate);
+                const bookingTime = b.time || b.slot || b.timeSlot || 'N/A';
                 
                 tbody.innerHTML += `
                     <tr>
@@ -4631,12 +4482,9 @@
                             <div><strong>${b.facilityName}</strong></div>
                             <small class="text-muted">${b.sportType} • ${b.location}</small>
                         </td>
-                        <td>
-                            <div>${b.date || bookingDate}</div>
-                            <small class="text-muted">${bookingTime}</small>
-                        </td>
-                        <td>${b.time || "N/A"}</td>
-                        <td><strong>RM${(b.amount || 0).toFixed(2)}</strong></td>
+                        <td>${bookingDate}</td>
+                        <td>${bookingTime}</td>
+                        <td><strong>RM${managementBookingAmount(b).toFixed(2)}</strong></td>
                         <td><span class="status ${statusClass}">${b.status || "pending"}</span></td>
                         <td>
                             <div class="action-buttons">
@@ -4700,10 +4548,10 @@
                     <div class="row mb-4">
                         <div class="col-md-6">
                             <h5>Booking Details</h5>
-                            <p><strong>Booking Date:</strong> ${booking.date || 'N/A'}</p>
-                            <p><strong>Time Slot:</strong> ${booking.time || 'N/A'}</p>
+                            <p><strong>Booking Date:</strong> ${formatManagementDate(booking.bookingDate || booking.date)}</p>
+                            <p><strong>Time Slot:</strong> ${booking.time || booking.slot || booking.timeSlot || 'N/A'}</p>
                             <p><strong>Duration:</strong> ${booking.duration || 'N/A'}</p>
-                            <p><strong>Amount:</strong> RM${(booking.amount || 0).toFixed(2)}</p>
+                            <p><strong>Amount:</strong> RM${managementBookingAmount(booking).toFixed(2)}</p>
                         </div>
                         <div class="col-md-6">
                             <h5>Additional Information</h5>
@@ -4833,7 +4681,7 @@
                 const amenities = Array.isArray(b.amenities) ? b.amenities.join('; ') : '';
                 const createdAt = b.createdAt ? b.createdAt.toLocaleString() : '';
 
-                csvContent += `"${b.id}","${b.userName}","${b.userEmail}","${b.facilityName}","${b.sportType}","${b.location}","${b.date}","${b.time}","${b.duration}",${b.amount || 0},"${b.status}",${b.capacity || 0},"${amenities}","${b.promo || ''}","${createdAt}"\n`;
+                csvContent += `"${b.id}","${b.userName}","${b.userEmail}","${b.facilityName}","${b.sportType}","${b.location}","${formatManagementDate(b.bookingDate || b.date)}","${b.time || b.slot || b.timeSlot || ''}","${b.duration}",${managementBookingAmount(b)},"${b.status}",${b.capacity || 0},"${amenities}","${b.promo || ''}","${createdAt}"\n`;
             });
 
             // Create download link

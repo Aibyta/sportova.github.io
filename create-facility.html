@@ -1,144 +1,283 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Manage Sports Facilities</title>
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Admin Dashboard | Sportova</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <style>
-    body { font-family: 'Segoe UI', sans-serif; background-color: #f8f9fa; }
-    .facility-image { height: 180px; object-fit: cover; }
-    .facility-card { transition: transform 0.2s; }
-    .facility-card:hover { transform: translateY(-5px); }
-    .promo-badge {
-      position: absolute;
-      top: 10px;
-      right: 10px;
-      z-index: 1;
+    :root {
+      --primary-color: #3498db;
+      --secondary-color: #2c3e50;
+      --success-color: #27ae60;
+      --warning-color: #f39c12;
+      --danger-color: #e74c3c;
+      --light-color: #f8f9fa;
+      --dark-color: #343a40;
     }
-    .sport-icon {
-      width: 24px;
-      height: 24px;
-      margin-right: 5px;
+    
+    body {
+      background-color: #f5f7fa;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      overflow: hidden;
     }
-    .player-capacity {
-      display: inline-block;
+
+    .sidebar {
+      min-height: 100vh;
+      background-color: var(--secondary-color);
+      padding: 1rem;
+      color: white;
+      width: 250px;
+      box-shadow: 2px 0 5px rgba(0,0,0,0.1);
+    }
+
+    .sidebar a {
+      display: block;
+      margin: 0.3rem 0;
+      color: #bdc3c7;
+      text-decoration: none;
+      padding: 12px 15px;
+      border-radius: 5px;
+      transition: all 0.3s;
+    }
+
+    .sidebar a:hover, .sidebar a.active {
+      background-color: var(--primary-color);
+      color: white;
+    }
+
+    iframe {
+      border: none;
+      width: calc(100vw - 250px);
+      height: 100vh;
+      margin-left: 250px;
+      position: fixed;
+      top: 0;
+    }
+
+    .profile-pic {
+      width: 60px;
+      height: 60px;
+      border-radius: 50%;
+      object-fit: cover;
+      border: 2px solid white;
+      margin-right: 10px;
+    }
+
+    .profile-section {
+      display: flex;
+      align-items: center;
+      padding: 1rem 0;
+      margin-bottom: 1rem;
+      border-bottom: 1px solid #495057;
+    }
+
+    .profile-info {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .profile-name {
+      font-weight: bold;
+      color: white;
+      margin-bottom: 0.2rem;
+      font-size: 1.1rem;
+    }
+
+    .profile-email {
+      font-size: 0.8rem;
+      color: #bdc3c7;
+    }
+
+    .admin-badge {
+      background-color: var(--warning-color);
+      color: white;
       padding: 3px 8px;
-      border-radius: 12px;
-      background-color: #e9ecef;
-      font-size: 0.85rem;
+      border-radius: 4px;
+      font-size: 0.7rem;
+      margin-top: 5px;
+    }
+
+    .nav-items {
+      margin-top: 1rem;
+    }
+
+    .logout-btn {
+      position: absolute;
+      bottom: 20px;
+      width: calc(250px - 2rem);
+      background-color: var(--danger-color);
+      color: white;
+      border: none;
+      padding: 10px;
+      border-radius: 5px;
+      cursor: pointer;
+      transition: background-color 0.3s;
+      font-weight: 500;
+    }
+
+    .logout-btn:hover {
+      background-color: #c82333;
+      transform: translateY(-2px);
+      box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+    }
+
+    .website-logo {
+      position: absolute;
+      bottom: 70px;
+      width: calc(250px - 2rem);
+      text-align: center;
+      padding: 10px 0;
+    }
+
+    .website-logo img {
+      max-width: 80%;
+      max-height: 50px;
+      margin-bottom: 10px;
+      border-radius: 5px;
+    }
+
+    .logo-text {
+      display: flex;
+      flex-direction: column;
+      line-height: 1.2;
+    }
+
+    .slogan {
+      font-size: 0.65em;
+      font-weight: 400;
+      color: var(--primary-color);
+      opacity: 0.9;
+      margin-top: 2px;
+    }
+
+    .home-link {
+      color: #bdc3c7;
+      text-decoration: none;
+      font-size: 0.9rem;
+      transition: color 0.3s;
+      margin-top: 10px;
+      display: inline-block;
+    }
+
+    .home-link:hover {
+      color: white;
+    }
+    
+    /* Notification badge */
+    .notification-badge {
+      position: absolute;
+      top: -5px;
+      right: -5px;
+      background-color: var(--danger-color);
+      color: white;
+      border-radius: 50%;
+      width: 18px;
+      height: 18px;
+      font-size: 0.7rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    
+    .nav-item-with-badge {
+      position: relative;
+    }
+    
+    /* Active link styling */
+    .sidebar a.active {
+      font-weight: 600;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    }
+    
+    /* Responsive adjustments */
+    @media (max-width: 768px) {
+      .sidebar {
+        width: 100%;
+        height: auto;
+        position: relative;
+        min-height: auto;
+      }
+      
+      iframe {
+        width: 100%;
+        margin-left: 0;
+        position: relative;
+        height: calc(100vh - 200px);
+      }
     }
   </style>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore-compat.js"></script>
 </head>
+
 <body>
-  <div class="container py-4">
-    <header class="mb-8">
-      <h1 class="text-4xl font-bold text-gray-800 mb-2">Manage Sports Facilities</h1>
-    </header>
-    <br>
-    <div class="card mb-4">
-      <div class="card-header bg-primary text-white">
-        <h5 class="mb-0">Add New Sports Facility</h5>
+  <div class="d-flex">
+    <!-- Sidebar -->
+    <div class="sidebar">
+      <div class="profile-section">
+        <img id="profilePicture" src="img/admin-profile.svg" alt="Profile" class="profile-pic">
+        <div class="profile-info">
+          <div id="adminName" class="profile-name">Admin</div>
+          <div id="adminEmail" class="profile-email">Loading...</div>
+          <span class="admin-badge">Super Admin</span>
+        </div>
       </div>
-      <div class="card-body">
-        <form id="addFacilityForm">
-          <div class="row">
-            <div class="col-md-6 mb-3">
-              <label for="facilityName" class="form-label">Facility Name</label>
-              <input type="text" class="form-control" id="facilityName" required>
-            </div>
-            <div class="col-md-6 mb-3">
-              <label for="sportType" class="form-label">Sport Type</label>
-              <select class="form-select" id="sportType" required>
-                <option value="">Select a sport</option>
-                <option value="tennis" selected>Tennis</option>
-                <option value="badminton">Badminton</option>
-                <option value="basketball">Basketball</option>
-                <option value="volleyball">Volleyball</option>
-                <option value="football">Football</option>
-                <option value="futsal">Futsal</option>
-                <option value="squash">Squash</option>
-                <option value="table-tennis">Table Tennis</option>
-                <option value="other">Other</option>
-              </select>
-            </div>
-          </div>
-          
-          <div class="mb-3">
-            <label for="facilityImage" class="form-label">Facility Image URL</label>
-            <input type="url" class="form-control" id="facilityImage" required>
-          </div>
-          
-          <div class="mb-3">
-            <label for="facilityDescription" class="form-label">Description</label>
-            <textarea class="form-control" id="facilityDescription" rows="3" required></textarea>
-          </div>
-          
-          <div class="row">
-            <div class="col-md-4 mb-3">
-              <label for="facilityPrice" class="form-label">Price per Slot (RM)</label>
-              <input type="number" class="form-control" id="facilityPrice" min="1" required>
-            </div>
-            <div class="col-md-4 mb-3">
-              <label for="minPlayers" class="form-label">Minimum Players</label>
-              <input type="number" class="form-control" id="minPlayers" min="1" value="1">
-            </div>
-            <div class="col-md-4 mb-3">
-              <label for="maxPlayers" class="form-label">Maximum Players</label>
-              <input type="number" class="form-control" id="maxPlayers" min="1" value="2">
-            </div>
-          </div>
-          
-          <div class="mb-3">
-            <label for="timeSlots" class="form-label">Available Time Slots (comma separated)</label>
-            <input type="text" class="form-control" id="timeSlots" 
-                   placeholder="6-7 AM, 7-8 AM, 5-6 PM" required>
-          </div>
-          
-          <div class="mb-3">
-            <label for="facilityPromotion" class="form-label">Promotion Text (optional)</label>
-            <input type="text" class="form-control" id="facilityPromotion" 
-                   placeholder="e.g., 20% Off Weekday Mornings">
-            <div class="form-text">Leave blank if no promotion</div>
-          </div>
-          
-          <button type="submit" class="btn btn-primary">Add Sports Facility</button>
-        </form>
+
+      <div class="nav-items">
+        <a href="dashboard.html" target="contentFrame" class="active">
+          <i class="fas fa-home me-2"></i> Dashboard
+        </a>
+        <a href="create-facility.html" target="contentFrame">
+          <i class="fas fa-plus me-2"></i> Create Facility
+        </a>
+        <a href="admin-booking-management.html" target="contentFrame" class="nav-item-with-badge">
+          <i class="fas fa-calendar-alt me-2"></i> Booking Management
+          <span class="notification-badge">3</span>
+        </a>
+        <a href="admin-manage-users.html" target="contentFrame">
+          <i class="fas fa-users me-2"></i> Manage Users
+        </a>
+        <a href="admin-manage-coach.html" target="contentFrame">
+          <i class="fas fa-user-tie me-2"></i> Manage Coach/Trainer
+        </a>
+        <a href="admin-pricing.html" target="contentFrame">
+          <i class="fas fa-tag me-2"></i> Pricing Management
+        </a>
+        <a href="admin-equipment.html" target="contentFrame">
+          <i class="fas fa-tools me-2"></i> Equipment
+        </a>
+        <a href="admin-marketplace.html" target="contentFrame">
+          <i class="fas fa-store me-2"></i> Marketplace
+        </a>
+        <a href="admin-events.html" target="contentFrame">
+          <i class="fas fa-calendar-week me-2"></i> Events & Leagues
+        </a>
+        <a href="admin-settings.html" target="contentFrame">
+          <i class="fas fa-cog me-2"></i> Settings
+        </a>
       </div>
+
+      <div class="website-logo">
+        <img src="img/logo.jpg" alt="Website Logo">
+        <div class="slogan">Book. Play. Win</div>
+        <a href="index.html" class="home-link">
+          <i class="fas fa-arrow-left me-1"></i> Back to Homepage
+        </a>
+      </div>
+
+      <button id="logoutBtn" onclick="logout()" class="logout-btn">
+        <i class="fas fa-sign-out-alt me-1"></i> Logout
+      </button>
     </div>
 
-    <div class="card">
-      <div class="card-header bg-primary text-white">
-        <h5 class="mb-0">Existing Sports Facilities</h5>
-      </div>
-      <div class="card-body">
-        <div class="mb-3">
-          <label for="sportFilter" class="form-label">Filter by Sport:</label>
-          <select class="form-select" id="sportFilter" style="max-width: 200px;">
-            <option value="all">All Sports</option>
-            <option value="tennis" selected>Tennis</option>
-            <option value="badminton">Badminton</option>
-            <option value="basketball">Basketball</option>
-            <option value="volleyball">Volleyball</option>
-            <option value="football">Football</option>
-            <option value="futsal">Futsal</option>
-            <option value="squash">Squash</option>
-            <option value="table-tennis">Table Tennis</option>
-          </select>
-        </div>
-        <div id="facilityList" class="row"></div>
-      </div>
-    </div>
+    <!-- Main Content Area -->
+    <iframe name="contentFrame" src="dashboard.html"></iframe>
   </div>
 
-  <script src="https://cdn.jsdelivr.net/npm/jquery@3.6.0/dist/jquery.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
-
   <script>
-    // Firebase configuration
     const firebaseConfig = {
       apiKey: "AIzaSyDjMwv9Bxff1bUE7CR_S-DPx3NV5kkinTU",
       authDomain: "nste-booking-system.firebaseapp.com",
@@ -147,178 +286,100 @@
       messagingSenderId: "574207536433",
       appId: "1:574207536433:web:0d2aeaacdc280cec019410"
     };
-
     firebase.initializeApp(firebaseConfig);
-    const db = firebase.firestore();
+
     const auth = firebase.auth();
+    const db = firebase.firestore();
 
-    // Sport icons mapping
-    const sportIcons = {
-      tennis: "🎾",
-      badminton: "🏸",
-      basketball: "🏀",
-      volleyball: "🏐",
-      football: "⚽",
-      futsal: "🥅",
-      squash: "🎯",
-      "table-tennis": "🏓",
-      other: "🏟️"
-    };
+    // Track if we're already logging out to prevent duplicate calls
+    let isLoggingOut = false;
 
-    $(document).ready(function() {
-      // Check if user is admin
-      auth.onAuthStateChanged(user => {
-        if (!user || user.email !== 'aibytatech@gmail.com') {
-          window.location.href = 'booking.html';
+    auth.onAuthStateChanged(user => {
+      if (user) {
+        document.getElementById("adminName").textContent = user.displayName || "Admin";
+        document.getElementById("adminEmail").textContent = user.email || "No email";
+
+        // Set profile picture if available
+        if (user.photoURL) {
+          document.getElementById("profilePicture").src = user.photoURL;
         }
-        loadFacilities();
-      });
-
-      // Filter facilities by sport type
-      $('#sportFilter').change(function() {
-        loadFacilities();
-      });
-
-      // Add facility form
-      $('#addFacilityForm').submit(async function(e) {
-        e.preventDefault();
         
-        const promotionText = $('#facilityPromotion').val().trim();
-        const sportType = $('#sportType').val();
+        // Update active link based on current iframe source
+        updateActiveLink();
+      } else {
+        window.location.href = "login.html";
+      }
+    });
+
+    function logout() {
+      if (isLoggingOut) return;
+      isLoggingOut = true;
+      
+      auth.signOut().then(() => {
+        window.location.href = "login.html";
+      }).catch((error) => {
+        console.error("Logout error:", error);
+        window.location.href = "login.html";
+      });
+    }
+
+    // Update active link when iframe content changes
+    function updateActiveLink() {
+      const iframe = document.querySelector('iframe');
+      const links = document.querySelectorAll('.sidebar a');
+      
+      iframe.addEventListener('load', function() {
+        const currentSrc = iframe.contentWindow.location.pathname.split('/').pop();
         
-        const newFacility = {
-          name: $('#facilityName').val(),
-          sportType: sportType,
-          image: $('#facilityImage').val(),
-          description: $('#facilityDescription').val(),
-          price: parseInt($('#facilityPrice').val()),
-          minPlayers: parseInt($('#minPlayers').val()) || 1,
-          maxPlayers: parseInt($('#maxPlayers').val()) || 2,
-          slots: $('#timeSlots').val().split(',').map(s => s.trim()),
-          maxBookings: 1,
-          type: 'sport-facility',
-          createdAt: firebase.firestore.FieldValue.serverTimestamp()
-        };
+        links.forEach(link => {
+          link.classList.remove('active');
+          const linkHref = link.getAttribute('href');
+          if (linkHref === currentSrc) {
+            link.classList.add('active');
+          }
+        });
+      });
+    }
 
-        // Only add promotion field if it has value
-        if (promotionText) {
-          newFacility.promotion = promotionText;
-        }
-
-        try {
-          await db.collection('facilities').add(newFacility);
-          $('#addFacilityForm')[0].reset();
-          loadFacilities();
-          alert('Sports facility added successfully!');
-        } catch (error) {
-          console.error("Error adding facility:", error);
-          alert('Error adding facility. Please try again.');
-        }
+    // Set active link on click
+    document.querySelectorAll('.sidebar a').forEach(link => {
+      link.addEventListener('click', function() {
+        document.querySelectorAll('.sidebar a').forEach(a => a.classList.remove('active'));
+        this.classList.add('active');
       });
     });
 
-    async function loadFacilities() {
-      try {
-        const sportFilter = $('#sportFilter').val();
-        let query = db.collection('facilities');
-        
-        // First try to load all facilities without any filters
-        const snapshot = await query.get();
-        
-        $('#facilityList').empty();
-        
-        if (snapshot.empty) {
-          $('#facilityList').html('<div class="col-12"><div class="alert alert-info">No facilities found</div></div>');
-          return;
+    // Handle page/tab close
+    window.addEventListener('beforeunload', (event) => {
+      if (auth.currentUser && !isLoggingOut) {
+        // Use sendBeacon if available for more reliable logout
+        if (navigator.sendBeacon) {
+          const data = new Blob(
+            [JSON.stringify({ uid: auth.currentUser.uid })],
+            { type: 'application/json' }
+          );
         }
-        
-        let facilities = [];
-        snapshot.forEach(doc => {
-          const facility = doc.data();
-          facility.id = doc.id;
-          
-          // For legacy tennis courts, set default sportType
-          if (!facility.sportType && facility.type === 'tennis') {
-            facility.sportType = 'tennis';
-          }
-          
-          // Apply filter if not 'all'
-          if (sportFilter === 'all' || facility.sportType === sportFilter) {
-            facilities.push(facility);
-          }
-        });
-        
-        if (facilities.length === 0) {
-          $('#facilityList').html('<div class="col-12"><div class="alert alert-info">No facilities match the filter</div></div>');
-          return;
-        }
-        
-        // Sort by creation date (newest first)
-        facilities.sort((a, b) => {
-          const aDate = a.createdAt ? a.createdAt.toDate() : new Date(0);
-          const bDate = b.createdAt ? b.createdAt.toDate() : new Date(0);
-          return bDate - aDate;
-        });
-        
-        // Display facilities
-        facilities.forEach(facility => {
-          const promoBadge = facility.promotion ? 
-            `<span class="badge bg-danger promo-badge">${facility.promotion}</span>` : '';
-            
-          const sportType = facility.sportType || 'tennis';
-          const sportIcon = sportIcons[sportType] || sportIcons.other;
-          
-          const minPlayers = facility.minPlayers || 1;
-          const maxPlayers = facility.maxPlayers || 2;
-          const playerCapacity = maxPlayers > 1 ? 
-            `<span class="player-capacity">${minPlayers}-${maxPlayers} players</span>` : 
-            `<span class="player-capacity">Single player</span>`;
-            
-          $('#facilityList').append(`
-            <div class="col-md-6 col-lg-4 mb-4">
-              <div class="card facility-card h-100">
-                ${promoBadge}
-                <img src="${facility.image}" class="card-img-top facility-image" alt="${facility.name}">
-                <div class="card-body">
-                  <h5 class="card-title">
-                    <span class="sport-icon">${sportIcon}</span>
-                    ${facility.name}
-                  </h5>
-                  <p class="card-text">${facility.description}</p>
-                  <div class="d-flex justify-content-between align-items-center mb-2">
-                    <p class="mb-0"><strong>Price:</strong> RM${facility.price}/slot</p>
-                    ${playerCapacity}
-                  </div>
-                  <p><strong>Sport:</strong> ${sportType.charAt(0).toUpperCase() + sportType.slice(1)}</p>
-                  <p><strong>Available Slots:</strong> ${facility.slots.join(', ')}</p>
-                  ${facility.promotion ? `<p class="text-success"><strong>Promotion:</strong> ${facility.promotion}</p>` : ''}
-                </div>
-                <div class="card-footer bg-transparent">
-                  <button class="btn btn-danger delete-btn" data-facility-id="${facility.id}">
-                    Delete Facility
-                  </button>
-                </div>
-              </div>
-            </div>
-          `);
-        });
-
-        $('.delete-btn').click(function() {
-          if (confirm('Are you sure you want to delete this sports facility?')) {
-            const facilityId = $(this).data('facility-id');
-            db.collection('facilities').doc(facilityId).delete()
-              .then(() => loadFacilities())
-              .catch(error => {
-                console.error("Error deleting facility:", error);
-                alert("Error deleting facility. Please try again.");
-              });
-          }
-        });
-      } catch (error) {
-        console.error("Error loading facilities:", error);
-        $('#facilityList').html('<div class="col-12"><div class="alert alert-danger">Error loading facilities: ' + error.message + '</div></div>');
       }
+    });
+
+    // Auto-logout after 30 minutes of inactivity
+    let inactivityTimer;
+    function resetInactivityTimer() {
+      clearTimeout(inactivityTimer);
+      inactivityTimer = setTimeout(() => {
+        if (auth.currentUser && !isLoggingOut) {
+          logout();
+        }
+      }, 30 * 60 * 1000); // 30 minutes
     }
+
+    // Events that reset the inactivity timer
+    document.addEventListener('mousemove', resetInactivityTimer);
+    document.addEventListener('keypress', resetInactivityTimer);
+    document.addEventListener('click', resetInactivityTimer);
+    
+    // Start the timer when page loads
+    resetInactivityTimer();
   </script>
 </body>
 </html>

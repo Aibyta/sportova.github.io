@@ -1695,6 +1695,65 @@
     #slotSelectionSummary {
       border-left: 4px solid #0d6efd;
     }
+    /* Sportova user portal refresh */
+    :root { --primary-color:#4658d8; --secondary-color:#3444b8; --success-color:#18a779; --warning-color:#efa93a; --danger-color:#df5b67; --light-color:#f5f7fc; --dark-color:#18243c; --sidebar-width:258px; }
+    body { background:#f4f6fb; color:#202b3e; font-family:Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif; }
+    .sidebar { background:#fff; color:#26344c; border-right:1px solid #e8edf4; box-shadow:8px 0 28px rgba(29,42,70,.04); padding:16px 13px; }
+    .sidebar-header { border-bottom:1px solid #edf0f5; padding:10px 8px 18px; }
+    .sidebar-title { color:#1e2a40; letter-spacing:-.03em; }
+    .sidebar-toggle { color:#4658d8; }
+    .sidebar-menu a { color:#657189; border-radius:11px; padding:11px 13px; font-weight:550; }
+    .sidebar-menu a:hover,.sidebar-menu a.active { color:#4053d1; background:#eef0ff; }
+    .sidebar-menu a.active { box-shadow:inset 3px 0 #4658d8; }
+    .sidebar-footer { border-top:1px solid #edf0f5; color:#35435a; }
+    .sidebar-footer .btn-outline-light { color:#5e6b80; border-color:#dfe5ef; }
+    .main-content { padding:26px 30px; }
+    .header { border:1px solid #e9edf4; border-radius:16px; padding:16px 22px; box-shadow:0 5px 20px rgba(31,45,75,.04); }
+    .header h1,#pageContent h2,#pageContent h3,#pageContent h4 { color:#1e2a40; letter-spacing:-.03em; font-weight:700; }
+    .stats-card,.table-card,.form-card,.facility-card,.event-card,.friend-card,.coach-card,.month-calendar,.modal-content { border:1px solid #e8edf4; border-radius:16px; box-shadow:0 6px 22px rgba(31,45,75,.045); }
+    .stats-card { padding:21px; }
+    .stats-card:hover { transform:translateY(-2px); box-shadow:0 10px 24px rgba(31,45,75,.08); }
+    .stats-card i { font-size:1.8rem; color:#5969dc; }
+    .stats-card .number { color:#28385a; letter-spacing:-.04em; }
+    .table-card,.form-card { padding:22px; background:#fff; }
+    .table th { color:#758198; background:#f8f9fc; font-size:.76rem; font-weight:700; text-transform:uppercase; letter-spacing:.045em; }
+    .table>:not(caption)>*>* { padding:.8rem .75rem; vertical-align:middle; }
+    .btn { border-radius:9px; font-weight:550; }
+    .btn-primary { background:#4658d8; border-color:#4658d8; }
+    .form-control,.form-select { border-color:#dfe5ef; border-radius:9px; min-height:42px; }
+    textarea.form-control { min-height:100px; }
+    .form-label { color:#34435b; font-size:.9rem; }
+    .form-control:focus,.form-select:focus { border-color:#8d98ed; box-shadow:0 0 0 .2rem rgba(70,88,216,.12); }
+    .facility-card,.event-card,.friend-card,.coach-card { overflow:hidden; transition:transform .18s ease,box-shadow .18s ease,border-color .18s ease; }
+    .facility-card:hover,.event-card:hover,.friend-card:hover,.coach-card:hover { transform:translateY(-3px); box-shadow:0 12px 28px rgba(31,45,75,.1); border-color:#d9def5; }
+    .facility-image { height:210px; }
+    .month-calendar { padding:20px; }
+    .calendar-grid { gap:6px; background:transparent; border:0; }
+    .calendar-header-month { color:#26344c; }
+    .calendar-day-month { border:1px solid #edf0f5; border-radius:10px; min-height:104px; }
+    .calendar-day-month.today { background:#f1f3ff; border-color:#8d98ed; }
+    .calendar-day-month.selected { background:#4658d8; border-color:#4658d8; color:#fff; }
+    .calendar-event-small { background:#eef0ff; color:#4658d8; border-radius:6px; padding:3px 6px; }
+    .step-indicator { gap:8px; }
+    .step-number { background:#f0f2f7; color:#6b7890; border:1px solid #e0e5ee; }
+    .step.active .step-number { background:#4658d8; border-color:#4658d8; }
+    .step.completed .step-number { background:#18a779; border-color:#18a779; }
+    .step-label { color:#56647b; }
+    #timeSlots .time-slot,#timeSlotSelection .time-slot { border-radius:11px; border-width:1px; padding:12px 14px; background:#fff; transition:all .16s ease; }
+    #timeSlots .time-slot.available,#timeSlotSelection .time-slot.available { background:#f0faf6!important; border-color:#b7e5d3!important; color:#247b5d!important; }
+    #timeSlots .time-slot.booked,#timeSlotSelection .time-slot.booked { background:#fff3f2!important; border-color:#f1c5c2!important; color:#a44b49!important; }
+    #timeSlots .time-slot.selected,#timeSlotSelection .time-slot.selected { background:#eef0ff!important; border-color:#4658d8!important; color:#3444b8!important; box-shadow:0 0 0 2px rgba(70,88,216,.12); }
+    .modal-content { overflow:hidden; }
+    .modal-header { background:#fbfcfe; border-bottom-color:#edf0f5; padding:18px 22px; }
+    .modal-footer { border-top-color:#edf0f5; padding:14px 22px; }
+    #promoBannerWrapper { background:#fff7e9; border-bottom:1px solid #f5e6ca; padding:7px 0; }
+    #promoText { color:#92601b; font-size:.88rem; }
+    .toast-container { top:auto!important; left:auto!important; right:22px!important; bottom:22px!important; transform:none!important; }
+    .toast { width:min(380px,calc(100vw - 28px)); max-width:calc(100vw - 28px); padding:0; font-size:1rem; border-radius:12px; box-shadow:0 12px 30px rgba(31,45,75,.16); }
+    .toast-header,.toast-body { font-size:.95rem; }
+    @media(max-width:900px) { .main-content { padding:18px; } }
+    @media(max-width:768px) { .main-content { padding:14px; } .header { padding:13px 15px; } .calendar-grid { gap:3px; } .calendar-day-month { min-height:78px; padding:6px; } .step-label { font-size:.7rem; } }
+    @media(max-width:520px) { .main-content { padding:10px; } .table-card,.form-card { padding:16px; } .month-calendar { padding:10px; } .calendar-day-month { min-height:58px; font-size:.82rem; } .step-indicator { margin-bottom:1.2rem; } }
   </style>
 </head>
 
@@ -2085,21 +2144,36 @@
     }
 
     /* ============================================================
-       ✅ FACILITY PRICE HELPERS (per-facility display price)
-       Each facility can waive the platform fee for its bookings.
-       - showPriceWithoutCommission === true  → user pays base price
-       - otherwise (default)                  → user pays base price
-                                                plus a platform service
-                                                fee (5%)
+       ✅ FACILITY PRICE HELPERS (user-facing prices include platform fee)
+       User prices always include the 5% platform fee. Facility commission
+       settings only control the admin portal's reporting display.
        The user never sees the term "commission" — they just see
        one hourly price on the card and one total in the summary.
        ============================================================ */
     function getFacilityDisplayPrice(facility) {
       const base = Number(facility?.price) || 0;
-      if (facility?.showPriceWithoutCommission === true) return base;
       return base * 1.05;
     }
     window.getFacilityDisplayPrice = getFacilityDisplayPrice;
+
+    function getFacilitySlotPrice(facility, slots) {
+      const court = Array.isArray(facility?.courts) ? facility.courts.find(c => String(c.name || '').trim() === String(selectedCourt || '').trim()) : null;
+      const courtBands = Array.isArray(court?.pricingBands) && court.pricingBands.length ? court.pricingBands : null;
+      const bands = courtBands || (Array.isArray(facility?.pricingBands) && facility.pricingBands.length
+        ? facility.pricingBands : [{ start: '00:00', end: '24:00', rate: Number(facility?.price) || 0 }]);
+      const toMinutes = value => { const [h,m] = String(value || '0:0').split(':').map(Number); return h*60+m; };
+      let base = 0;
+      (slots || []).forEach(slot => {
+        const match = String(slot).match(/(\d{1,2}:\d{2})\s*[-–]\s*(\d{1,2}:\d{2})/);
+        if (!match) return;
+        const start = toMinutes(match[1]), end = toMinutes(match[2]);
+        for(let minute=start;minute<end;minute+=30){
+          const rate = bands.find(b => minute >= toMinutes(b.start) && minute < toMinutes(b.end));
+          base += (Number(rate?.rate) || Number(facility?.price) || 0) * Math.min(30,end-minute) / 60;
+        }
+      });
+      return base * 1.05;
+    }
 
     // Expand a stored `time` value into slot strings.
     // "08:00-08:30"    -> ["08:00-08:30"]
@@ -2158,8 +2232,7 @@
         return;
       }
       const hours   = calculateSlotsDuration(selectedTimeSlots);
-      const hourly  = Number(getFacilityDisplayPrice(selectedFacility));
-      const fee     = hourly * hours;
+      const fee = getFacilitySlotPrice(selectedFacility, selectedTimeSlots);
       const hint    = selectionAnchor
         ? `<span class="text-muted ms-2 d-inline-block"><i class="fas fa-info-circle me-1"></i>Click another slot to fill the range, or click the same slot to deselect.</span>`
         : '';
@@ -4333,8 +4406,12 @@
         const promoBadge = facility.promo ? `<div class="promo-badge">${facility.promo}</div>` : '';
         const availabilityStatus = getAvailabilityStatus(facility);
         const statusBadge = `<span class="badge ${availabilityStatus.class} float-end">${availabilityStatus.text}</span>`;
-        // ✅ Display price uses the per-facility helper — hidden platform fee when waived
+        // User-facing prices always include the 5% platform fee.
+        const bands = Array.isArray(facility.pricingBands) ? facility.pricingBands : [];
+        const multiplier = 1.05;
+        const prices = bands.map(b => Number(b.rate) * multiplier).filter(n => Number.isFinite(n));
         const displayPrice = getFacilityDisplayPrice(facility);
+        const priceLabel = prices.length ? (Math.min(...prices) === Math.max(...prices) ? `RM${Math.min(...prices).toFixed(2)}/hour` : `RM${Math.min(...prices).toFixed(2)}–${Math.max(...prices).toFixed(2)}/hour`) : `RM${displayPrice.toFixed(2)}/hour`;
         col.innerHTML = `
           <div class="facility-card card h-100">
             ${promoBadge}
@@ -4350,7 +4427,7 @@
               <div class="mb-2">${amenitiesHtml}</div>
               <div class="mt-auto">
                 <div class="d-flex justify-content-between align-items-center">
-                  <span class="badge bg-primary">RM${displayPrice.toFixed(2)}/hour</span>
+                  <span class="badge bg-primary">${priceLabel}</span>
                   <button class="btn btn-sm btn-outline-primary book-facility-btn" data-id="${facility.id}">Book Now</button>
                 </div>
               </div>
@@ -4803,8 +4880,9 @@
         return;
       }
 
-      const hasCourtDate = court.dates && court.dates.includes(formattedDate);
-      const hasFacilityDate = selectedFacility.availableDates && selectedFacility.availableDates.includes(formattedDate);
+      const courtHasCustomDates = Array.isArray(court.dates) && court.dates.length > 0;
+      const hasCourtDate = courtHasCustomDates ? court.dates.includes(formattedDate) : false;
+      const hasFacilityDate = !courtHasCustomDates && selectedFacility.availableDates && selectedFacility.availableDates.includes(formattedDate);
       if (!hasCourtDate && !hasFacilityDate) {
         timeSlotSelection.innerHTML = '<div class="alert alert-warning">This court is not available on the selected date.</div>';
         return;
@@ -4814,7 +4892,7 @@
       try { bookedSlots = await getBookedSlotsForCourt(courtName, bookingDate); } catch { bookedSlots = []; }
       const bookedSet = new Set(bookedSlots.map(s => String(s).trim()).filter(Boolean));
 
-      let slots = selectedFacility.slots || [];
+      let slots = Array.isArray(court.slots) && court.slots.length ? court.slots : (selectedFacility.slots || []);
       if (slots.length === 0) {
         timeSlotSelection.innerHTML = '<div class="alert alert-info">No time slots configured for this facility.</div>';
         return;
@@ -5026,9 +5104,7 @@
 
     function updateBookingSummary() {
       const hours     = calculateSlotsDuration(selectedTimeSlots) || 1;
-      // ✅ Hourly rate uses the per-facility helper (includes hidden platform fee when not waived)
-      const hourlyRate = getFacilityDisplayPrice(selectedFacility);
-      const courtFee  = Number((hourlyRate * hours).toFixed(2));
+      const courtFee = Number(getFacilitySlotPrice(selectedFacility, selectedTimeSlots).toFixed(2));
       const coachFee  = Number(selectedCoach?.rate) || 0;
       const snacksFee = (selectedSnacks || []).reduce((t, s) => t + (Number(s?.price) || 0), 0);
       const amenitiesTotal = calculateAmenitiesTotal();
@@ -5292,9 +5368,7 @@
         const timeDisplay   = formatSlotRange(sortedSlots);
         const durationLabel = formatHours(hours);
 
-        // ✅ Hourly rate uses per-facility helper (matches what the user was shown)
-        const hourlyRate = getFacilityDisplayPrice(selectedFacility);
-        const courtFee = Number((hourlyRate * hours).toFixed(2));
+        const courtFee = Number(getFacilitySlotPrice(selectedFacility, sortedSlots).toFixed(2));
         const coachFee = selectedCoach ? Number(selectedCoach.rate) || 0 : 0;
         const snacksFee = selectedSnacks.reduce((t, s) => t + (Number(s.price) || 0), 0);
         const amenitiesFee = selectedAmenities.reduce((t, a) => t + (Number(a.amenityPrice) || 0), 0);
@@ -10315,6 +10389,8 @@
                         <option value="football">Football</option>
                         <option value="volleyball">Volleyball</option>
                         <option value="swimming">Swimming</option>
+                        <option value="yoga">Yoga</option>
+                        <option value="pilates">Pilates</option>
                         <option value="other">Other</option>
                       </select>
                     </div>
@@ -10352,8 +10428,9 @@
                     <label class="form-label">District</label>
                     <select class="form-select" id="eventDistrict" required disabled></select>
                   </div>
+                  <div class="col-md-4"><label class="form-label">Session location type</label><select class="form-select" id="eventLocationType"><option value="facility">Facility studio</option><option value="freelance">Freelance instructor (user's home)</option></select></div>
                   <div class="col-md-4">
-                    <label class="form-label">Venue Name</label>
+                    <label class="form-label">Venue Name / service area</label>
                     <input type="text" class="form-control" id="eventLocation" placeholder="Court / Stadium name">
                   </div>
                   <div class="col-md-6">
@@ -10405,6 +10482,7 @@
           </div>
         </div>
       
+        <div class="form-card mb-4"><h4><i class="fas fa-calendar-week me-2"></i>Yoga &amp; Pilates class schedule</h4><p class="text-muted small">Classes appear on their scheduled dates. Select a class to jump to its booking card.</p><div id="yogaPilatesSchedule" class="table-responsive"><p class="text-muted">Loading class schedule…</p></div></div>
         <!-- Tabs for My Events vs All Events -->
         <div class="row mb-4">
           <div class="col-md-12">
@@ -10713,6 +10791,8 @@
           state: document.getElementById("eventState").value,
           district: document.getElementById("eventDistrict").value,
           location: document.getElementById('eventLocation').value.trim(),
+          locationType: document.getElementById('eventLocationType')?.value || 'facility',
+          serviceMode: document.getElementById('eventLocationType')?.value === 'freelance' ? 'home-visit' : 'studio',
           maxParticipants: document.getElementById('eventMaxParticipants').value ? parseInt(document.getElementById(
             'eventMaxParticipants').value) : null,
           description: document.getElementById('eventDescription').value.trim(),
@@ -10784,6 +10864,7 @@
         events.sort((a, b) => new Date(a.startDate) - new Date(b.startDate));
 
         renderAllEvents(events);
+        renderYogaPilatesSchedule(events);
 
       } catch (error) {
         console.error('Error loading all events:', error);
@@ -11085,6 +11166,21 @@
       await renderEventsToContainer(events, eventsList, 'registered');
     }
 
+    function renderYogaPilatesSchedule(events) {
+      const host=document.getElementById('yogaPilatesSchedule'); if(!host)return;
+      const dateKey=e=>{const raw=e.startDate||e.sessionDate;const d=raw&&raw.toDate?raw.toDate():new Date(raw);return isNaN(d.getTime())?'':d.toISOString().slice(0,10);};
+      const classes=(events||[]).filter(e=>['yoga','pilates'].includes(String(e.sport||'').toLowerCase())&&e.status!=='cancelled'&&dateKey(e)).sort((a,b)=>dateKey(a).localeCompare(dateKey(b)));
+      if(!classes.length){host.innerHTML='<p class="text-muted mb-0">No Yoga or Pilates classes are scheduled yet.</p>';return;}
+      const todayKey=new Date().toISOString().slice(0,10),firstUpcoming=classes.find(e=>dateKey(e)>=todayKey)||classes[classes.length-1];
+      const month=dateKey(firstUpcoming).slice(0,7), monthEvents=classes.filter(e=>dateKey(e).startsWith(month));
+      const [year,mon]=month.split('-').map(Number), days=new Date(year,mon,0).getDate(), offset=new Date(year,mon-1,1).getDay();
+      let html='<table class="table table-bordered align-middle"><thead><tr>'+['Sun','Mon','Tue','Wed','Thu','Fri','Sat'].map(d=>'<th>'+d+'</th>').join('')+'</tr></thead><tbody><tr>';
+      for(let i=0;i<offset;i++)html+='<td class="bg-light"></td>';
+      for(let d=1;d<=days;d++){if((offset+d-1)%7===0&&d!==1)html+='</tr><tr>';const date=year+'-'+String(mon).padStart(2,'0')+'-'+String(d).padStart(2,'0');const ev=monthEvents.filter(e=>dateKey(e)===date);html+='<td style="min-width:110px;height:90px;vertical-align:top"><strong>'+d+'</strong>'+ev.map(e=>'<button type="button" class="btn btn-link p-0 d-block text-start small yoga-calendar-event" data-target-event="'+e.id+'">'+(e.startTime||'')+' '+e.name+'</button>').join('')+'</td>';}
+      html+='</tr></tbody></table><div class="small text-muted">Showing '+new Date(year,mon-1,1).toLocaleString('en',{month:'long',year:'numeric'})+'. Register for a class in its card below.</div>';host.innerHTML=html;
+      host.querySelectorAll('.yoga-calendar-event').forEach(button=>button.addEventListener('click',()=>document.querySelector('.event-card[data-event-id="'+button.dataset.targetEvent+'"]')?.scrollIntoView({behavior:'smooth',block:'center'})));
+    }
+
     // Generic render function
     async function renderEventsToContainer(events, container, type) {
       container.innerHTML = '';
@@ -11163,7 +11259,7 @@
         }
 
         col.innerHTML = `
-          <div class="card h-100 event-card">
+          <div class="card h-100 event-card" data-event-id="${event.id}">
             <img src="${event.imageUrl || 'https://via.placeholder.com/300x200?text=Event'}" 
                  class="card-img-top" alt="${event.name}"
                  style="height: 200px; object-fit: cover;"
@@ -11186,8 +11282,9 @@
                 </p>
                 <p class="mb-1">
                   <i class="fas fa-map-marker-alt me-2"></i>
-                  ${locationText}, ${event.district || ''}, ${event.state || ''}
+                  ${event.locationType === 'freelance' ? 'Freelance instructor • Home visit' : (locationText || 'Facility studio')}, ${event.district || ''}, ${event.state || ''}
                 </p>
+                ${Number(event.price || event.entryFee) > 0 ? `<p class="mb-1"><i class="fas fa-tag me-2"></i>RM${Number(event.price || event.entryFee).toFixed(2)} per person</p>` : ''}
                 <p class="mb-1">
                   <i class="fas fa-users me-2"></i>
                   ${participantsCount} participants

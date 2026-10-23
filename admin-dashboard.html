@@ -1180,6 +1180,59 @@
         .unified-info-box .info-text strong {
             color: var(--primary-color);
         }
+        .rate-schedule { display:grid; gap:12px; margin:12px 0; }
+        .rate-session { background:#fff; border:1px solid #e5eaf2; border-radius:14px; padding:16px; box-shadow:0 3px 12px rgba(26,42,108,.05); }
+        .rate-session-head { display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:14px; }
+        .rate-session-title { display:flex; align-items:center; gap:10px; font-weight:700; color:#24324a; }
+        .rate-session-icon { width:36px; height:36px; border-radius:11px; display:grid; place-items:center; color:#4457c4; background:#eef0ff; }
+        .rate-session-fields { display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr) minmax(180px,1.2fr); gap:12px; align-items:end; }
+        .rate-session .form-label { font-size:.78rem; color:#68758a; margin-bottom:6px; }
+        .rate-price-wrap { position:relative; }
+        .rate-price-prefix { position:absolute; top:50%; left:12px; transform:translateY(-50%); font-weight:700; color:#45536a; }
+        .rate-price-input { padding-left:42px; font-size:1.12rem; font-weight:700; min-height:44px; }
+        .rate-period-pill { display:inline-flex; border-radius:999px; padding:5px 10px; background:#f2f5fa; color:#627086; font-size:.75rem; font-weight:600; }
+        .rate-presets { display:flex; flex-wrap:wrap; gap:10px; }
+        .rate-preset { flex:1 1 200px; text-align:left; border:1px solid #e2e8f0; border-radius:12px; background:#fff; padding:11px 14px; color:#34435b; }
+        .rate-preset:hover { border-color:#8291ef; background:#f7f8ff; }
+        .rate-preset strong,.rate-preset small { display:block; }
+        .rate-preset small { color:#778399; margin-top:2px; }
+        @media(max-width:700px) { .rate-session-fields { grid-template-columns:1fr 1fr; } .rate-session-fields .rate-price-field { grid-column:1 / -1; } }
+        /* Admin portal refresh */
+        :root { --primary-color:#4658d8; --secondary-color:#3444b8; --light-color:#f5f7fc; --dark-color:#17233d; --sidebar-width:270px; }
+        body { background:#f4f6fb; color:#202b3e; font-family:Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif; }
+        .sidebar { background:#fff; color:#28354b; border-right:1px solid #e8edf4; box-shadow:8px 0 28px rgba(29,42,70,.04); padding:18px 14px; }
+        .sidebar-header { border-bottom:1px solid #edf0f5; padding:10px 8px 18px; }
+        .sidebar-title { color:#1e2a40; letter-spacing:-.03em; }
+        .sidebar-menu a { color:#657189; border-radius:11px; padding:11px 13px; font-weight:550; }
+        .sidebar-menu a:hover,.sidebar-menu a.active { color:#4053d1; background:#eef0ff; }
+        .sidebar-menu a.active { box-shadow:inset 3px 0 #4658d8; }
+        .sidebar-menu i { color:inherit; }
+        .sidebar-footer { border-top:1px solid #edf0f5; }
+        .main-content { padding:26px 30px; }
+        .header { border:1px solid #e9edf4; border-radius:16px; padding:16px 22px; box-shadow:0 5px 20px rgba(31,45,75,.04); }
+        .header h1 { font-size:1.35rem; letter-spacing:-.03em; }
+        #pageContent h3,#pageContent h4 { color:#1e2a40; letter-spacing:-.025em; font-weight:700; }
+        .stats-card,.table-card,.card,.modal-content { border:1px solid #e8edf4; border-radius:16px; box-shadow:0 6px 22px rgba(31,45,75,.045); }
+        .stats-card { padding:21px; }
+        .stats-card:hover { transform:translateY(-2px); box-shadow:0 10px 24px rgba(31,45,75,.08); }
+        .table-card { padding:22px; background:#fff; }
+        .btn { border-radius:9px; font-weight:550; }
+        .btn-primary { background:#4658d8; border-color:#4658d8; }
+        .form-control,.form-select { border-color:#dfe5ef; border-radius:9px; min-height:42px; }
+        .form-control:focus,.form-select:focus { border-color:#8d98ed; box-shadow:0 0 0 .2rem rgba(70,88,216,.12); }
+        .table thead th { color:#758198; background:#f8f9fc; font-size:.76rem; font-weight:700; text-transform:uppercase; letter-spacing:.045em; border-bottom:1px solid #e8edf4; }
+        .table>:not(caption)>*>* { padding:.8rem .75rem; vertical-align:middle; }
+        .modal-content { overflow:hidden; }
+        .modal-header { background:#fbfcfe; border-bottom-color:#edf0f5; padding:18px 22px; }
+        .modal-footer { border-top-color:#edf0f5; padding:14px 22px; }
+        .calendar { gap:8px; }
+        .calendar-header { border-radius:9px; background:#f1f3f8; color:#748098; font-weight:700; }
+        .calendar-day { border:1px solid #e8edf4; border-radius:10px; background:#fff; }
+        .calendar-day.today { border:2px solid #7886e8; background:#f8f9ff; }
+        .calendar-event { border-radius:8px; box-shadow:none; }
+        .calendar-day.drag-over,.calendar-week-slot.drag-over { outline:2px solid #6879e8; background:#f0f2ff; }
+        @media(max-width:900px) { .main-content { padding:18px; } }
+        @media(max-width:700px) { .main-content { padding:12px; } .header { padding:12px 14px; } .calendar { gap:3px; } .calendar-day { padding:4px; } }
     </style>
 </head>
 
@@ -1446,6 +1499,8 @@
         let editAmenities = [];
         let editFoods = [];
         let editCourts = [];             // EDIT:   [{ name, slots: [], _open }]
+        let editFacilityPricingBands = [];
+        let editFacilityDefaultDates = [];
         let editCourtLayoutImageUrl = "";
         let editCourtLayouts = [];
         let editPDFUrl = "";
@@ -1475,7 +1530,7 @@
         // Otherwise → show amount minus 5% commission (current default behaviour)
         function applyCommissionDisplay(amount, facilityId) {
             const amt = parseFloat(amount) || 0;
-            if (getFacilityCommissionMode(facilityId)) return amt;
+            if (getFacilityCommissionMode(facilityId)) return 0;
             return amt - amt * 0.05;
         }
 
@@ -1486,14 +1541,21 @@
             return amt * 0.05;
         }
 
-        // Small badge used in the facility management table
-        function getCommissionModeBadge(facility) {
-            if (facility && facility.showPriceWithoutCommission === true) {
-                return ' <i class="fas fa-eye-slash text-success" title="Admins see this facility\'s prices WITHOUT the 5% commission"></i>';
-            }
-            return '';
-        }
-
+        function toBookingDate(value){if(!value)return null;if(value instanceof Date)return Number.isNaN(value.getTime())?null:value;if(typeof value.toDate==='function'){const d=value.toDate();return Number.isNaN(d.getTime())?null:d;}if(typeof value==='object'&&Number.isFinite(value.seconds))return new Date(value.seconds*1000);if(typeof value==='string'){const match=value.match(/^(\d{4})-(\d{2})-(\d{2})$/);if(match)return new Date(Number(match[1]),Number(match[2])-1,Number(match[3]));}const d=new Date(value);return Number.isNaN(d.getTime())?null:d;}
+        function bookingDateKey(value){const d=toBookingDate(value);return d?`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`:'';}
+        function bookingSlotValue(b){return String(b?.time||b?.slot||b?.timeSlot||b?.Time||'');}
+        function localDateTimestamp(date){const [y,m,d]=String(date).split('-').map(Number);return firebase.firestore.Timestamp.fromDate(new Date(y,m-1,d,12,0,0));}
+        function bookingDurationHours(b) { if(Number(b?.durationHours)>0)return Number(b.durationHours); const m=String(bookingSlotValue(b)).match(/(\d{1,2}:\d{2})\s*[-–]\s*(\d{1,2}:\d{2})/); if(m){const n=v=>{const [h,x]=v.split(':').map(Number);return h*60+x;};return Math.max(0,(n(m[2])-n(m[1]))/60);} const d=String(b?.duration||'').match(/[0-9]+(?:\.[0-9]+)?/);if(d)return Number(d[0]); if(Array.isArray(b?.slots)&&b.slots.length)return b.slots.length*.5;return 1; }
+        function getFacilityPricingBands(f){return Array.isArray(f?.pricingBands)&&f.pricingBands.length?f.pricingBands:[{start:'07:00',end:'19:00',rate:Number(f?.price)||0},{start:'19:00',end:'21:00',rate:Number(f?.price)||0}];}
+        function bookingHoursInBand(b,fromHour,toHour){const ranges=[];const inputs=Array.isArray(b?.slots)&&b.slots.length?b.slots:[b?.time||b?.timeSlot||''];for(const input of inputs){const m=String(input).match(/(\d{1,2}:\d{2})\s*[-–]\s*(\d{1,2}:\d{2})/);if(!m)continue;const toMin=v=>{const [h,x]=v.split(':').map(Number);return h*60+x;};const a=toMin(m[1]),z=toMin(m[2]);ranges.push([a,z]);}if(!ranges.length){const h=parseInt(String(b?.time||'').slice(0,2),10);return h>=fromHour&&h<toHour?bookingDurationHours(b):0;}return ranges.reduce((sum,[a,z])=>sum+Math.max(0,Math.min(z,toHour*60)-Math.max(a,fromHour*60))/60,0); }
+        function pricingBandEditorHTML(id,bands){return `<div class="rate-presets"><button class="rate-preset" type="button" onclick="applyPricingPreset('${id}','dayNight')"><strong><i class="fas fa-sun me-2 text-warning"></i>Day + night</strong><small>7:00 AM–7:00 PM, then 7:00 PM–9:00 PM</small></button><button class="rate-preset" type="button" onclick="applyPricingPreset('${id}','flat')"><strong><i class="fas fa-clock me-2 text-primary"></i>One rate</strong><small>Same hourly price all day</small></button></div><div class="rate-schedule" id="${id}">${(bands||[]).map((b,i)=>pricingBandRowHTML(b,i)).join('')}</div><button class="btn btn-sm btn-light border" type="button" onclick="addPricingBand('${id}')"><i class="fas fa-plus me-1"></i>Add time period</button>`;}
+        function pricingTimeOptions(selected){const times=[];for(let m=0;m<1440;m+=30){const h=Math.floor(m/60),minute=m%60;times.push(`${String(h).padStart(2,'0')}:${String(minute).padStart(2,'0')}`);}if(selected&&!times.includes(selected))times.push(selected);times.sort();return times.map(t=>`<option value="${t}" ${t===selected?'selected':''}>${formatTimeForRate(t)}</option>`).join('');}
+        function formatTimeForRate(value){const [h,m]=value.split(':').map(Number);const suffix=h<12?'AM':'PM';return `${(h%12)||12}:${String(m).padStart(2,'0')} ${suffix}`;}
+        function pricingBandRowHTML(b={},index=0){const start=b.start||'07:00',end=b.end||'19:00';return `<div class="rate-session pricing-band"><div class="rate-session-head"><div class="rate-session-title"><span class="rate-session-icon"><i class="fas ${index===1?'fa-moon':'fa-sun'}"></i></span><span>Session ${index+1}<span class="d-block fw-normal small text-muted">Set when this rate applies</span></span></div><span class="rate-period-pill">Per hour</span><button type="button" class="btn btn-sm btn-light text-danger" title="Remove period" onclick="this.closest('.pricing-band').remove()"><i class="fas fa-trash"></i></button></div><div class="rate-session-fields"><div><label class="form-label">Starts</label><select class="form-select band-start">${pricingTimeOptions(start)}</select></div><div><label class="form-label">Ends</label><select class="form-select band-end">${pricingTimeOptions(end)}</select></div><div class="rate-price-field"><label class="form-label">Hourly price</label><div class="rate-price-wrap"><span class="rate-price-prefix">RM</span><input type="number" class="form-control rate-price-input band-rate" min="0" step="1" value="${Number(b.rate)||0}" placeholder="0"></div></div></div></div>`;}
+        function applyPricingPreset(id,preset){const c=document.getElementById(id);if(!c)return;const rows=preset==='dayNight'?[{start:'07:00',end:'19:00',rate:50},{start:'19:00',end:'21:00',rate:60}]:[{start:'07:00',end:'21:00',rate:50}];c.innerHTML=rows.map((b,i)=>pricingBandRowHTML(b,i)).join('');}
+        function addPricingBand(id){const c=document.getElementById(id);if(c){const i=c.querySelectorAll('.pricing-band').length;c.insertAdjacentHTML('beforeend',pricingBandRowHTML({start:'07:00',end:'19:00',rate:0},i));}}
+        function readPricingBands(id){return Array.from(document.querySelectorAll(`#${id} .pricing-band`)).map(r=>({start:r.querySelector('.band-start').value,end:r.querySelector('.band-end').value,rate:Number(r.querySelector('.band-rate').value)||0})).filter(b=>b.start&&b.end&&b.start<b.end);}
+        function readCourtDates(scope,i){const list=getCourtList(scope);const e=document.getElementById(`court-dates-${scope}-${i}`);if(e?._flatpickr){const ds=e._flatpickr.selectedDates;if(ds.length===2)return getDatesInRange(ds[0],ds[1]);return ds.map(d=>{const y=d.getFullYear(),m=String(d.getMonth()+1).padStart(2,'0'),day=String(d.getDate()).padStart(2,'0');return `${y}-${m}-${day}`;});}return Array.isArray(list[i]?.dates)?list[i].dates:[];}
         // Legacy globals kept for backwards compatibility (no longer used for court names)
         let courtNames = [];
         let editCourtNames = [];
@@ -1832,6 +1894,12 @@
             if (!container) return;
 
             const list = getCourtList(scope);
+            list.forEach((court, index) => {
+                const pricingId = `courtPricing-${scope}-${index}`;
+                if (document.getElementById(pricingId)) court.pricingBands = readPricingBands(pricingId);
+                const dateInput = document.getElementById(`court-dates-${scope}-${index}`);
+                if (dateInput?._flatpickr) court.dates = readCourtDates(scope, index);
+            });
 
             if (!list.length) {
                 container.innerHTML =
@@ -1848,22 +1916,21 @@
                                 <span class="badge bg-secondary ms-2" id="court-count-${scope}-${index}">${(court.slots || []).length} slot(s)</span>
                             </div>
                             <div class="d-flex gap-1">
-                                <button type="button" class="btn btn-sm btn-outline-primary"
-                                        onclick="toggleCourtSlotPanel('${scope}', ${index})">
-                                    <i class="fas fa-clock me-1"></i> Time Slots
-                                </button>
                                 <button type="button" class="btn btn-sm btn-danger"
                                         onclick="removeCourt('${scope}', ${index})">
                                     <i class="fas fa-trash"></i>
                                 </button>
                             </div>
                         </div>
+                        <div class="p-2"><label class="form-label small fw-semibold">Available date range</label><input class="form-control form-control-sm court-date-picker" id="court-dates-${scope}-${index}" value="${(court.dates || []).join(', ')}" placeholder="Choose a start date, then an end date"><small class="text-muted">All dates between the start and end are included.</small></div>
                         <div class="court-slots-panel" id="court-panel-${scope}-${index}"
-                             style="display:${court._open ? 'block' : 'none'};">
+                             style="display:block;">
                             ${renderCourtSlotPickerHTML(scope, index, court.slots || [])}
                         </div>
+                        <div class="p-3 border-top"><label class="form-label fw-semibold">Hourly rates for ${court.name}</label><div class="small text-muted mb-2">Set the price for each time period. Add or remove periods as needed.</div>${pricingBandEditorHTML(`courtPricing-${scope}-${index}`,court.pricingBands || (scope==='edit'?editFacilityPricingBands:[{start:'07:00',end:'19:00',rate:50},{start:'19:00',end:'21:00',rate:60}]))}</div>
                     </div>
                 `).join('');
+            if (typeof flatpickr === 'function') container.querySelectorAll('.court-date-picker').forEach((input, index) => flatpickr(input, {mode:'range',dateFormat:'Y-m-d',defaultDate:list[index]?.dates?.length?[list[index].dates[0],list[index].dates[list[index].dates.length-1]]:[],onChange:(dates)=>{list[index].dates=dates.length===2?getDatesInRange(dates[0],dates[1]):dates.map(d=>{const y=d.getFullYear(),m=String(d.getMonth()+1).padStart(2,'0'),day=String(d.getDate()).padStart(2,'0');return `${y}-${m}-${day}`;});}}));
         }
 
         /* The 1-hour slot grid for ONE court */
@@ -2010,7 +2077,7 @@
                 showToast(`Court "${name}" already exists`, 'warning');
                 return;
             }
-            courts.push({ name: name, slots: [], _open: true });
+            courts.push({ name: name, dates: [], slots: [], pricingBands:[{start:'07:00',end:'19:00',rate:50},{start:'19:00',end:'21:00',rate:60}], _open: true });
             input.value = '';
             renderCourtList('courtListContainer', 'create');
             showToast(`Court "${name}" added — now choose its time slots`, 'success');
@@ -2026,7 +2093,7 @@
                 showToast(`Court "${name}" already exists`, 'warning');
                 return;
             }
-            editCourts.push({ name: name, slots: [], _open: true });
+            editCourts.push({ name: name, dates: [...editFacilityDefaultDates], slots: [], pricingBands:[...editFacilityPricingBands.map(b=>({...b}))], _open: true });
             input.value = '';
             renderCourtList('editCourtListContainer', 'edit');
             showToast(`Court "${name}" added — now choose its time slots`, 'success');
@@ -3056,6 +3123,13 @@
         // 10. FACILITY MANAGEMENT (PER-COURT TIME SLOTS)
         // =========================================================================
         async function loadFacilityManagementPage() {
+            const facilityHours = {};
+            for (const f of adminFacilities) {
+                const snap = await db.collection('bookings').where('facilityId', '==', f.id).get();
+                let hours = 0;
+                snap.forEach(d => { const b=d.data(); if (!['cancelled','rejected'].includes(String(b.status||'').toLowerCase())) hours += bookingDurationHours(b); });
+                facilityHours[f.id] = hours;
+            }
             let facilitiesHTML = '';
             if (adminFacilities.length === 0) {
                 facilitiesHTML = '<tr><td colspan="7" class="text-center py-4">No facilities found</td></tr>';
@@ -3073,14 +3147,12 @@
                             return `${name} <span class="badge bg-light text-dark">${slotCount} slots</span>`;
                         }).join('<br>');
                     }
-                    // ✅ NEW: per-facility commission mode badge
-                    const commissionBadge = getCommissionModeBadge(facility);
                     facilitiesHTML += `
                             <tr>
                                 <td>${facility.name || 'N/A'}</td>
                                 <td>${facility.type || 'N/A'}</td>
                                 <td>${facility.location || ''},${facility.state || ''}, ${facility.district || ''}</td>
-                                <td>RM${facility.price || '0'}${commissionBadge}</td>
+                                <td>${facility.showPriceWithoutCommission === true ? `${(facilityHours[facility.id] || 0).toFixed(1)} booked hrs` : `RM${facility.price || '0'}`}</td>
                                 <td><div class="small">${courtList}</div></td>
                                 <td>${facility.status || 'Active'}</td>
                                 <td>
@@ -3105,7 +3177,7 @@
                     <div class="table-card">
                         <div class="table-responsive">
                             <table class="table table-hover">
-                                <thead><tr><th>Facility Name</th><th>Type</th><th>Location</th><th>Price</th><th>Courts &amp; Slots</th><th>Status</th><th>Actions</th></tr></thead>
+                                <thead><tr><th>Facility Name</th><th>Type</th><th>Location</th><th>Rate / Booked Hours</th><th>Courts &amp; Slots</th><th>Status</th><th>Actions</th></tr></thead>
                                 <tbody>${facilitiesHTML}</tbody>
                             </table>
                         </div>
@@ -3140,55 +3212,17 @@
                                             <div class="col-md-6"><div class="form-group"><label class="form-label">Location Link</label><input type="url" class="form-control" name="locationLink" placeholder="https://maps.google.com/..." pattern="https://.*"><div class="form-text">Enter Google Maps link or directions URL</div></div></div>
                                         </div>
                                         <div class="row">
-                                            <div class="col-md-6"><div class="form-group"><label class="form-label">Price (RM)</label><input type="number" class="form-control" name="price" min="0" step="0.01" required></div></div>
+                                            <div class="col-md-6"><div class="form-group"><label class="form-label">Default rate (fallback only, RM/hour)</label><input type="number" class="form-control" name="price" min="0" step="0.01" placeholder="Court rates are set below"></div></div>
                                             <div class="col-md-6"><div class="form-group"><label class="form-label">Capacity</label><input type="number" class="form-control" name="capacity" min="1" required></div></div>
                                         </div>
+                                        
 
-                                        <!-- ===== SHARED DATE RANGE ===== -->
-                                        <div class="row mt-3">
-                                            <div class="col-12">
-                                                <div class="form-group">
-                                                    <label class="form-label fw-bold">
-                                                        <i class="fas fa-calendar-days me-2"></i>Available Date Range
-                                                        <span class="text-muted fw-normal">(Pick start and end date)</span>
-                                                    </label>
-                                                    <div class="date-selection-group">
-                                                        <input type="text" class="form-control" id="multiDateCreate" placeholder="Select date range">
-                                                        <div class="selected-dates" id="selectedDatesContainer">
-                                                            <small class="text-muted">No dates selected</small>
-                                                        </div>
-                                                        <small class="text-muted">
-                                                            <i class="fas fa-info-circle me-1"></i>
-                                                            These dates apply to ALL courts in this facility.
-                                                        </small>
-                                                    </div>
-                                                </div>
-
-                                                <!-- ===== COURTS WITH THEIR OWN TIME SLOTS ===== -->
-                                                <div class="form-group mt-4">
-                                                    <label class="form-label fw-bold">
-                                                        <i class="fas fa-chess-board me-2"></i>Courts &amp; Their Time Slots
-                                                        <span class="text-muted fw-normal">(each court can have different timings)</span>
-                                                    </label>
-                                                    <div class="border p-3 rounded">
-                                                        <div class="row align-items-end">
-                                                            <div class="col-md-8">
-                                                                <label class="form-label">Court Name</label>
-                                                                <input type="text" class="form-control" id="courtNameInput" placeholder="e.g., Court A, Court 1, Main Court">
-                                                            </div>
-                                                            <div class="col-md-4">
-                                                                <button type="button" class="btn btn-success w-100" onclick="addCourtName()">
-                                                                    <i class="fas fa-plus me-1"></i> Add Court
-                                                                </button>
-                                                            </div>
-                                                        </div>
-                                                        <div class="mt-3" id="courtListContainer"></div>
-                                                        <small class="text-muted mt-2 d-block">
-                                                            <i class="fas fa-info-circle me-1"></i>
-                                                            Each court keeps its own 1-hour time slots. The available date range above is shared by all courts.
-                                                        </small>
-                                                    </div>
-                                                </div>
+                                        <div class="form-group mt-4">
+                                            <label class="form-label fw-bold"><i class="fas fa-chess-board me-2"></i>Set up courts</label>
+                                            <p class="small text-muted">Add a court, then enter its dates, available times, and hourly rates together.</p>
+                                            <div class="border p-3 rounded">
+                                                <div class="row align-items-end"><div class="col-md-8"><label class="form-label">Court name</label><input type="text" class="form-control" id="courtNameInput" placeholder="e.g. Court A"></div><div class="col-md-4"><button type="button" class="btn btn-success w-100" onclick="addCourtName()"><i class="fas fa-plus me-1"></i>Add court</button></div></div>
+                                                <div class="mt-3" id="courtListContainer"></div>
                                             </div>
                                         </div>
 
@@ -3274,12 +3308,14 @@
                 }
 
                 // Get all dates from range (shared by every court)
-                const availableDates = getCreateSelectedDates();
+                const availableDates = [...new Set(courts.flatMap((c,i)=>readCourtDates("create",i)))].sort();
 
                 // ✅ Each court carries its own 1-hour slots
-                const courtsData = courts.map(c => ({
+                const courtsData = courts.map((c, i) => ({
                     name: c.name,
-                    slots: [...c.slots].sort()
+                    dates: readCourtDates("create", i),
+                    slots: [...c.slots].sort(),
+                    pricingBands: readPricingBands(`courtPricing-create-${i}`)
                 }));
                 // Union of all court slots — kept on the facility for backwards compatibility
                 const slots = [...new Set(courtsData.flatMap(c => c.slots))].sort();
@@ -3291,7 +3327,8 @@
                     state: document.getElementById("facilityState").value,
                     district: document.getElementById("facilityDistrict").value,
                     locationLink: formData.get("locationLink"),
-                    price: parseFloat(formData.get("price")),
+                    price: parseFloat(formData.get("price")) || courtsData[0]?.pricingBands?.[0]?.rate || 0,
+                    pricingBands: courtsData[0]?.pricingBands || [],
                     capacity: parseInt(formData.get("capacity")),
                     status: formData.get("status"),
                     description: formData.get("description"),
@@ -3341,19 +3378,25 @@
                 //    Legacy documents (courts stored as plain strings) inherit the facility-level slots.
                 const facilitySlots = Array.isArray(facilityy.slots) ? facilityy.slots : [];
                 editCourts = [];
+                editFacilityDefaultDates = Array.isArray(facilityy.availableDates) ? [...facilityy.availableDates] : [];
+                editFacilityPricingBands = getFacilityPricingBands(facilityy);
                 if (Array.isArray(facilityy.courts)) {
                     facilityy.courts.forEach(c => {
                         if (c && typeof c === 'object') {
                             editCourts.push({
                                 name: c.name || c.courtName || 'Court',
+                                dates: Array.isArray(c.dates) ? [...c.dates] : [],
                                 slots: (Array.isArray(c.slots) && c.slots.length) ? [...c.slots] : [...facilitySlots],
-                                _open: false
+                                pricingBands: Array.isArray(c.pricingBands) && c.pricingBands.length ? [...c.pricingBands] : [...editFacilityPricingBands],
+                                _open: true
                             });
                         } else {
                             editCourts.push({
                                 name: String(c),
+                                dates: [...editFacilityDefaultDates],
                                 slots: [...facilitySlots],
-                                _open: false
+                                pricingBands: [...editFacilityPricingBands],
+                                _open: true
                             });
                         }
                     });
@@ -3395,55 +3438,17 @@
                                                 <div class="col-md-6"><div class="form-group"><label class="form-label">Location Link</label><input type="url" class="form-control" name="locationLink" value="${facility.locationLink || ''}"></div></div>
                                             </div>
                                             <div class="row">
-                                                <div class="col-md-6"><div class="form-group"><label class="form-label">Price (RM)</label><input type="number" class="form-control" name="price" value="${facility.price || 0}" min="0" step="0.01" required></div></div>
+                                                <div class="col-md-6"><div class="form-group"><label class="form-label">Default rate (fallback only, RM/hour)</label><input type="number" class="form-control" name="price" value="${facility.price || 0}" min="0" step="0.01" placeholder="Court rates are set below"></div></div>
                                                 <div class="col-md-6"><div class="form-group"><label class="form-label">Capacity</label><input type="number" class="form-control" name="capacity" value="${facility.capacity || 1}" min="1" required></div></div>
                                             </div>
+                                            
 
-                                            <!-- ===== SHARED DATE RANGE (EDIT) ===== -->
-                                            <div class="row mt-3">
-                                                <div class="col-12">
-                                                    <div class="form-group">
-                                                        <label class="form-label fw-bold">
-                                                            <i class="fas fa-calendar-days me-2"></i>Available Date Range
-                                                            <span class="text-muted fw-normal">(Pick start and end date)</span>
-                                                        </label>
-                                                        <div class="date-selection-group">
-                                                            <input type="text" class="form-control" id="multiDateEdit" placeholder="Select date range">
-                                                            <div class="selected-dates" id="editSelectedDatesContainer">
-                                                                <small class="text-muted">No dates selected</small>
-                                                            </div>
-                                                            <small class="text-muted">
-                                                                <i class="fas fa-info-circle me-1"></i>
-                                                                These dates apply to ALL courts in this facility.
-                                                            </small>
-                                                        </div>
-                                                    </div>
-
-                                                    <!-- ===== COURTS WITH THEIR OWN TIME SLOTS (EDIT) ===== -->
-                                                    <div class="form-group mt-4">
-                                                        <label class="form-label fw-bold">
-                                                            <i class="fas fa-chess-board me-2"></i>Courts &amp; Their Time Slots
-                                                            <span class="text-muted fw-normal">(each court can have different timings)</span>
-                                                        </label>
-                                                        <div class="border p-3 rounded">
-                                                            <div class="row align-items-end">
-                                                                <div class="col-md-8">
-                                                                    <label class="form-label">Court Name</label>
-                                                                    <input type="text" class="form-control" id="editCourtNameInput" placeholder="e.g., Court A, Court 1, Main Court">
-                                                                </div>
-                                                                <div class="col-md-4">
-                                                                    <button type="button" class="btn btn-success w-100" onclick="addEditCourtName()">
-                                                                        <i class="fas fa-plus me-1"></i> Add Court
-                                                                    </button>
-                                                                </div>
-                                                            </div>
-                                                            <div class="mt-3" id="editCourtListContainer"></div>
-                                                            <small class="text-muted mt-2 d-block">
-                                                                <i class="fas fa-info-circle me-1"></i>
-                                                                Each court keeps its own 1-hour time slots. The available date range above is shared by all courts.
-                                                            </small>
-                                                        </div>
-                                                    </div>
+                                            <div class="form-group mt-4">
+                                                <label class="form-label fw-bold"><i class="fas fa-chess-board me-2"></i>Courts, dates, times &amp; hourly rates</label>
+                                                <p class="small text-muted">Each court has its own setup. Add a court or update its dates, time slots, and rates below.</p>
+                                                <div class="border p-3 rounded">
+                                                    <div class="row align-items-end"><div class="col-md-8"><label class="form-label">Court name</label><input type="text" class="form-control" id="editCourtNameInput" placeholder="e.g. Court A"></div><div class="col-md-4"><button type="button" class="btn btn-success w-100" onclick="addEditCourtName()"><i class="fas fa-plus me-1"></i>Add court</button></div></div>
+                                                    <div class="mt-3" id="editCourtListContainer"></div>
                                                 </div>
                                             </div>
 
@@ -3558,12 +3563,15 @@
                 }
 
                 // Get all dates from range (shared by every court)
-                const availableDates = getEditSelectedDates();
+                const courtDates = editCourts.flatMap((c,i)=>readCourtDates("edit",i));
+                const availableDates = [...new Set(courtDates.length ? courtDates : editFacilityDefaultDates)].sort();
 
                 // ✅ Each court carries its own 1-hour slots
-                const courtsData = editCourts.map(c => ({
+                const courtsData = editCourts.map((c, i) => ({
                     name: c.name,
-                    slots: [...c.slots].sort()
+                    dates: readCourtDates("edit", i),
+                    slots: [...c.slots].sort(),
+                    pricingBands: readPricingBands(`courtPricing-edit-${i}`)
                 }));
                 const slots = [...new Set(courtsData.flatMap(c => c.slots))].sort();
 
@@ -3574,7 +3582,8 @@
                     state: document.getElementById("editFacilityState").value,
                     district: document.getElementById("editFacilityDistrict").value,
                     locationLink: formData.get("locationLink"),
-                    price: parseFloat(formData.get("price")),
+                    price: parseFloat(formData.get("price")) || facilityy.price || courtsData[0]?.pricingBands?.[0]?.rate || 0,
+                    pricingBands: courtsData[0]?.pricingBands || editFacilityPricingBands,
                     capacity: parseInt(formData.get("capacity")),
                     status: formData.get("status"),
                     description: formData.get("description"),
@@ -3648,11 +3657,6 @@
                             `;
                     }).join('') : 'No courts';
 
-                // ✅ NEW: per-facility commission mode pill
-                const commissionModeHtml = facility.showPriceWithoutCommission === true
-                    ? '<span class="badge bg-success"><i class="fas fa-eye-slash me-1"></i>Admins see price WITHOUT commission</span>'
-                    : '<span class="badge bg-warning text-dark"><i class="fas fa-eye me-1"></i>Admins see price WITH commission</span>';
-
                 const modalContent = `
                         <div class="modal fade" id="viewFacilityModal" tabindex="-1">
                             <div class="modal-dialog modal-lg">
@@ -3668,7 +3672,6 @@
                                                 <p><strong>Price:</strong> RM${facility.price || '0'}</p>
                                                 <p><strong>Capacity:</strong> ${facility.capacity || 'N/A'} people</p>
                                                 <p><strong>Status:</strong> <span class="badge ${facility.status === 'Active' ? 'bg-success' : facility.status === 'Maintenance' ? 'bg-warning' : 'bg-secondary'}">${facility.status || 'Active'}</span></p>
-                                                <p><strong>Commission Mode:</strong><br>${commissionModeHtml}</p>
                                             </div>
                                         </div>
                                         <div class="mt-3"><h6>Courts &amp; Time Slots</h6>${courtsHtml}</div>
@@ -3889,7 +3892,7 @@
                                     <td>${booking.facilityName || 'Unknown Facility'}</td>
                                     <td>${displayDate}</td>
                                     <td>${displayTime}</td>
-                                    <td>RM${parseFloat(booking.amount || 0).toFixed(2)}</td>
+                                    <td>${getFacilityCommissionMode(booking.facilityId) ? `${bookingDurationHours(booking).toFixed(1)} hours` : `RM${parseFloat(booking.amount || 0).toFixed(2)}`}</td>
                                     <td><span class="badge badge-status ${statusBadgeClass}">${status.charAt(0).toUpperCase() + status.slice(1)}</span></td>
                                     <td><div class="btn-group" role="group"><button class="btn btn-sm btn-primary me-1" onclick="viewBooking('${booking.id}')" title="View Details"><i class="fas fa-eye"></i></button></div></td>
                                 </tr>
@@ -3917,7 +3920,7 @@
                         <div class="table-card">
                             <div class="table-responsive">
                                 <table class="table table-hover">
-                                    <thead><tr><th>User</th><th>Facility</th><th>Date</th><th>Time</th><th>Amount</th><th>Status</th><th>Actions</th></tr></thead>
+                                    <thead><tr><th>User</th><th>Facility</th><th>Date</th><th>Time</th><th>Hours / Amount</th><th>Status</th><th>Actions</th></tr></thead>
                                     <tbody id="bookingsTableBody">${bookingsHTML}</tbody>
                                 </table>
                             </div>
@@ -3957,13 +3960,15 @@
                 const bookingDoc = await db.collection('bookings').doc(bookingId).get();
                 if (!bookingDoc.exists) { showToast('Booking not found', 'danger'); return; }
                 const booking = bookingDoc.data();
+                const isNonCommissionFacility = getFacilityCommissionMode(booking.facilityId);
+                const bookedHoursDisplay = bookingDurationHours(booking).toFixed(1);
 
                 let amenitiesHTML = '<p class="text-muted mb-0">No amenities selected</p>';
                 if (booking.amenities && booking.amenities.length > 0) {
                     amenitiesHTML = booking.amenities.map(a => `
                             <div class="d-flex align-items-center mb-2">
                                 <img src="${a.amenityImage}" width="40" height="40" class="rounded me-2" alt="${a.amenity}">
-                                <div><div class="fw-semibold">${a.amenity}</div><small class="text-muted">RM ${a.amenityPrice}</small></div>
+                                <div><div class="fw-semibold">${a.amenity}</div><small class="text-muted">${isNonCommissionFacility ? '' : `RM ${a.amenityPrice}`}</small></div>
                             </div>
                         `).join('');
                 }
@@ -3973,7 +3978,7 @@
                     snacksHTML = booking.snacks.map(s => `
                             <div class="d-flex align-items-center mb-2">
                                 <img src="${s.image}" width="40" height="40" class="rounded me-2" alt="${s.name}">
-                                <div><div class="fw-semibold">${s.name}</div><small class="text-muted">RM ${s.price}</small></div>
+                                <div><div class="fw-semibold">${s.name}</div><small class="text-muted">${isNonCommissionFacility ? '' : `RM ${s.price}`}</small></div>
                             </div>
                         `).join('');
                 }
@@ -3990,7 +3995,7 @@
                                     <div class="modal-body">
                                         <div class="row">
                                             <div class="col-md-6"><h6>Booking Information</h6><p><strong>User:</strong> ${booking.userEmail || booking.userName || 'Unknown'}</p><p><strong>Facility:</strong> ${booking.facilityName || 'Unknown'}</p><p><strong>Court:</strong> ${booking.courtName || booking.court || 'N/A'}</p><p><strong>Date:</strong> ${date}</p><p><strong>Time:</strong> ${booking.time || booking.Time || 'N/A'}</p><p><strong>Duration:</strong> ${booking.duration || '1 hour(s)'}</p></div>
-                                            <div class="col-md-6"><h6>Payment & Status</h6><p><strong>Amount:</strong> RM${parseFloat(booking.amount || 0).toFixed(2)}</p><p><strong>Status:</strong> <span class="badge badge-status badge-${booking.status || 'pending'}">${booking.status || 'pending'}</span></p><p><strong>Payment Method:</strong> ${booking.paymentMethod || 'Online'}</p></div>
+                                            <div class="col-md-6"><h6>${isNonCommissionFacility ? 'Booking Hours & Status' : 'Payment & Status'}</h6><p><strong>${isNonCommissionFacility ? 'Booked hours:' : 'Amount:'}</strong> ${isNonCommissionFacility ? `${bookedHoursDisplay} hours` : `RM${parseFloat(booking.amount || 0).toFixed(2)}`}</p><p><strong>Status:</strong> <span class="badge badge-status badge-${booking.status || 'pending'}">${booking.status || 'pending'}</span></p><p><strong>Payment Method:</strong> ${booking.paymentMethod || 'Online'}</p></div>
                                         </div>
                                         ${booking.notes ? `<div class="mt-3"><h6>Additional Notes</h6><p>${booking.notes}</p></div>` : ''}
                                         <hr>
@@ -4002,6 +4007,7 @@
                                     <div class="modal-footer">
                                         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
                                         <button type="button" class="btn btn-success" onclick="openAssignStaffModal('${bookingId}','${booking.facilityName || ''}','${date}','${booking.time || booking.Time || ''}','${booking.duration || '1 hour'}','${booking.userName}')"><i class="fab fa-whatsapp me-1"></i> Assign Staff</button>
+                                        <button type="button" class="btn btn-outline-danger" onclick="cancelBooking('${bookingId}')"><i class="fas fa-ban me-1"></i> Cancel Booking</button>
                                         <button type="button" class="btn btn-warning" onclick="editBooking('${bookingId}')"><i class="fas fa-edit me-1"></i> Edit Booking</button>
                                     </div>
                                 </div>
@@ -4080,97 +4086,95 @@
         }
 
         function openEditBookingModal(bookingId, booking) {
-            document.getElementById("editBookingModal")?.remove();
+            document.getElementById('editBookingModal')?.remove();
             currentBooking = booking;
-            oldBookingDate = booking.date.toDate ?
-                booking.date.toDate().toISOString().split("T")[0] :
-                new Date(booking.date).toISOString().split("T")[0];
-            oldBookingSlot = booking.time;
-
-            let editDate = "";
-            if (booking.date) {
-                editDate = booking.date.toDate().toISOString().split("T")[0];
-            }
-
+            oldBookingDate = bookingDateKey(booking.date);
+            oldBookingSlot = bookingSlotValue(booking);
+            const selectedCourt = booking.courtName || booking.court || '';
             const modalHTML = `
-                    <div class="modal fade" id="editBookingModal" tabindex="-1">
-                        <div class="modal-dialog">
-                            <div class="modal-content">
-                                <div class="modal-header"><h5 class="modal-title">Edit Booking</h5><button class="btn-close" data-bs-dismiss="modal"></button></div>
-                                <div class="modal-body">
-                                    <div class="mb-3"><label>Booking Date</label><input type="date" class="form-control" id="editBookingDate" value="${editDate}" onchange="loadAvailableSlots('${booking.facilityId}','${bookingId}')"></div>
-                                    <div class="mb-3"><label>Available Slots</label><select class="form-select" id="editBookingSlot"><option>Loading slots...</option></select></div>
-                                </div>
-                                <div class="modal-footer">
-                                    <button class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                                    <button class="btn btn-success" onclick="saveBookingChanges('${bookingId}','${booking.userEmail}')">Save Changes</button>
-                                </div>
-                            </div>
+                <div class="modal fade" id="editBookingModal" tabindex="-1" aria-hidden="true">
+                    <div class="modal-dialog modal-dialog-centered"><div class="modal-content">
+                        <div class="modal-header"><div><h5 class="modal-title mb-1">Edit booking</h5><div class="small text-muted">${booking.facilityName || 'Facility booking'}</div></div><button class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button></div>
+                        <div class="modal-body p-4">
+                            <div class="mb-3"><label class="form-label fw-semibold" for="editBookingCourt">Court</label><select class="form-select" id="editBookingCourt"><option>Loading courts…</option></select></div>
+                            <div class="mb-3"><label class="form-label fw-semibold" for="editBookingDate">Booking date</label><input type="date" class="form-control" id="editBookingDate" value="${oldBookingDate}"></div>
+                            <div class="mb-3"><label class="form-label fw-semibold" for="editBookingSlot">Available time</label><select class="form-select" id="editBookingSlot"><option value="">Select a court and date first</option></select><div class="form-text" id="editBookingSlotHelp">Available times update when the court or date changes.</div></div>
                         </div>
-                    </div>
-                `;
-            document.body.insertAdjacentHTML("beforeend", modalHTML);
-            new bootstrap.Modal(document.getElementById("editBookingModal")).show();
-            loadAvailableSlots(booking.facilityId, bookingId);
+                        <div class="modal-footer justify-content-between"><button class="btn btn-outline-danger" onclick="cancelBooking('${bookingId}')"><i class="fas fa-ban me-1"></i>Cancel booking</button><div class="d-flex gap-2"><button class="btn btn-light" data-bs-dismiss="modal">Close</button><button class="btn btn-primary" id="saveBookingChangesBtn" onclick="saveBookingChanges('${bookingId}')"><i class="fas fa-check me-1"></i>Save changes</button></div></div>
+                    </div></div>
+                </div>`;
+            document.body.insertAdjacentHTML('beforeend', modalHTML);
+            const modalEl = document.getElementById('editBookingModal');
+            modalEl.addEventListener('hidden.bs.modal', () => modalEl.remove(), {once:true});
+            const courtSelect = document.getElementById('editBookingCourt');
+            courtSelect.addEventListener('change', () => loadAvailableSlots(booking.facilityId, bookingId));
+            document.getElementById('editBookingDate').addEventListener('change', () => loadAvailableSlots(booking.facilityId, bookingId));
+            db.collection('facilities').doc(booking.facilityId).get().then(facilitySnap => {
+                if (!facilitySnap.exists) { courtSelect.innerHTML = '<option value="">Facility not found</option>'; return; }
+                const facility = facilitySnap.data();
+                const courts = Array.isArray(facility.courts) && facility.courts.length ? facility.courts : [{name:'Court',slots:facility.slots||[]}];
+                courtSelect.innerHTML = '';
+                courts.forEach(c => {
+                    const name = typeof c === 'object' ? (c.name || c.courtName || 'Court') : String(c);
+                    const option = new Option(name, name, false, name === selectedCourt);
+                    courtSelect.add(option);
+                });
+                if (!courtSelect.value && courtSelect.options.length) courtSelect.selectedIndex = 0;
+                loadAvailableSlots(booking.facilityId, bookingId);
+            }).catch(error => {
+                console.error('Could not load courts for booking edit:', error);
+                courtSelect.innerHTML = '<option value="">Could not load courts</option>';
+            });
+            new bootstrap.Modal(modalEl).show();
+        }
+
+        function slotInterval(value) {
+            const match = String(value || '').match(/(\d{1,2}:\d{2})\s*[-–]\s*(\d{1,2}:\d{2})/);
+            if (!match) return null;
+            const toMinutes = time => { const [h,m] = time.split(':').map(Number); return h*60+m; };
+            return [toMinutes(match[1]), toMinutes(match[2])];
+        }
+        function slotsOverlap(a,b) {
+            const one=slotInterval(a),two=slotInterval(b);
+            return one&&two ? one[0]<two[1]&&two[0]<one[1] : String(a).trim()===String(b).trim();
         }
 
         async function loadAvailableSlots(facilityId, bookingId) {
-            const dateInput = document.getElementById("editBookingDate").value;
-            const slotSelect = document.getElementById("editBookingSlot");
-            if (!dateInput || !slotSelect) return;
-            slotSelect.innerHTML = `<option>Loading available slots...</option>`;
+            const dateInput=document.getElementById('editBookingDate'),courtInput=document.getElementById('editBookingCourt'),slotSelect=document.getElementById('editBookingSlot');
+            if(!dateInput||!courtInput||!slotSelect)return;
+            const date=dateInput.value,courtName=courtInput.value;
+            slotSelect.innerHTML='<option value="">Loading available times…</option>';
+            if(!date||!courtName){slotSelect.innerHTML='<option value="">Select a court and date first</option>';return;}
             try {
-                const facilitySnap = await db.collection("facilities").doc(facilityId).get();
-                if (!facilitySnap.exists) { slotSelect.innerHTML = `<option>No facility found</option>`; return; }
-                const facilityData = facilitySnap.data();
-
-                // ✅ CHANGED: prefer the booked court's own slot list, fall back to the facility union
-                let allSlots = Array.isArray(facilityData.slots) ? facilityData.slots : [];
-                try {
-                    const bookingSnap = await db.collection("bookings").doc(bookingId).get();
-                    if (bookingSnap.exists) {
-                        const bData = bookingSnap.data();
-                        const courtName = bData.courtName || bData.court || null;
-                        if (courtName && Array.isArray(facilityData.courts)) {
-                            const court = facilityData.courts.find(c =>
-                                ((c && typeof c === 'object') ? (c.name || c.courtName) : String(c)) === courtName
-                            );
-                            if (court && typeof court === 'object' && Array.isArray(court.slots) && court.slots.length) {
-                                allSlots = court.slots;
-                            }
-                        }
-                    }
-                } catch (e) { /* ignore, fall back to facility slots */ }
-
-                const start = new Date(dateInput);
-                start.setHours(0, 0, 0, 0);
-                const end = new Date(dateInput);
-                end.setHours(23, 59, 59, 999);
-                const bookingsSnap = await db.collection("bookings")
-                    .where("facilityId", "==", facilityId)
-                    .where("date", ">=", firebase.firestore.Timestamp.fromDate(start))
-                    .where("date", "<=", firebase.firestore.Timestamp.fromDate(end))
-                    .get();
-                const bookedTimes = [];
-                bookingsSnap.forEach(doc => {
-                    if (doc.id !== bookingId) {
-                        const data = doc.data();
-                        if (data.time) bookedTimes.push(data.time);
-                    }
+                const facilitySnap=await db.collection('facilities').doc(facilityId).get();
+                if(!facilitySnap.exists){slotSelect.innerHTML='<option value="">Facility not found</option>';return;}
+                const facility=facilitySnap.data();
+                const court=(facility.courts||[]).find(c=>(typeof c==='object'?(c.name||c.courtName):String(c))===courtName);
+                const singleCourt=(facility.courts||[]).length<=1;
+                const allSlots=Array.isArray(court?.slots)&&court.slots.length?court.slots:(facility.slots||[]);
+                if(court&&Array.isArray(court.dates)&&court.dates.length&&!court.dates.includes(date)){
+                    slotSelect.innerHTML='<option value="">This court is not available on this date</option>';return;
+                }
+                if((!court?.dates||!court.dates.length)&&Array.isArray(facility.availableDates)&&facility.availableDates.length&&!facility.availableDates.includes(date)){
+                    slotSelect.innerHTML='<option value="">This facility is not available on this date</option>';return;
+                }
+                const snapshot=await db.collection('bookings').where('facilityId','==',facilityId).get();
+                const reserved=[];
+                snapshot.forEach(doc=>{
+                    if(doc.id===bookingId)return;
+                    const b=doc.data(),status=String(b.status||'pending').toLowerCase();
+                    if(!['pending','approved','confirmed','active'].includes(status)||bookingDateKey(b.date)!==date)return;
+                    const bookedCourt=String(b.courtName||b.court||'');if(bookedCourt&&bookedCourt!==courtName)return;if(!bookedCourt&&!singleCourt)return;
+                    const slot=bookingSlotValue(b);if(slot)reserved.push(slot);
                 });
-                const availableSlots = allSlots.filter(slot => !bookedTimes.includes(slot));
-                slotSelect.innerHTML = "";
-                if (availableSlots.length === 0) { slotSelect.innerHTML =
-                        `<option>No slots available</option>`; return; }
-                availableSlots.forEach(slot => {
-                    const option = document.createElement("option");
-                    option.value = slot;
-                    option.textContent = slot;
-                    slotSelect.appendChild(option);
-                });
-            } catch (error) {
-                console.error("Error loading available slots:", error);
-                slotSelect.innerHTML = `<option>Error loading slots</option>`;
+                slotSelect.innerHTML='';
+                const available=allSlots.filter(slot=>!reserved.some(booked=>slotsOverlap(slot,booked)));
+                if(!available.length){slotSelect.innerHTML='<option value="">No available times</option>';return;}
+                available.forEach(slot=>slotSelect.add(new Option(slot,slot, false, slot===oldBookingSlot && date===oldBookingDate && courtName===(currentBooking?.courtName||currentBooking?.court||''))));
+                document.getElementById('editBookingSlotHelp').textContent=`${available.length} available time${available.length===1?'':'s'} for this court and date.`;
+            } catch(error) {
+                console.error('Error loading available times:',error);
+                slotSelect.innerHTML='<option value="">Could not load times. Try again.</option>';
             }
         }
 
@@ -4190,50 +4194,48 @@
             (error) => { console.error("❌ Slot change email failed:", error); });
         }
 
-        async function saveBookingChanges(bookingId, userEmail) {
-            const date = document.getElementById("editBookingDate").value;
-            const slot = document.getElementById("editBookingSlot").value;
-            if (!date || !slot) { showToast("Please select date and slot", "warning"); return; }
-            if (date === oldBookingDate && slot === oldBookingSlot) { showToast("No changes made", "info"); return; }
+        async function saveBookingChanges(bookingId) {
+            const date=document.getElementById('editBookingDate')?.value;
+            const slot=document.getElementById('editBookingSlot')?.value;
+            const court=document.getElementById('editBookingCourt')?.value;
+            if(!date||!slot||!court){showToast('Choose an available court, date, and time.', 'warning');return;}
+            const unchanged=date===oldBookingDate&&slot===oldBookingSlot&&court===(currentBooking?.courtName||currentBooking?.court||'');
+            if(unchanged){showToast('No changes to save.', 'info');return;}
+            const button=document.getElementById('saveBookingChangesBtn');if(button){button.disabled=true;button.innerHTML='<span class="spinner-border spinner-border-sm me-2"></span>Saving';}
             try {
-                await db.collection("bookings").doc(bookingId).update({
-                    date: firebase.firestore.Timestamp.fromDate(new Date(date)),
-                    time: slot,
-                    updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+                const conflict=await checkBookingConflict(bookingId,date,slot,court);
+                if(conflict){showToast('That time was just booked. Choose another available time.', 'warning');if(button){button.disabled=false;button.innerHTML='<i class="fas fa-check me-1"></i>Save changes';}await loadAvailableSlots(currentBooking.facilityId,bookingId);return;}
+                await db.collection('bookings').doc(bookingId).update({
+                    date:localDateTimestamp(date),time:slot,slot:slot,court:court,courtName:court,
+                    updatedAt:firebase.firestore.FieldValue.serverTimestamp()
                 });
-                showToast("Booking updated successfully", "success");
-                sendSlotChangeEmail(
-                    userEmail,
-                    currentBooking.userName,
-                    currentBooking.facilityName,
-                    currentBooking.imageUrl,
-                    oldBookingDate,
-                    oldBookingSlot,
-                    date,
-                    slot
-                );
-                document.activeElement?.blur();
-                bootstrap.Modal.getInstance(document.getElementById("editBookingModal")).hide();
-                loadDashboardData();
-            } catch (err) {
-                console.error(err);
-                showToast("Failed to update booking", "danger");
+                try { sendSlotChangeEmail(currentBooking.userEmail||'',currentBooking.userName,currentBooking.facilityName,currentBooking.imageUrl,oldBookingDate,oldBookingSlot,date,slot); } catch(e) { console.warn('Booking updated; notification could not be sent.',e); }
+                showToast('Booking updated successfully.', 'success');
+                bootstrap.Modal.getInstance(document.getElementById('editBookingModal'))?.hide();
+                refreshCurrentAdminPage();
+            } catch(error) {
+                console.error('Failed to update booking:',error);showToast('Could not update the booking. Please try again.', 'danger');
+                if(button){button.disabled=false;button.innerHTML='<i class="fas fa-check me-1"></i>Save changes';}
             }
         }
 
+        async function cancelBooking(bookingId) {
+            if(!window.confirm('Cancel this booking?'))return;
+            const updated=await updateBookingStatus(bookingId,'cancelled');if(!updated)return;
+            bootstrap.Modal.getInstance(document.getElementById('editBookingModal'))?.hide();
+            bootstrap.Modal.getInstance(document.getElementById('viewBookingModal'))?.hide();
+        }
+
+        function refreshCurrentAdminPage(){const page=currentPage||document.querySelector('.sidebar-menu a.active')?.getAttribute('data-page')||'calendar-scheduling';loadPageContent(page);}
+
         async function updateBookingStatus(bookingId, status) {
             try {
-                await db.collection('bookings').doc(bookingId).update({
-                    status: status,
-                    updatedAt: firebase.firestore.FieldValue.serverTimestamp()
-                });
-                showToast(`Booking ${status} successfully`, 'success');
-                if (document.querySelector('.sidebar-menu a.active').getAttribute('data-page') === 'booking-management') {
-                    loadPageContent('booking-management');
-                }
-            } catch (error) {
-                console.error('Error updating booking status:', error);
-                showToast('Error updating booking status', 'danger');
+                await db.collection('bookings').doc(bookingId).update({status,updatedAt:firebase.firestore.FieldValue.serverTimestamp()});
+                showToast(`Booking ${status} successfully.`, 'success');
+                refreshCurrentAdminPage();
+                return true;
+            } catch(error) {
+                console.error('Error updating booking status:',error);showToast('Could not update booking status. Please try again.', 'danger');return false;
             }
         }
 
@@ -4312,7 +4314,7 @@
                 const userId = booking.userId;
                 if (!userBookingsMap[userId]) { userBookingsMap[userId] = { bookings: [], totalSpent: 0 }; }
                 userBookingsMap[userId].bookings.push(booking);
-                if (booking.amount) userBookingsMap[userId].totalSpent += parseFloat(booking.amount);
+                if (booking.amount && !getFacilityCommissionMode(booking.facilityId)) userBookingsMap[userId].totalSpent += parseFloat(booking.amount);
             });
             return users.map(user => {
                 const userStats = userBookingsMap[user.id] || { bookings: [], totalSpent: 0 };
@@ -4371,7 +4373,7 @@
                     });
                 }
                 const totalBookings = userBookings.length;
-                const totalSpent = userBookings.reduce((sum, booking) => sum + parseFloat(booking.amount || 0), 0);
+                const totalSpent = userBookings.reduce((sum, booking) => sum + (getFacilityCommissionMode(booking.facilityId) ? 0 : parseFloat(booking.amount || 0)), 0);
                 const sortedBookings = userBookings.sort((a, b) => {
                     let dateA, dateB;
                     if (a.timestamp && a.timestamp.toDate) dateA = a.timestamp.toDate();
@@ -4414,9 +4416,9 @@
                                         ${userBookings.length > 0 ? `
                                             <div class="mt-4"><h5>Recent Bookings (${userBookings.length} total)</h5>
                                             <div class="table-responsive"><table class="table table-sm table-hover">
-                                                <thead><tr><th>Facility</th><th>Date</th><th>Time</th><th>Amount</th><th>Status</th><th>Actions</th></tr></thead>
+                                                <thead><tr><th>Facility</th><th>Date</th><th>Time</th><th>Amount / Hours</th><th>Status</th><th>Actions</th></tr></thead>
                                                 <tbody>${sortedBookings.slice(0, 5).map(booking => `
-                                                    <tr><td>${booking.facilityName || 'N/A'}</td><td>${formatBookingDate(booking)}</td><td>${booking.time || booking.timeSlot || 'N/A'}</td><td>RM${parseFloat(booking.amount || 0).toFixed(2)}</td><td><span class="badge badge-status badge-${booking.status || 'pending'}">${(booking.status || 'pending').charAt(0).toUpperCase() + (booking.status || 'pending').slice(1)}</span></td><td><button class="btn btn-sm btn-outline-primary" onclick="viewBooking('${booking.id}')"><i class="fas fa-eye"></i></button></td></tr>
+                                                    <tr><td>${booking.facilityName || 'N/A'}</td><td>${formatBookingDate(booking)}</td><td>${booking.time || booking.timeSlot || 'N/A'}</td><td>${getFacilityCommissionMode(booking.facilityId) ? `${bookingDurationHours(booking).toFixed(1)} hours` : `RM${parseFloat(booking.amount || 0).toFixed(2)}`}</td><td><span class="badge badge-status badge-${booking.status || 'pending'}">${(booking.status || 'pending').charAt(0).toUpperCase() + (booking.status || 'pending').slice(1)}</span></td><td><button class="btn btn-sm btn-outline-primary" onclick="viewBooking('${booking.id}')"><i class="fas fa-eye"></i></button></td></tr>
                                                 `).join('')}</tbody></table></div>
                                             ${userBookings.length > 5 ? `<div class="text-center mt-2"><small class="text-muted">Showing 5 of ${userBookings.length} bookings</small></div>` : ''}
                                         ` : `<div class="alert alert-info mt-4"><i class="fas fa-info-circle me-2"></i>This user hasn't made any bookings at your facilities yet.</div>`}
@@ -4863,66 +4865,11 @@
         // 14. PAYMENT & FINANCE
         // =========================================================================
         async function loadPaymentFinancePage() {
-            const facilityIds = adminFacilities.map(f => f.id);
-            let payments = [];
-            let totalRevenue = 0;
-            if (facilityIds.length > 0) {
-                const bookingsSnapshot = await db.collection("bookings")
-                    .where("facilityId", "in", facilityIds)
-                    .where("status", "==", "approved").get();
-                bookingsSnapshot.forEach(doc => {
-                    const booking = doc.data();
-                    if (booking.amount) {
-                        // ✅ Per-facility commission display
-                        const commission = getCommissionDisplay(booking.amount, booking.facilityId);
-                        const netamount = applyCommissionDisplay(booking.amount, booking.facilityId);
-                        totalRevenue += parseFloat(netamount);
-                        payments.push({ id: doc.id, ...booking, commission: commission, netamount: netamount,
-                            paymentDate: booking.createdAt });
-                    }
-                });
-            }
-            let paymentsHTML = '';
-            if (payments.length === 0) {
-                paymentsHTML = '<tr><td colspan="6" class="text-center py-4">No payments found</td></tr>';
-            } else {
-                payments.forEach(payment => {
-                    const date = formatDate1(payment.paymentDate);
-                    paymentsHTML += `
-                            <tr>
-                                <td>${payment.userName || 'Unknown User'}</td>
-                                <td>${payment.facilityName || 'Unknown Facility'}</td>
-                                <td>${date}</td>
-                                <td>RM${payment.amount || '0'}</td>
-                                <td>RM${payment.commission || '0'}</td>
-                                <td>RM${payment.netamount || '0'}</td>
-                                <td>${payment.paymentMethod || 'Online'}</td>
-                                <td><span class="badge badge-status badge-approved">Paid</span></td>
-                            </tr>
-                        `;
-                });
-            }
-            return `
-                    <div class="d-flex justify-content-between align-items-center mb-4">
-                        <h3>Payment & Finance</h3>
-                        <div><button class="btn btn-primary me-2" onclick="exportPayments()"><i class="fas fa-download me-1"></i> Export</button><button class="btn btn-success" onclick="generateReport()"><i class="fas fa-chart-bar me-1"></i> Generate Report</button></div>
-                    </div>
-                    <div class="row mb-4">
-                        <div class="col-md-3"><div class="stats-card"><i class="fas fa-dollar-sign"></i><div class="number">RM${totalRevenue.toFixed(2)}</div><div class="label">Total Revenue</div></div></div>
-                        <div class="col-md-3"><div class="stats-card"><i class="fas fa-calendar-check"></i><div class="number">${payments.length}</div><div class="label">Total Transactions</div></div></div>
-                        <div class="col-md-3"><div class="stats-card"><i class="fas fa-chart-line"></i><div class="number">RM${(totalRevenue / Math.max(payments.length, 1)).toFixed(2)}</div><div class="label">Average Transaction</div></div></div>
-                        <div class="col-md-3"><div class="stats-card"><i class="fas fa-money-bill-wave"></i><div class="number">RM0</div><div class="label">Pending Payouts</div></div></div>
-                    </div>
-                    <div class="table-card">
-                        <h4>Payment History</h4>
-                        <div class="table-responsive">
-                            <table class="table table-hover">
-                                <thead><tr><th>User</th><th>Facility</th><th>Date</th><th>Amount</th><th>Commission</th><th>Net Amount</th><th>Method</th><th>Status</th></tr></thead>
-                                <tbody>${paymentsHTML}</tbody>
-                            </table>
-                        </div>
-                    </div>
-                `;
+            const ids=adminFacilities.map(f=>f.id);let rows=[];
+            if(ids.length){const snap=await db.collection('bookings').where('facilityId','in',ids).where('status','==','approved').get();snap.forEach(d=>{const b=d.data();rows.push({id:d.id,...b,hours:bookingDurationHours(b)});});}
+            const hourOf=b=>parseInt(String(b.time||'').slice(0,2),10);const day=rows.reduce((n,b)=>n+bookingHoursInBand(b,7,19),0),night=rows.reduce((n,b)=>n+bookingHoursInBand(b,19,21),0);
+            const html=rows.length?rows.map(b=>`<tr><td>${b.userName||'Unknown User'}</td><td>${b.facilityName||'Unknown Facility'}</td><td>${formatDate1(b.date || b.createdAt)}</td><td>${b.hours.toFixed(1)} hours</td><td>${hourOf(b)>=19?'Night':'Day'}</td><td>${b.paymentMethod||'Online'}</td><td>${b.status||'approved'}</td></tr>`).join(''):'<tr><td colspan="7" class="text-center py-4">No approved bookings found</td></tr>';
+            return `<div class="d-flex justify-content-between align-items-center mb-4"><h3>Payment &amp; Finance</h3><button class="btn btn-primary" onclick="exportPayments()"><i class="fas fa-download me-1"></i> Export hours</button></div><div class="row mb-4"><div class="col-md-4"><div class="stats-card"><i class="fas fa-clock"></i><div class="number">${rows.reduce((n,b)=>n+b.hours,0).toFixed(1)}</div><div class="label">Total booked hours</div></div></div><div class="col-md-4"><div class="stats-card"><i class="fas fa-sun"></i><div class="number">${day.toFixed(1)}</div><div class="label">Day sessions (7am–7pm)</div></div></div><div class="col-md-4"><div class="stats-card"><i class="fas fa-moon"></i><div class="number">${night.toFixed(1)}</div><div class="label">Night sessions (7pm–9pm)</div></div></div></div><div class="table-card"><h4>Booking hours</h4><div class="table-responsive"><table class="table table-hover"><thead><tr><th>User</th><th>Facility</th><th>Date</th><th>Hours</th><th>Session</th><th>Method</th><th>Status</th></tr></thead><tbody>${html}</tbody></table></div></div>`;
         }
 
         // =========================================================================
@@ -4937,12 +4884,7 @@
                     bookingsSnapshot.forEach(doc => {
                         const bookingData = doc.data();
                         let bookingDate = null;
-                        if (bookingData.date) {
-                            if (typeof bookingData.date.toDate === 'function') bookingDate = bookingData.date
-                                .toDate();
-                            else if (bookingData.date.seconds) bookingDate = new Date(bookingData.date.seconds *
-                                1000);
-                        }
+                        if (bookingData.date) bookingDate = toBookingDate(bookingData.date);
                         if (!bookingDate && bookingData.timestamp) {
                             if (typeof bookingData.timestamp.toDate === 'function') bookingDate = bookingData
                                 .timestamp.toDate();
@@ -5149,35 +5091,7 @@
 
         // --- Calendar View Generators ---
         function getFilteredBookingsForDate(dateStr) {
-            const [year, month, day] = dateStr.split('-').map(Number);
-            const targetDate = new Date(year, month - 1, day);
-            targetDate.setHours(12, 0, 0, 0);
-            const targetYear = targetDate.getFullYear();
-            const targetMonth = targetDate.getMonth();
-            const targetDay = targetDate.getDate();
-            return allBookings.filter(booking => {
-                if (!booking.date) return false;
-                let bookingDate = booking.date;
-                if (!(bookingDate instanceof Date)) {
-                    if (typeof bookingDate.toDate === 'function') bookingDate = bookingDate.toDate();
-                    else if (bookingDate.seconds) bookingDate = new Date(bookingDate.seconds * 1000);
-                    else if (typeof bookingDate === 'string') {
-                        if (bookingDate.includes('-')) {
-                            const [bYear, bMonth, bDay] = bookingDate.split('-').map(Number);
-                            bookingDate = new Date(bYear, bMonth - 1, bDay);
-                        } else if (bookingDate.includes('/')) {
-                            const [bMonth, bDay, bYear] = bookingDate.split('/').map(Number);
-                            bookingDate = new Date(bYear, bMonth - 1, bDay);
-                        }
-                    }
-                }
-                if (!bookingDate || !(bookingDate instanceof Date) || isNaN(bookingDate.getTime())) return false;
-                const normalizedBookingDate = new Date(bookingDate);
-                normalizedBookingDate.setHours(12, 0, 0, 0);
-                return normalizedBookingDate.getFullYear() === targetYear &&
-                    normalizedBookingDate.getMonth() === targetMonth &&
-                    normalizedBookingDate.getDate() === targetDay;
-            });
+            return allBookings.filter(booking => bookingDateKey(booking.date) === dateStr);
         }
 
         function getBookingsForTimeSlot(dateStr, timeSlot) {
@@ -5502,51 +5416,34 @@
 
         async function dropBooking(event, newDate) {
             event.preventDefault();
-            const bookingId = event.dataTransfer.getData('text/plain');
-            const bookingData = JSON.parse(event.dataTransfer.getData('application/json'));
+            const bookingId=event.dataTransfer.getData('text/plain');
             event.currentTarget.classList.remove('drag-over');
             try {
-                const conflict = await checkBookingConflict(bookingId, newDate, null);
-                if (conflict) { showToast('Booking conflict detected! Cannot reschedule.', 'danger'); return; }
-                await db.collection('bookings').doc(bookingId).update({
-                    date: newDate,
-                    updatedAt: firebase.firestore.FieldValue.serverTimestamp()
-                });
-                updateLocalBooking(bookingId, { date: newDate });
-                showToast('Booking date updated successfully', 'success');
-                loadPageContent('calendar-scheduling');
-            } catch (error) {
-                console.error('Error updating booking date:', error);
-                showToast('Error updating booking date', 'danger');
-            }
+                const booking=allBookings.find(b=>b.id===bookingId);
+                if(!booking){showToast('Booking could not be found. Refresh and try again.','danger');return;}
+                const time=bookingSlotValue(booking),court=booking.courtName||booking.court||'';
+                if(await checkBookingConflict(bookingId,newDate,time,court)){showToast('That court and time are already booked. Cannot reschedule.','danger');return;}
+                await db.collection('bookings').doc(bookingId).update({date:localDateTimestamp(newDate),updatedAt:firebase.firestore.FieldValue.serverTimestamp()});
+                updateLocalBooking(bookingId,{date:toBookingDate(newDate)});
+                showToast('Booking date updated.','success');refreshCurrentAdminPage();
+            } catch(error) { console.error('Error updating booking date:',error);showToast('Could not update booking date. Try again.','danger'); }
         }
 
         async function dropBookingToSlot(event, newDate, newTime) {
             event.preventDefault();
-            const bookingId = event.dataTransfer.getData('text/plain');
-            const bookingData = JSON.parse(event.dataTransfer.getData('application/json'));
+            const bookingId=event.dataTransfer.getData('text/plain');
             event.currentTarget.classList.remove('drag-over');
             try {
-                const conflict = await checkBookingConflict(bookingId, newDate, newTime);
-                if (conflict) { showToast('Booking conflict detected! Cannot reschedule.', 'danger'); return; }
-                const bookingDoc = await db.collection('bookings').doc(bookingId).get();
-                const booking = bookingDoc.data();
-                const duration = booking.duration || 1;
-                const endTime = calculateEndTime(newTime, duration);
-                const newSlot = `${newTime}-${endTime}`;
-                await db.collection('bookings').doc(bookingId).update({
-                    date: newDate,
-                    slot: newSlot,
-                    duration: duration,
-                    updatedAt: firebase.firestore.FieldValue.serverTimestamp()
-                });
-                updateLocalBooking(bookingId, { date: newDate, slot: newSlot, duration: duration });
-                showToast('Booking rescheduled successfully', 'success');
-                loadPageContent('calendar-scheduling');
-            } catch (error) {
-                console.error('Error rescheduling booking:', error);
-                showToast('Error rescheduling booking', 'danger');
-            }
+                const booking=allBookings.find(b=>b.id===bookingId);
+                if(!booking){showToast('Booking could not be found. Refresh and try again.','danger');return;}
+                const court=booking.courtName||booking.court||'';
+                if(await checkBookingConflict(bookingId,newDate,newTime,court)){showToast('That court and time are already booked. Cannot reschedule.','danger');return;}
+                const duration=Number(booking.duration)||bookingDurationHours(booking)||1;
+                const endTime=calculateEndTime(newTime,duration),newSlot=`${newTime}-${endTime}`;
+                await db.collection('bookings').doc(bookingId).update({date:localDateTimestamp(newDate),slot:newSlot,time:newSlot,updatedAt:firebase.firestore.FieldValue.serverTimestamp()});
+                updateLocalBooking(bookingId,{date:toBookingDate(newDate),slot:newSlot,time:newSlot});
+                showToast('Booking rescheduled.','success');refreshCurrentAdminPage();
+            } catch(error) { console.error('Error rescheduling booking:',error);showToast('Could not reschedule booking. Try again.','danger'); }
         }
 
         function updateLocalBooking(bookingId, updates) {
@@ -5556,42 +5453,25 @@
             }
         }
 
-        async function checkBookingConflict(bookingId, newDate, newTime) {
+        async function checkBookingConflict(bookingId, newDate, newTime, courtName) {
             try {
-                const bookingDoc = await db.collection('bookings').doc(bookingId).get();
-                if (!bookingDoc.exists) return true;
-                const booking = bookingDoc.data();
-                const facilityId = booking.facilityId;
-                let query = db.collection('bookings')
-                    .where('facilityId', '==', facilityId)
-                    .where('date', '==', newDate)
-                    .where('status', 'in', ['approved', 'pending', 'confirmed']);
-                const existingBookings = await query.get();
-                if (newTime) {
-                    const duration = booking.duration || 1;
-                    const newStartTime = newTime;
-                    const newEndTime = calculateEndTime(newStartTime, duration);
-                    for (const doc of existingBookings.docs) {
-                        if (doc.id === bookingId) continue;
-                        const existingBooking = doc.data();
-                        if (existingBooking.slot) {
-                            const [existingStart, existingEnd] = existingBooking.slot.split('-');
-                            if ((newStartTime >= existingStart && newStartTime < existingEnd) ||
-                                (newEndTime > existingStart && newEndTime <= existingEnd) ||
-                                (newStartTime <= existingStart && newEndTime >= existingEnd)) {
-                                return true;
-                            }
-                        }
-                    }
-                } else {
-                    const hasOverlappingBookings = existingBookings.docs.some(doc => doc.id !== bookingId);
-                    return hasOverlappingBookings;
-                }
-                return false;
-            } catch (error) {
-                console.error('Error checking booking conflict:', error);
-                return true;
-            }
+                const bookingSnap=await db.collection('bookings').doc(bookingId).get();
+                if(!bookingSnap.exists)return true;
+                const booking=bookingSnap.data(),facilityId=booking.facilityId;
+                const chosenCourt=courtName||booking.courtName||booking.court||'';
+                const chosenSlot=newTime||bookingSlotValue(booking);
+                const normalizedSlot=slotInterval(chosenSlot)?chosenSlot:(/^\d{1,2}:\d{2}$/.test(chosenSlot)?`${chosenSlot}-${calculateEndTime(chosenSlot,Number(booking.duration)||bookingDurationHours(booking)||1)}`:chosenSlot);
+                const facilitySnap=await db.collection('facilities').doc(facilityId).get();
+                const singleCourt=facilitySnap.exists&&(facilitySnap.data().courts||[]).length<=1;
+                const snapshot=await db.collection('bookings').where('facilityId','==',facilityId).get();
+                return snapshot.docs.some(doc=>{
+                    if(doc.id===bookingId)return false;
+                    const other=doc.data(),status=String(other.status||'pending').toLowerCase();
+                    if(!['pending','approved','confirmed','active'].includes(status)||bookingDateKey(other.date)!==newDate)return false;
+                    const otherCourt=String(other.courtName||other.court||'');if(chosenCourt&&otherCourt&&otherCourt!==chosenCourt)return false;if(chosenCourt&&!otherCourt&&!singleCourt)return false;
+                    return slotsOverlap(normalizedSlot,bookingSlotValue(other));
+                });
+            } catch(error) { console.error('Error checking booking conflict:',error);return true; }
         }
 
         function showBookingDetails(bookingId, event) {
@@ -7183,9 +7063,9 @@
                                 'Facility Name': booking.facilityName || 'Unknown',
                                 'Date': booking.date ? booking.date.toDate().toLocaleString() : 'N/A',
                                 'Time': booking.time || 'N/A',
-                                'Amount': `RM${parseFloat(booking.amount).toFixed(2)}`,
+                                'Amount': getFacilityCommissionMode(booking.facilityId) ? `${bookingDurationHours(booking).toFixed(1)} hours` : `RM${parseFloat(booking.amount).toFixed(2)}`,
                                 'Status': booking.status || 'approved',
-                                'Commission': commission || 0,
+                                'Commission': getFacilityCommissionMode(booking.facilityId) ? '' : (commission || 0),
                                 'Payment Method': booking.paymentMethod || 'Online',
                                 'Transaction Date': booking.createdAt ? booking.createdAt.toDate()
                                 .toLocaleString() : 'N/A',
@@ -7225,7 +7105,7 @@
                         'Type': facility.type || 'N/A',
                         'Location': facility.location || 'N/A',
                         'locationLink': facility.locationLink || '',
-                        'Price': `RM${facility.price || '0'}`,
+                        'Price': facility.showPriceWithoutCommission === true ? 'Hours only' : `RM${facility.price || '0'}`,
                         'Capacity': facility.capacity || 'N/A',
                         'Status': facility.status || 'Active',
                         'Description': facility.description || '',
@@ -7552,7 +7432,7 @@
                 tr.innerHTML = `
                         <td><div class="fw-semibold">${session.name || 'Unnamed Session'}</div><small class="text-muted">${session.description ? session.description.substring(0, 30) + '...' : ''}</small></td>
                         <td><span class="session-type-badge ${typeClass}">${typeLabel}</span></td>
-                        <td>${session.instructor || 'N/A'}</td>
+                        <td>${session.instructor || 'N/A'}<small class="d-block text-muted">${session.locationType === 'freelance' ? 'Home visit' : 'Facility studio'}</small></td>
                         <td><div>${dateStr}</div><small class="text-muted">${timeStr}</small></td>
                         <td>${capDisplay}</td>
                         <td>RM${parseFloat(session.price || 0).toFixed(2)}</td>
@@ -7675,6 +7555,10 @@
                                             </div>
                                         </div>
 
+                                        <div class="row">
+                                            <div class="col-md-6"><label class="form-label">Session location type</label><select class="form-select" id="pyLocationType"><option value="facility" ${sessionData?.locationType !== 'freelance' ? 'selected' : ''}>Facility studio</option><option value="freelance" ${sessionData?.locationType === 'freelance' ? 'selected' : ''}>Freelance instructor (user's home)</option></select></div>
+                                            <div class="col-md-6"><label class="form-label">Facility studio (if applicable)</label><select class="form-select" id="pyFacilityId"><option value="">Choose a facility</option>${adminFacilities.map(f=>`<option value="${f.id}" ${sessionData?.facilityId===f.id?'selected':''}>${f.name}</option>`).join('')}</select></div>
+                                        </div>
                                         <div class="row">
                                             <div class="col-md-6">
                                                 <div class="form-group">
@@ -7821,6 +7705,8 @@
                 const price = parseFloat(document.getElementById('pyPrice').value) || 0;
                 const status = document.getElementById('pyStatus').value || 'upcoming';
                 const location = document.getElementById('pyLocation').value.trim();
+                const locationType=document.getElementById('pyLocationType').value;
+                const facilityId=document.getElementById('pyFacilityId').value;
                 const state = document.getElementById('pyState').value;
                 const district = document.getElementById('pyDistrict').value;
                 const contactInfo = document.getElementById('pyContactInfo').value.trim();
@@ -7860,6 +7746,9 @@
                     status: status,
                     imageUrl: imageUrl || '',
                     location: location || '',
+                    locationType: locationType,
+                    facilityId: locationType === 'facility' ? (facilityId || null) : null,
+                    serviceMode: locationType === 'freelance' ? 'home-visit' : 'studio',
                     state: state || '',
                     district: district || '',
                     contactInfo: contactInfo || '',

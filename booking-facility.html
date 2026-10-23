@@ -2,1931 +2,1855 @@
 <html lang="en">
 
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Book Sports Facilities | NSTE</title>
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
-  <link href="https://cdn.jsdelivr.net/npm/evo-calendar@1.1.3/evo-calendar/css/evo-calendar.min.css" rel="stylesheet">
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css">
-  <style>
-    body {
-      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-      background-color: #f8f9fa;
-    }
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SPORTOVA · Book & Play</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/evo-calendar@1.1.3/evo-calendar/css/evo-calendar.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css">
+    <style>
+        /* ===== MODERN RESET & VARIABLES ===== */
+        :root {
+            --primary: #6c5ce7;
+            --primary-dark: #5a4bd1;
+            --secondary: #00b894;
+            --accent: #fd79a8;
+            --bg-dark: #0a0e1a;
+            --glass: rgba(255, 255, 255, 0.05);
+            --glass-border: rgba(255, 255, 255, 0.08);
+            --radius: 20px;
+            --shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+        }
 
-    .facility-card {
-      transition: transform 0.2s;
-      border-radius: 10px;
-      overflow: hidden;
-      border: none;
-      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
-    }
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
 
-    .facility-card:hover {
-      transform: translateY(-5px);
-      box-shadow: 0 6px 12px rgba(0, 0, 0, 0.1);
-    }
+        body {
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+            background: var(--bg-dark);
+            color: #fff;
+            min-height: 100vh;
+            background: radial-gradient(ellipse at 20% 50%, #1a1a3e 0%, #0a0e1a 80%);
+        }
 
-    .facility-image {
-      height: 200px;
-      object-fit: cover;
-    }
+        /* ===== GLASS CARD ===== */
+        .glass-card {
+            background: var(--glass);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid var(--glass-border);
+            border-radius: var(--radius);
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .glass-card:hover {
+            border-color: rgba(108, 92, 231, 0.3);
+            transform: translateY(-4px);
+            box-shadow: var(--shadow);
+        }
 
-    .friend-badge {
-      background-color: #e3f2fd;
-      color: #0d6efd;
-      display: inline-flex;
-      align-items: center;
-      padding: 5px 10px;
-      border-radius: 20px;
-      font-size: 0.9rem;
-      margin-bottom: 10px;
-    }
+        /* ===== FACILITY CARDS ===== */
+        .facility-card {
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            border-radius: var(--radius);
+            overflow: hidden;
+            border: none;
+            background: var(--glass);
+            backdrop-filter: blur(20px);
+            border: 1px solid var(--glass-border);
+            cursor: pointer;
+        }
+        .facility-card:hover {
+            transform: translateY(-8px) scale(1.01);
+            border-color: rgba(108, 92, 231, 0.4);
+            box-shadow: 0 30px 60px rgba(108, 92, 231, 0.15);
+        }
+        .facility-image {
+            height: 200px;
+            object-fit: cover;
+            transition: all 0.5s ease;
+        }
+        .facility-card:hover .facility-image {
+            transform: scale(1.03);
+        }
 
-    .loading-spinner {
-      width: 3rem;
-      height: 3rem;
-      margin: 2rem auto;
-      display: block;
-    }
+        /* ===== SEARCH CONTAINER ===== */
+        .search-container {
+            background: var(--glass);
+            backdrop-filter: blur(20px);
+            border-radius: var(--radius);
+            padding: 24px;
+            border: 1px solid var(--glass-border);
+        }
+        .search-container .form-control,
+        .search-container .form-select {
+            background: rgba(255, 255, 255, 0.06);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            color: #fff;
+            border-radius: 12px;
+            padding: 10px 16px;
+            transition: all 0.3s ease;
+        }
+        .search-container .form-control:focus,
+        .search-container .form-select:focus {
+            background: rgba(255, 255, 255, 0.08);
+            border-color: var(--primary);
+            box-shadow: 0 0 0 4px rgba(108, 92, 231, 0.15);
+        }
+        .search-container .form-control::placeholder {
+            color: rgba(255, 255, 255, 0.3);
+        }
+        .search-container .form-select option {
+            background: #1a1a3e;
+            color: #fff;
+        }
 
-    .slot-btn {
-      width: 120px;
-      margin: 5px;
-    }
+        /* ===== TABS ===== */
+        .nav-tabs {
+            border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+        }
+        .nav-tabs .nav-link {
+            color: rgba(255, 255, 255, 0.5);
+            border: none;
+            padding: 10px 20px;
+            font-weight: 600;
+            border-radius: 12px 12px 0 0;
+            transition: all 0.3s ease;
+        }
+        .nav-tabs .nav-link:hover {
+            color: #fff;
+            background: rgba(255, 255, 255, 0.04);
+        }
+        .nav-tabs .nav-link.active {
+            color: #fff;
+            background: transparent;
+            border-bottom: 3px solid var(--primary);
+        }
 
-    #bookingDetails {
-      background-color: #f8f9fa;
-      border-radius: 8px;
-      padding: 15px;
-      margin-top: 15px;
-    }
+        /* ===== BUTTONS ===== */
+        .btn-primary {
+            background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+            border: none;
+            border-radius: 12px;
+            padding: 10px 24px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 30px rgba(108, 92, 231, 0.3);
+        }
+        .btn-success {
+            background: linear-gradient(135deg, var(--secondary), #00a381);
+            border: none;
+            border-radius: 12px;
+            font-weight: 600;
+        }
+        .btn-success:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 30px rgba(0, 184, 148, 0.3);
+        }
+        .btn-outline-secondary {
+            border-color: rgba(255, 255, 255, 0.15);
+            color: rgba(255, 255, 255, 0.7);
+            border-radius: 12px;
+        }
+        .btn-outline-secondary:hover {
+            background: rgba(255, 255, 255, 0.05);
+            border-color: rgba(255, 255, 255, 0.3);
+            color: #fff;
+        }
 
-    .modal-header {
-      border-bottom: none;
-    }
+        /* ===== SLOT BUTTONS ===== */
+        .slot-btn {
+            width: 110px;
+            margin: 6px;
+            border-radius: 12px;
+            font-weight: 600;
+            padding: 10px;
+            background: rgba(255, 255, 255, 0.06);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            color: #fff;
+            transition: all 0.3s ease;
+        }
+        .slot-btn:hover:not(:disabled) {
+            background: var(--primary);
+            transform: scale(1.05);
+        }
+        .slot-btn:disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+        }
+        .slot-btn.booked {
+            background: rgba(255, 107, 107, 0.15);
+            border-color: rgba(255, 107, 107, 0.2);
+        }
 
-    .modal-footer {
-      border-top: none;
-    }
+        /* ===== LOYALTY POINTS ===== */
+        .loyalty-points {
+            background: linear-gradient(135deg, #6a11cb, #2575fc);
+            border-radius: var(--radius);
+            padding: 20px 24px;
+            color: #fff;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
 
-    .theme-btn {
-      position: fixed;
-      top: 20px;
-      right: 20px;
-      z-index: 1000;
-    }
+        /* ===== MODALS ===== */
+        .modal-content {
+            background: #1a1a3e;
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            border-radius: var(--radius);
+            backdrop-filter: blur(20px);
+        }
+        .modal-header {
+            border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+            padding: 20px 24px;
+        }
+        .modal-body {
+            padding: 24px;
+        }
+        .modal-footer {
+            border-top: 1px solid rgba(255, 255, 255, 0.06);
+            padding: 16px 24px;
+        }
+        .modal-title {
+            font-weight: 700;
+        }
 
-    .promo-badge {
-      position: absolute;
-      top: 10px;
-      right: 10px;
-      z-index: 1;
-      font-size: 0.8rem;
-    }
+        /* ===== COACH CARDS ===== */
+        .coach-item {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            border-radius: 16px;
+            transition: all 0.3s ease;
+            overflow: hidden;
+        }
+        .coach-item:hover {
+            border-color: rgba(108, 92, 231, 0.3);
+            background: rgba(255, 255, 255, 0.05);
+        }
+        .coach-item .form-check-input:checked {
+            background-color: var(--primary);
+            border-color: var(--primary);
+        }
 
-    .search-container {
-      background-color: white;
-      border-radius: 10px;
-      padding: 20px;
-      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-      margin-bottom: 30px;
-    }
+        /* ===== REWARDS ===== */
+        .reward-card {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            border-radius: 16px;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+        .reward-card:hover {
+            transform: translateY(-4px);
+            border-color: rgba(108, 92, 231, 0.3);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+        }
 
-    .nav-tabs .nav-link.active {
-      font-weight: bold;
-      border-bottom: 3px solid #0d6efd;
-    }
+        /* ===== TERMS ===== */
+        .terms-conditions {
+            background: rgba(255, 255, 255, 0.03);
+            border-radius: var(--radius);
+            padding: 24px;
+            border: 1px solid rgba(255, 255, 255, 0.06);
+        }
+        .terms-conditions ul {
+            list-style: none;
+            padding-left: 0;
+        }
+        .terms-conditions ul li {
+            padding: 6px 0;
+            padding-left: 24px;
+            position: relative;
+        }
+        .terms-conditions ul li::before {
+            content: '✦';
+            position: absolute;
+            left: 0;
+            color: var(--primary);
+        }
 
-    .event-card {
-      transition: all 0.3s;
-      cursor: pointer;
-    }
+        /* ===== SCROLLBAR ===== */
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.02);
+        }
+        ::-webkit-scrollbar-thumb {
+            background: var(--primary);
+            border-radius: 10px;
+        }
 
-    .event-card:hover {
-      transform: translateY(-3px);
-      box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
-    }
+        /* ===== RESPONSIVE ===== */
+        @media (max-width: 768px) {
+            .search-container {
+                padding: 16px;
+            }
+            .facility-image {
+                height: 150px;
+            }
+            .slot-btn {
+                width: 90px;
+                font-size: 0.8rem;
+                padding: 8px;
+            }
+            .modal-content {
+                margin: 12px;
+            }
+        }
 
-    .skill-level {
-      display: inline-block;
-      padding: 3px 8px;
-      border-radius: 12px;
-      font-size: 0.8rem;
-      font-weight: bold;
-    }
+        /* ===== ANIMATIONS ===== */
+        @keyframes fadeUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        .animate-fade-up {
+            animation: fadeUp 0.5s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+        }
 
-    .skill-beginner {
-      background-color: #d4edda;
-      color: #155724;
-    }
+        /* ===== LOADING ===== */
+        .loading-spinner {
+            width: 3rem;
+            height: 3rem;
+            margin: 2rem auto;
+            display: block;
+        }
 
-    .skill-intermediate {
-      background-color: #fff3cd;
-      color: #856404;
-    }
+        /* Select2 overrides */
+        .select2-container--default .select2-selection--multiple {
+            background: rgba(255, 255, 255, 0.06);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 12px;
+            min-height: 42px;
+        }
+        .select2-container--default .select2-selection--multiple .select2-selection__choice {
+            background: var(--primary);
+            color: #fff;
+            border: none;
+            border-radius: 8px;
+            padding: 2px 10px;
+        }
+        .select2-dropdown {
+            background: #1a1a3e;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+        .select2-container--default .select2-results__option--highlighted[aria-selected] {
+            background: var(--primary);
+        }
+        .select2-container--default .select2-search--dropdown .select2-search__field {
+            background: rgba(255, 255, 255, 0.06);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            color: #fff;
+            border-radius: 8px;
+        }
 
-    .skill-advanced {
-      background-color: #f8d7da;
-      color: #721c24;
-    }
-
-    .select2-container--default .select2-selection--multiple {
-      border: 1px solid #ced4da;
-      border-radius: 0.375rem;
-      min-height: 38px;
-    }
-
-    .event-image {
-      height: 150px;
-      object-fit: cover;
-    }
-
-    .compatibility-meter {
-      height: 10px;
-      background-color: #e9ecef;
-      border-radius: 5px;
-      margin-top: 5px;
-      overflow: hidden;
-    }
-
-    .compatibility-fill {
-      height: 100%;
-      background-color: #28a745;
-      border-radius: 5px;
-    }
-
-    .match-card {
-      border-left: 4px solid #0d6efd;
-    }
-
-    /* New styles for enhancements */
-    .promo-highlight {
-      font-size: 1.2rem;
-      font-weight: bold;
-      background-color: #fff3cd;
-      padding: 15px;
-      border-radius: 8px;
-      border-left: 4px solid #ffc107;
-    }
-
-    .terms-conditions {
-      margin-top: 30px;
-      padding: 20px;
-      background-color: white;
-      border-radius: 10px;
-      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-    }
-
-    .quantity-selector {
-      width: 70px;
-      display: inline-block;
-      margin-left: 10px;
-    }
-
-    .loyalty-points {
-      background: linear-gradient(135deg, #6a11cb 0%, #2575fc 100%);
-      color: white;
-      padding: 15px;
-      border-radius: 10px;
-      margin-bottom: 20px;
-    }
-
-    .reward-card {
-      border: 1px solid #dee2e6;
-      border-radius: 8px;
-      transition: all 0.3s;
-      cursor: pointer;
-    }
-
-    .reward-card:hover {
-      transform: translateY(-5px);
-      box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
-    }
-
-    .reward-badge {
-      position: absolute;
-      top: -10px;
-      right: -10px;
-      z-index: 1;
-    }
-
-    .equipment-item img {
-      height: 100px;
-      object-fit: contain;
-    }
-
-    .coach-select-btn {
-      position: fixed;
-      bottom: 20px;
-      right: 20px;
-      z-index: 1000;
-      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
-    }
-    
-    .discount-applied {
-      color: #28a745;
-      font-weight: bold;
-    }
-    
-    /* Sport icons */
-    .sport-icon {
-      width: 24px;
-      height: 24px;
-      margin-right: 5px;
-    }
-    .player-capacity {
-      display: inline-block;
-      padding: 3px 8px;
-      border-radius: 12px;
-      background-color: #e9ecef;
-      font-size: 0.85rem;
-    }
-  </style>
+        /* evo-calendar override */
+        #evoCalendar {
+            background: transparent !important;
+            border-radius: var(--radius);
+            overflow: hidden;
+        }
+        #evoCalendar .evo-header {
+            background: rgba(255, 255, 255, 0.03) !important;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.06) !important;
+        }
+        #evoCalendar .evo-header .evo-header-title {
+            color: #fff !important;
+        }
+        #evoCalendar .evo-weekday {
+            color: rgba(255, 255, 255, 0.5) !important;
+        }
+        #evoCalendar .evo-day {
+            color: #fff !important;
+            background: rgba(255, 255, 255, 0.02) !important;
+            border-radius: 12px !important;
+        }
+        #evoCalendar .evo-day:hover {
+            background: rgba(108, 92, 231, 0.15) !important;
+        }
+        #evoCalendar .evo-day.selected {
+            background: var(--primary) !important;
+        }
+    </style>
 </head>
 
 <body>
-  <button class="btn btn-outline-secondary theme-btn" id="toggleTheme">🌙</button>
 
-  <div class="container py-4">
-    <div id="friendNotice" class="alert alert-info d-none">
-      <i class="bi bi-info-circle"></i> You're booking with: <strong id="friendName"></strong>
-      <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-    </div>
+    <div class="container py-4">
 
-    <!-- Loyalty Points Display -->
-    <div id="loyaltyPointsDisplay" class="loyalty-points d-none">
-      <div class="d-flex justify-content-between align-items-center">
-        <div>
-          <h4 class="mb-1"><i class="bi bi-award"></i> Your Points: <span id="loyaltyPoints">0</span></h4>
-          <p class="mb-0">Redeem points for discounts on your bookings!</p>
-        </div>
-        <button class="btn btn-sm btn-outline-light" id="refreshPointsBtn">
-          <i class="bi bi-arrow-clockwise"></i>
-        </button>
-      </div>
-    </div>
-
-    <!-- Search and Filter Section -->
-    <div class="search-container mb-4">
-      <ul class="nav nav-tabs mb-3" id="bookingTabs" role="tablist">
-        <li class="nav-item" role="presentation">
-          <button class="nav-link active" id="facility-tab" data-bs-toggle="tab" data-bs-target="#facility-tab-pane"
-            type="button">Book Facility</button>
-        </li>
-        <li class="nav-item" role="presentation">
-          <button class="nav-link" id="event-tab" data-bs-toggle="tab" data-bs-target="#event-tab-pane"
-            type="button">Create Event</button>
-        </li>
-        <li class="nav-item" role="presentation">
-          <button class="nav-link" id="rewards-tab" data-bs-toggle="tab" data-bs-target="#rewards-tab-pane"
-            type="button">Rewards</button>
-        </li>
-      </ul>
-
-      <div class="tab-content" id="bookingTabsContent">
-        <!-- Facility Booking Tab -->
-        <div class="tab-pane fade show active" id="facility-tab-pane" role="tabpanel">
-          <div class="row g-3">
-            <div class="col-md-3">
-              <label for="sportType" class="form-label">Sport Type</label>
-              <select class="form-select" id="sportType">
-                <option value="tennis" selected>Tennis</option>
-                <option value="badminton">Badminton</option>
-                <option value="basketball">Basketball</option>
-                <option value="volleyball">Volleyball</option>
-                <option value="football">Football</option>
-                <option value="futsal">Futsal</option>
-                <option value="squash">Squash</option>
-                <option value="table-tennis">Table Tennis</option>
-              </select>
+        <!-- ===== HEADER ===== -->
+        <div class="d-flex align-items-center justify-content-between mb-4 flex-wrap gap-3">
+            <div class="d-flex align-items-center gap-3">
+                <div style="font-size:2rem; font-weight:900; background:linear-gradient(135deg,#6c5ce7,#00b894); -webkit-background-clip:text; -webkit-text-fill-color:transparent;">
+                    SPORTOVA
+                </div>
+                <span style="color:rgba(255,255,255,0.3); font-size:0.7rem; letter-spacing:2px;">⚡ BOOK · PLAY · WIN</span>
             </div>
-            <div class="col-md-3">
-              <label for="locationSearch" class="form-label">Location</label>
-              <select class="form-select" id="locationSearch">
-                <option value="" selected>All Areas</option>
-                <option value="kuala lumpur">Kuala Lumpur</option>
-                <option value="petaling jaya">Petaling Jaya</option>
-                <option value="subang jaya">Subang Jaya</option>
-                <option value="puchong">Puchong</option>
-              </select>
-            </div>
-            <div class="col-md-3">
-              <label for="facilityNameSearch" class="form-label">Facility Name</label>
-              <input type="text" class="form-control" id="facilityNameSearch" placeholder="Search by name">
-            </div>
-            <div class="col-md-3 d-flex align-items-end">
-              <button class="btn btn-primary w-100" id="searchBtn">
-                <i class="bi bi-search"></i> Search
-              </button>
-            </div>
-          </div>
+            <button class="btn btn-outline-secondary btn-sm" id="toggleTheme" style="border-radius:30px; padding:6px 16px;">
+                <i class="bi bi-moon-stars"></i> Theme
+            </button>
         </div>
 
-        <!-- Event Creation Tab -->
-        <div class="tab-pane fade" id="event-tab-pane" role="tabpanel">
-          <form id="eventForm">
-            <div class="row g-3">
-              <div class="col-md-3">
-                <label for="eventSportType" class="form-label">Sport Type*</label>
-                <select class="form-select" id="eventSportType" required>
-                  <option value="" disabled selected>Select sport</option>
-                  <option value="tennis">Tennis</option>
-                  <option value="badminton">Badminton</option>
-                  <option value="basketball">Basketball</option>
-                  <option value="volleyball">Volleyball</option>
-                  <option value="football">Football</option>
-                  <option value="futsal">Futsal</option>
-                  <option value="squash">Squash</option>
-                  <option value="table-tennis">Table Tennis</option>
-                </select>
-              </div>
-              <div class="col-md-3">
-                <label for="eventDate" class="form-label">Date*</label>
-                <input type="date" class="form-control" id="eventDate" required>
-              </div>
-              <div class="col-md-3">
-                <label for="eventTime" class="form-label">Time*</label>
-                <input type="time" class="form-control" id="eventTime" required>
-              </div>
-              <div class="col-md-3">
-                <label for="eventDuration" class="form-label">Duration*</label>
-                <select class="form-select" id="eventDuration" required>
-                  <option value="1">1 hour</option>
-                  <option value="1.5">1.5 hours</option>
-                  <option value="2" selected>2 hours</option>
-                  <option value="3">3 hours</option>
-                </select>
-              </div>
-              <div class="col-md-4">
-                <label for="eventSkillLevel" class="form-label">Skill Level*</label>
-                <select class="form-select" id="eventSkillLevel" required>
-                  <option value="beginner">Beginner</option>
-                  <option value="intermediate" selected>Intermediate</option>
-                  <option value="advanced">Advanced</option>
-                </select>
-              </div>
-              <div class="col-md-4">
-                <label for="eventPlayersNeeded" class="form-label">Players Needed*</label>
-                <select class="form-select" id="eventPlayersNeeded" required>
-                  <option value="1">1 player</option>
-                  <option value="2" selected>2 players</option>
-                  <option value="4">4 players (doubles)</option>
-                </select>
-              </div>
-              <div class="col-md-4">
-                <label for="eventFacility" class="form-label">Facility</label>
-                <textarea class="form-control" id="eventFacility" rows="1"
-                  placeholder="Enter facility name..."></textarea>
-              </div>
-              <div class="col-12">
-                <label for="eventDescription" class="form-label">Event Description</label>
-                <textarea class="form-control" id="eventDescription" rows="2"
-                  placeholder="Describe your event..."></textarea>
-              </div>
-              <div class="col-12">
-                <button type="submit" class="btn btn-success" id="createEventBtn">
-                  <i class="bi bi-calendar-event"></i> Create Event
+        <!-- ===== FRIEND NOTICE ===== -->
+        <div id="friendNotice" class="alert alert-info d-none animate-fade-up" style="background:rgba(108,92,231,0.15); border:1px solid rgba(108,92,231,0.2); color:#b8a9ff; border-radius:16px;">
+            <i class="bi bi-person-plus"></i> You're booking with: <strong id="friendName"></strong>
+            <button type="button" class="btn-close" data-bs-dismiss="alert" style="filter: invert(1);"></button>
+        </div>
+
+        <!-- ===== LOYALTY POINTS ===== -->
+        <div id="loyaltyPointsDisplay" class="loyalty-points d-none mb-4 animate-fade-up">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h5 class="mb-0"><i class="bi bi-award"></i> Your Points: <span id="loyaltyPoints">0</span></h5>
+                    <small style="opacity:0.7;">Redeem for discounts on bookings</small>
+                </div>
+                <button class="btn btn-sm btn-outline-light" id="refreshPointsBtn" style="border-radius:30px;">
+                    <i class="bi bi-arrow-clockwise"></i>
                 </button>
-              </div>
             </div>
-          </form>
         </div>
 
-        <!-- Rewards Tab -->
-        <div class="tab-pane fade" id="rewards-tab-pane" role="tabpanel">
-          <div class="row g-4">
-            <div class="col-md-6">
-              <div class="card reward-card h-100">
-                <div class="card-body">
-                  <div class="d-flex align-items-center">
-                    <div class="me-3">
-                      <i class="bi bi-gift-fill text-primary" style="font-size: 2rem;"></i>
-                    </div>
-                    <div>
-                      <h5 class="card-title mb-1">Loyalty Rewards</h5>
-                      <p class="card-text text-muted">Earn points with every booking and redeem for discounts!</p>
-                    </div>
-                  </div>
-                  <div class="mt-3">
-                    <div class="d-flex justify-content-between mb-2">
-                      <span>100 points = RM5 discount</span>
-                      <span class="badge bg-primary">Available</span>
-                    </div>
-                    <div class="d-flex justify-content-between mb-2">
-                      <span>200 points = RM12 discount</span>
-                      <span class="badge bg-primary">Available</span>
-                    </div>
-                    <div class="d-flex justify-content-between">
-                      <span>500 points = RM30 discount</span>
-                      <span class="badge bg-primary">Available</span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <h1 class="text-center mb-4" id="pageTitle">Book a Tennis Court</h1>
-
-    <div id="facilityList" class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4"></div>
-
-    <div id="calendarSection" style="display: none;">
-      <button class="btn btn-outline-secondary mb-3" id="backToFacilitiesBtn">
-        <i class="bi bi-arrow-left"></i> Back to Facilities
-      </button>
-      <h3 class="mb-3">Select Date for <span id="facilityNameDisplay"></span></h3>
-
-      <!-- Enhanced Promotion Display -->
-      <div id="promoDetails" class="promo-highlight mb-4 d-none">
-        <div class="d-flex align-items-center">
-          <i class="bi bi-megaphone-fill me-3" style="font-size: 1.5rem;"></i>
-          <div>
-            <h5 class="mb-1"><strong>SPECIAL PROMOTION</strong></h5>
-            <p class="mb-0" id="promoText"></p>
-          </div>
-        </div>
-      </div>
-
-      <div id="evoCalendar"></div>
-
-      <!-- Terms & Conditions Section -->
-      <div class="terms-conditions">
-        <h5><i class="bi bi-file-earmark-text"></i> Facility Terms & Conditions</h5>
-        <div id="facilityTerms">
-          <p>Loading terms and conditions...</p>
-        </div>
-      </div>
-    </div>
-
-    <!-- Events Section -->
-    <div id="eventsSection" class="mt-5" style="display: none;">
-      <h2 class="mb-4">Upcoming Tennis Events</h2>
-      <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4" id="eventsList"></div>
-    </div>
-  </div>
-
-  <!-- Slot Selection Modal -->
-  <div class="modal fade" id="slotModal" tabindex="-1">
-    <div class="modal-dialog modal-dialog-centered">
-      <div class="modal-content">
-        <div class="modal-header bg-primary text-white">
-          <h5 class="modal-title">Book <span id="selectedFacilityText"></span></h5>
-          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-        </div>
-        <div class="modal-body">
-          <h6 class="mb-3">Date: <span id="selectedDateText"></span></h6>
-          <div id="slotButtons" class="d-flex flex-wrap justify-content-center"></div>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- Add-ons Selection Modal -->
-  <div class="modal fade" id="addonsModal" tabindex="-1">
-    <div class="modal-dialog modal-dialog-centered modal-lg">
-      <div class="modal-content">
-        <div class="modal-header bg-primary text-white">
-          <h5 class="modal-title">Add Extras to Your Booking</h5>
-          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-        </div>
-        <div class="modal-body">
-          <ul class="nav nav-tabs mb-3" id="addonsTabs" role="tablist">
-            <li class="nav-item" role="presentation">
-              <button class="nav-link active" id="snacks-tab" data-bs-toggle="tab" data-bs-target="#snacks-tab-pane"
-                type="button">Snacks</button>
-            </li>
-            <li class="nav-item" role="presentation">
-              <button class="nav-link" id="equipment-tab" data-bs-toggle="tab" data-bs-target="#equipment-tab-pane"
-                type="button">Equipment</button>
-            </li>
-          </ul>
-
-          <div class="tab-content" id="addonsTabsContent">
-            <!-- Snacks Tab -->
-            <div class="tab-pane fade show active" id="snacks-tab-pane" role="tabpanel">
-              <div class="row row-cols-1 row-cols-md-2 g-3" id="snacksList"></div>
-            </div>
-
-            <!-- Equipment Tab -->
-            <div class="tab-pane fade" id="equipment-tab-pane" role="tabpanel">
-              <div class="row row-cols-1 row-cols-md-2 g-3" id="equipmentList"></div>
-            </div>
-          </div>
-
-          <div class="mt-4">
-            <h5>Your Selections</h5>
-            <div id="selectedAddons"></div>
-            <div class="d-flex justify-content-between mt-3">
-              <h6>Total: RM<span id="addonsTotal">0</span></h6>
-              <div>
-                <button type="button" class="btn btn-outline-secondary me-2" id="skipAddonsBtn">Skip Add-ons</button>
-                <button class="btn btn-primary" id="proceedToCoachBtn">Continue to Coach</button>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- Coach Selection Modal -->
-  <div class="modal fade" id="coachModal" tabindex="-1">
-    <div class="modal-dialog modal-dialog-centered">
-      <div class="modal-content">
-        <div class="modal-header bg-primary text-white">
-          <h5 class="modal-title">Add a Coach to Your Session</h5>
-          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-        </div>
-        <div class="modal-body">
-          <div class="row row-cols-1 g-3" id="coachesList"></div>
-          
-          <!-- Discount application section -->
-          <div class="mt-4 border-top pt-3">
-            <h5>Apply Discount</h5>
-            <div class="alert alert-info">
-              <i class="bi bi-info-circle"></i> You have <strong><span id="availablePointsDisplay">0</span></strong> loyalty points available.
-            </div>
-            <div class="d-flex align-items-center mb-3">
-              <select class="form-select me-2" id="redeemOption">
-                <option value="0">No discount</option>
-                <option value="100">100 points = RM5 discount</option>
-                <option value="200">200 points = RM12 discount</option>
-                <option value="500">500 points = RM30 discount</option>
-              </select>
-              <button class="btn btn-success" id="applyDiscountBtn">Apply</button>
-            </div>
-            <div id="discountAppliedMessage" class="alert alert-success d-none">
-              <i class="bi bi-check-circle"></i> Discount applied successfully!
-            </div>
-          </div>
-          
-          <!-- Final price display -->
-          <div class="mt-4 border-top pt-3">
-            <h5>Final Price</h5>
-            <div class="d-flex justify-content-between">
-              <strong>Subtotal:</strong> <span>RM<span id="subtotalDisplay">0</span></span>
-            </div>
-            <div class="d-flex justify-content-between">
-              <strong>Discount:</strong> <span class="text-success">-RM<span id="discountDisplay">0</span></span>
-            </div>
-            <div class="d-flex justify-content-between mt-2">
-              <strong>Total Amount:</strong> <span class="fw-bold">RM<span id="totalDisplay">0</span></span>
-            </div>
-          </div>
-        </div>
-        <div class="modal-footer">
-          <button type="button" class="btn btn-secondary" id="backToAddonsBtn">Back to Add-ons</button>
-          <button class="btn btn-success" id="confirmBookingBtn">Confirm Booking</button>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- Confirmation Modal -->
-  <div class="modal fade" id="confirmModal" tabindex="-1">
-    <div class="modal-dialog modal-dialog-centered">
-      <div class="modal-content">
-        <div class="modal-header bg-success text-white">
-          <h5 class="modal-title"><i class="bi bi-check-circle"></i> Booking Confirmed</h5>
-          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-        </div>
-        <div class="modal-body">
-          <p>Your sports facility booking has been confirmed!</p>
-          <div id="bookingDetails" class="mt-3"></div>
-        </div>
-        <div class="modal-footer">
-          <button type="button" class="btn btn-primary" data-bs-dismiss="modal">Close</button>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- Event Confirmation Modal -->
-  <div class="modal fade" id="eventConfirmModal" tabindex="-1">
-    <div class="modal-dialog modal-dialog-centered">
-      <div class="modal-content">
-        <div class="modal-header bg-success text-white">
-          <h5 class="modal-title"><i class="bi bi-check-circle"></i> Event Created</h5>
-          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-        </div>
-        <div class="modal-body">
-          <p>Your event has been created and notifications have been sent to matching players!</p>
-          <div id="eventDetails" class="mt-3"></div>
-        </div>
-        <div class="modal-footer">
-          <button type="button" class="btn btn-primary" data-bs-dismiss="modal">Close</button>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- Match Details Modal -->
-  <div class="modal fade" id="matchDetailsModal" tabindex="-1">
-    <div class="modal-dialog modal-lg">
-      <div class="modal-content">
-        <div class="modal-header bg-primary text-white">
-          <h5 class="modal-title">AI Match Results</h5>
-          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-        </div>
-        <div class="modal-body">
-          <div id="matchResultsContent"></div>
-        </div>
-        <div class="modal-footer">
-          <button type="button" class="btn btn-primary" data-bs-dismiss="modal">Close</button>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- Loading Spinner -->
-  <div id="loading" class="text-center my-5">
-    <div class="spinner-border text-primary loading-spinner" role="status">
-      <span class="visually-hidden">Loading...</span>
-    </div>
-    <p class="mt-3">Loading facilities...</p>
-  </div>
-
-  <!-- Floating Coach Select Button -->
-  <button class="btn btn-primary rounded-pill coach-select-btn d-none" id="floatingCoachBtn">
-    <i class="bi bi-person-check"></i> Select Coach
-  </button>
-
-  <!-- Firebase and other scripts -->
-  <script src="https://cdn.jsdelivr.net/npm/jquery@3.6.0/dist/jquery.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/evo-calendar@1.1.3/evo-calendar/js/evo-calendar.min.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
-
-  <script>
-    // Firebase configuration
-    const firebaseConfig = {
-      apiKey: "AIzaSyDjMwv9Bxff1bUE7CR_S-DPx3NV5kkinTU",
-      authDomain: "nste-booking-system.firebaseapp.com",
-      projectId: "nste-booking-system",
-      storageBucket: "nste-booking-system.appspot.com",
-      messagingSenderId: "574207536433",
-      appId: "1:574207536433:web:0d2aeaacdc280cec019410"
-    };
-
-    firebase.initializeApp(firebaseConfig);
-    const db = firebase.firestore();
-    const auth = firebase.auth();
-
-    // Sport icons mapping
-    const sportIcons = {
-      tennis: "🎾",
-      badminton: "🏸",
-      basketball: "🏀",
-      volleyball: "🏐",
-      football: "⚽",
-      futsal: "🥅",
-      squash: "🎯",
-      "table-tennis": "🏓",
-      other: "🏟️"
-    };
-
-    let currentUser = null;
-    let selectedFacility = null;
-    let selectedDate = null;
-    let selectedSlot = null;
-    let selectedAddons = [];
-    let selectedCoach = null;
-    let currentTheme = 'Royal Navy';
-    let bookingWithFriend = null;
-    let currentSport = 'tennis';
-    let facilitiesData = [];
-    let eventsData = [];
-    let userLoyaltyPoints = 0;
-    let appliedDiscount = 0;
-    let pendingDiscount = 0;
-
-    // Sample data for snacks, equipment and coaches
-    const snacksData = [
-      { id: 1, name: "Energy Bar", price: 5, image: "https://cdn.mos.cms.futurecdn.net/CpcooP3z8M7QXfQ6Gfncdg.jpg" },
-      { id: 2, name: "Sports Drink", price: 8, image: "https://premierfootballuk.com/wp-content/uploads/Sports-drink.jpg" },
-      { id: 3, name: "Protein Shake", price: 12, image: "https://i5.walmartimages.com/asr/949c9c39-f0fb-4d3e-80e2-484dad00b8ec.41c3cb759a9ad3cdedabe2cf25cafd45.jpeg" },
-      { id: 4, name: "Banana", price: 2, image: "https://wallpaperaccess.com/full/889245.jpg" }
-    ];
-
-    const equipmentData = [
-      { id: 101, name: "Tennis Racket", price: 15, image: "https://m.media-amazon.com/images/I/61+1mQjT1RL._AC_UF1000,1000_QL80_.jpg" },
-      { id: 102, name: "Tennis Balls (3)", price: 10, image: "https://m.media-amazon.com/images/I/71+J6zRXQZL._AC_UF1000,1000_QL80_.jpg" },
-      { id: 103, name: "Sweatband", price: 5, image: "https://m.media-amazon.com/images/I/71GQz9Vk2LL._AC_UF1000,1000_QL80_.jpg" },
-      { id: 104, name: "Tennis Shoes", price: 20, image: "https://m.media-amazon.com/images/I/71GQz9Vk2LL._AC_UF1000,1000_QL80_.jpg" }
-    ];
-
-    $(document).ready(function () {
-      // Initialize Select2 for multiple select
-      $('#inviteFriends').select2();
-
-      // Check if booking with a friend
-      const friendData = sessionStorage.getItem('bookingWithFriend');
-      if (friendData) {
-        bookingWithFriend = JSON.parse(friendData);
-        document.getElementById('friendNotice').classList.remove('d-none');
-        document.getElementById('friendName').textContent = bookingWithFriend.name;
-        sessionStorage.removeItem('bookingWithFriend');
-      }
-
-      // Initialize calendar
-      $('#evoCalendar').evoCalendar({
-        theme: currentTheme,
-        sidebarDisplayDefault: false,
-        sidebarToggler: false,
-        eventDisplayDefault: false,
-        eventListToggler: false
-      });
-
-      // Theme toggle button
-      $('#toggleTheme').click(() => {
-        currentTheme = currentTheme === 'Royal Navy' ? 'Midnight Blue' : 'Royal Navy';
-        $('#toggleTheme').text(currentTheme === 'Royal Navy' ? '🌙' : '☀️');
-        $('#evoCalendar').evoCalendar('setTheme', currentTheme);
-        $('body').toggleClass('bg-dark text-white', currentTheme);
-      });
-
-      // Auth state listener
-      auth.onAuthStateChanged(async user => {
-        currentUser = user;
-        if (user) {
-          // Initialize user document if it doesn't exist
-          const userRef = db.collection('users').doc(user.uid);
-          const doc = await userRef.get();
-          
-          if (!doc.exists) {
-            await userRef.set({
-              loyaltyPoints: 0,
-              name: user.displayName || '',
-              email: user.email || '',
-              createdAt: firebase.firestore.FieldValue.serverTimestamp()
-            });
-            userLoyaltyPoints = 0;
-          } else {
-            userLoyaltyPoints = doc.data().loyaltyPoints || 0;
-          }
-          
-          // Update UI with points
-          updateLoyaltyPointsDisplay();
-          
-          // Load other data
-          loadFacilities();
-          loadEvents();
-        } else {
-          $('#facilityList').html('<div class="alert alert-warning">Please log in to book facilities</div>');
-          $('#loading').hide();
-        }
-      });
-
-      // Back to facilities button
-      $('#backToFacilitiesBtn').click(() => {
-        $('#calendarSection').hide();
-        $('#facilityList').show();
-        $('#eventsSection').hide();
-      });
-
-      // Date selection handler
-      $('#evoCalendar').on('selectDate', (_, newDate) => {
-        selectedDate = newDate;
-        loadBookingsForFacility();
-      });
-
-      // Skip add-ons button
-      $('#skipAddonsBtn').click(() => {
-        selectedAddons = [];
-        $('#addonsModal').modal('hide');
-        showCoachesSelection();
-      });
-
-      // Back to add-ons button
-      $('#backToAddonsBtn').click(() => {
-        $('#coachModal').modal('hide');
-        showAddonsSelection();
-      });
-
-      // Proceed to coaches button
-      $('#proceedToCoachBtn').click(() => {
-        $('#addonsModal').modal('hide');
-        showCoachesSelection();
-      });
-
-      // Floating coach button
-      $('#floatingCoachBtn').click(() => {
-        $('#addonsModal').modal('hide');
-        showCoachesSelection();
-      });
-
-      // Refresh points button
-      $('#refreshPointsBtn').click(async () => {
-        if (!currentUser) return;
-        
-        try {
-          $('#loyaltyPoints').html('<span class="spinner-border spinner-border-sm"></span>');
-          const doc = await db.collection('users').doc(currentUser.uid).get();
-          if (doc.exists) {
-            userLoyaltyPoints = doc.data().loyaltyPoints || 0;
-            updateLoyaltyPointsDisplay();
-          }
-        } catch (error) {
-          console.error("Error refreshing points:", error);
-          $('#loyaltyPointsDisplay').append(
-            '<div class="alert alert-danger mt-2">Error updating points</div>'
-          );
-        }
-      });
-
-      // Apply discount button
-      $('#applyDiscountBtn').click(() => {
-        applyDiscount();
-      });
-
-      // Confirm booking button
-      $('#confirmBookingBtn').click(() => {
-        const coachOption = $('input[name="coachOption"]:checked').val();
-        selectedCoach = coachOption === 'no' ? null :
-          coachesData.find(c => c.id == coachOption);
-        completeBooking();
-      });
-
-      // Search button click
-      $('#searchBtn').click(() => {
-        currentSport = $('#sportType').val();
-        $('#pageTitle').text(`Book a ${capitalizeFirstLetter(currentSport)} Facility`);
-        loadFacilities();
-      });
-
-      // Sport type change
-      $('#sportType').change(() => {
-        currentSport = $('#sportType').val();
-        $('#pageTitle').text(`Book a ${capitalizeFirstLetter(currentSport)} Facility`);
-      });
-
-      // Event form submission
-      $('#eventForm').submit(function (e) {
-        e.preventDefault();
-        createEvent();
-      });
-
-      // Tab change handler
-      $('button[data-bs-toggle="tab"]').on('shown.bs.tab', function (e) {
-        if (e.target.id === 'event-tab') {
-          $('#facilityList').hide();
-          $('#calendarSection').hide();
-          $('#eventsSection').hide();
-        } else if (e.target.id === 'rewards-tab') {
-          $('#facilityList').hide();
-          $('#calendarSection').hide();
-          $('#eventsSection').hide();
-        } else {
-          $('#facilityList').show();
-          $('#calendarSection').hide();
-          $('#eventsSection').hide();
-        }
-      });
-
-      // Set minimum date for event date picker to today
-      const today = new Date().toISOString().split('T')[0];
-      $('#eventDate').attr('min', today);
-    });
-
-    function capitalizeFirstLetter(string) {
-      return string.charAt(0).toUpperCase() + string.slice(1);
-    }
-
-    function getSkillLevelClass(level) {
-      switch (level) {
-        case 'beginner': return 'skill-beginner';
-        case 'intermediate': return 'skill-intermediate';
-        case 'advanced': return 'skill-advanced';
-        default: return '';
-      }
-    }
-
-    function formatTime(timeString) {
-      const [hours, minutes] = timeString.split(':');
-      const hour = parseInt(hours);
-      const ampm = hour >= 12 ? 'PM' : 'AM';
-      const hour12 = hour % 12 || 12;
-      return `${hour12}:${minutes} ${ampm}`;
-    }
-
-    function updateLoyaltyPointsDisplay() {
-      if (userLoyaltyPoints > 0) {
-        $('#loyaltyPointsDisplay').removeClass('d-none');
-        $('#loyaltyPoints').text(userLoyaltyPoints);
-        $('#availablePointsDisplay').text(userLoyaltyPoints);
-      } else {
-        $('#loyaltyPointsDisplay').addClass('d-none');
-      }
-    }
-
-    async function updateUserPoints(pointsChange) {
-      if (!currentUser) return;
-
-      try {
-        // Show loading
-        $('#loyaltyPoints').html('<span class="spinner-border spinner-border-sm"></span>');
-        
-        // Update in Firestore
-        await db.collection('users').doc(currentUser.uid).update({
-          loyaltyPoints: firebase.firestore.FieldValue.increment(pointsChange)
-        });
-        
-        // Update local value
-        userLoyaltyPoints += pointsChange;
-        
-        // Update UI
-        updateLoyaltyPointsDisplay();
-      } catch (error) {
-        console.error("Error updating points:", error);
-        // Show error to user
-        $('#loyaltyPointsDisplay').append(
-          '<div class="alert alert-danger mt-2">Error updating points</div>'
-        );
-      }
-    }
-
-    // AI Matching Algorithm
-    function findMatchingPlayers(eventData) {
-      return new Promise(async (resolve) => {
-        try {
-          // Get all users with matching skill level
-          const usersSnapshot = await db.collection('users')
-            .where('skillLevel', '==', eventData.skillLevel)
-            .get();
-
-          const potentialMatches = [];
-
-          usersSnapshot.forEach(doc => {
-            const user = doc.data();
-            // Basic matching criteria (can be enhanced)
-            if (user.uid !== currentUser.uid && // Don't match with self
-              user.preferredTimes.some(time =>
-                eventData.time.includes("Evening") ?
-                  time.includes("Evening") :
-                  time.includes("Morning"))) {
-
-              // Calculate compatibility score
-              const compatibilityScore = calculateCompatibility(user, eventData);
-
-              potentialMatches.push({
-                ...user,
-                compatibilityScore,
-                id: doc.id
-              });
-            }
-          });
-
-          // Sort by compatibility (highest first)
-          potentialMatches.sort((a, b) => b.compatibilityScore - a.compatibilityScore);
-
-          resolve(potentialMatches);
-        } catch (error) {
-          console.error("Error in matching:", error);
-          resolve([]);
-        }
-      });
-    }
-
-    function calculateCompatibility(user, event) {
-      let score = 0;
-
-      // Skill level match (exact match = highest score)
-      if (user.skillLevel === event.skillLevel) score += 50;
-
-      // Preferred times match
-      if (user.preferredTimes.some(t => event.time.includes(t.split(" ")[1]))) {
-        score += 30;
-      }
-
-      // Playing frequency (more frequent = higher score)
-      if (user.playingFrequency === "Daily") score += 20;
-      else if (user.playingFrequency === "Weekly") score += 15;
-      else score += 5;
-
-      return Math.min(100, score); // Cap at 100%
-    }
-
-    // Modified createEvent function with AI matching
-    async function createEvent() {
-      if (!currentUser) {
-        alert("Please log in to create an event");
-        return;
-      }
-
-      const eventData = {
-        sport: $('#eventSportType').val(),
-        date: $('#eventDate').val(),
-        time: $('#eventTime').val(),
-        duration: parseFloat($('#eventDuration').val()),
-        skillLevel: $('#eventSkillLevel').val(),
-        playersNeeded: parseInt($('#eventPlayersNeeded').val()),
-        facility: $('#eventFacility').val() || null,
-        description: $('#eventDescription').val() || '',
-        organizerId: currentUser.uid,
-        organizerName: currentUser.displayName || currentUser.email || "Guest",
-        createdAt: firebase.firestore.FieldValue.serverTimestamp(),
-        participants: null,
-        status: 'active'
-      };
-
-      try {
-        // Show loading state
-        $('#createEventBtn').html('<span class="spinner-border spinner-border-sm" role="status"></span> Finding matches...');
-
-        // Find matching players using AI
-        const matchedPlayers = await findMatchingPlayers(eventData);
-
-        if (matchedPlayers.length === 0) {
-          alert("No matching players found. You can still create the event and invite friends manually.");
-        }
-
-        // Show match details before creating event
-        showMatchDetails(matchedPlayers, eventData);
-
-      } catch (error) {
-        console.error("Error creating event:", error);
-        alert("Error creating event. Please try again.");
-      } finally {
-        $('#createEventBtn').html('<i class="bi bi-calendar-event"></i> Create Event');
-      }
-    }
-
-    function showMatchDetails(matchedPlayers, eventData) {
-      const playersNeeded = parseInt($('#eventPlayersNeeded').val());
-      const playersToShow = matchedPlayers.slice(0, playersNeeded - 1);
-
-      let content = `
-        <h5>Event Details</h5>
-        <div class="mb-3 p-3 bg-light rounded">
-          <p><strong>Sport:</strong> ${capitalizeFirstLetter(eventData.sport)}</p>
-          <p><strong>When:</strong> ${eventData.date} at ${formatTime(eventData.time)}</p>
-          <p><strong>Skill Level:</strong> <span class="${getSkillLevelClass(eventData.skillLevel)}">
-            ${capitalizeFirstLetter(eventData.skillLevel)}
-          </span></p>
-        </div>
-        
-        <h5 class="mt-4">AI Matched Players (${playersToShow.length})</h5>
-        <p>Our system found these players that match your event criteria:</p>
-      `;
-
-      if (playersToShow.length > 0) {
-        content += `<div class="row g-3 mt-2">`;
-
-        playersToShow.forEach(player => {
-          content += `
-            <div class="col-md-6">
-              <div class="card match-card h-100">
-                <div class="card-body">
-                  <div class="d-flex align-items-center">
-                    <img src="${player.photoURL || 'https://cdn.pixabay.com/photo/2015/10/05/22/37/blank-profile-picture-973460_640.png'}" 
-                         class="rounded-circle me-3" width="50" height="50">
-                    <div>
-                      <h6 class="mb-0">${player.name}</h6>
-                      <small class="text-muted">${player.email}</small>
-                    </div>
-                  </div>
-                  
-                  <div class="mt-3">
-                    <div class="d-flex justify-content-between">
-                      <small>Compatibility</small>
-                      <small>${player.compatibilityScore}%</small>
-                    </div>
-                    <div class="compatibility-meter">
-                      <div class="compatibility-fill" style="width: ${player.compatibilityScore}%"></div>
-                    </div>
-                  </div>
-                  
-                  <div class="row mt-2">
-                    <div class="col-6">
-                      <small><i class="bi bi-person-badge"></i> ${capitalizeFirstLetter(player.skillLevel)}</small>
-                    </div>
-                    <div class="col-6">
-                      <small><i class="bi bi-clock"></i> ${player.preferredTimes.join(', ')}</small>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          `;
-        });
-
-        content += `</div>`;
-      } else {
-        content += `
-          <div class="alert alert-info">
-            No matching players found. You can still create the event and invite friends manually.
-          </div>
-        `;
-      }
-
-      content += `
-        <div class="mt-4">
-          <button class="btn btn-primary" id="confirmEventWithMatches">
-            Confirm Event with These Matches
-          </button>
-          <button class="btn btn-outline-secondary ms-2" data-bs-dismiss="modal">
-            Cancel
-          </button>
-        </div>
-      `;
-
-      $('#matchResultsContent').html(content);
-      $('#matchDetailsModal').modal('show');
-
-      // Handle confirmation
-      $('#confirmEventWithMatches').click(async () => {
-        $('#matchDetailsModal').modal('hide');
-        await finalizeEventCreation(eventData, playersToShow);
-      });
-    }
-
-    async function finalizeEventCreation(eventData, matchedPlayers) {
-      try {
-        // Limit to the number of players needed (minus 1 for organizer)
-        const playersToInvite = matchedPlayers.slice(0, eventData.playersNeeded - 1);
-
-        // Add to event data
-        eventData.matchedPlayers = playersToInvite.map(p => p.id);
-        eventData.pendingConfirmations = playersToInvite.map(p => p.id);
-
-        // Save to Firestore
-        const eventRef = await db.collection('events').add(eventData);
-        eventData.id = eventRef.id;
-
-        // Send notifications
-        await sendEventNotifications(playersToInvite, eventData);
-
-        // Show confirmation
-        showEventConfirmation(eventData, playersToInvite);
-
-      } catch (error) {
-        console.error("Error finalizing event:", error);
-        alert("Error creating event. Please try again.");
-      }
-    }
-
-    async function sendEventNotifications(players, eventData) {
-      try {
-        const responses = await Promise.all(
-          players.map(player => {
-            return fetch('https://nste-email-api.onrender.com/send-event-invite', {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-              },
-              body: JSON.stringify({
-                name: player.name,
-                email: player.email,
-                eventName: `${eventData.sport} Event`,
-                date: eventData.date,
-                time: eventData.time,
-                organizer: eventData.organizerName,
-                eventId: eventData.id
-              })
-            });
-          })
-        );
-
-        console.log('Notifications sent:', responses);
-      } catch (error) {
-        console.error('Error sending notifications:', error);
-      }
-    }
-
-    function showEventConfirmation(eventData, matchedPlayers) {
-      const playerList = matchedPlayers.map(p =>
-        `<li>${p.name} (${p.email}) - Compatibility: ${p.compatibilityScore}%</li>`
-      ).join('');
-
-      $('#eventDetails').html(`
-        <div class="mb-2"><strong>Event:</strong> ${capitalizeFirstLetter(eventData.sport)} Session</div>
-        <div class="mb-2"><strong>Date:</strong> ${eventData.date} at ${formatTime(eventData.time)}</div>
-        <div class="mb-2"><strong>Matched Players:</strong></div>
-        <ul>${playerList}</ul>
-        ${eventData.description ? `
-        <div class="mb-2"><strong>Description:</strong> ${eventData.description}</div>
-        ` : ''}
-      `);
-
-      $('#eventConfirmModal').modal('show');
-      $('#eventForm')[0].reset();
-    }
-
-    async function loadFacilities() {
-      try {
-        const locationFilter = $('#locationSearch').val().toLowerCase();
-        const nameFilter = $('#facilityNameSearch').val().toLowerCase();
-
-        // Modified query to handle both old and new data structures
-        const snapshot = await db.collection('facilities')
-          .where('type', 'in', [currentSport, 'sport-facility'])
-          .get();
-
-        $('#facilityList').empty();
-        $('#loading').hide();
-
-        if (snapshot.empty) {
-          $('#facilityList').html(`<div class="alert alert-info">No ${currentSport} facilities available at the moment</div>`);
-          return;
-        }
-
-        facilitiesData = [];
-        snapshot.forEach(doc => {
-          const facility = { id: doc.id, ...doc.data() };
-          // For legacy tennis courts, set sportType
-          if (!facility.sportType && facility.type === currentSport) {
-            facility.sportType = currentSport;
-          }
-          // Only include facilities for the current sport
-          if (facility.sportType === currentSport || facility.type === currentSport) {
-            facilitiesData.push(facility);
-          }
-        });
-
-        // Apply filters
-        let filteredFacilities = facilitiesData;
-        if (locationFilter) {
-          filteredFacilities = filteredFacilities.filter(f =>
-            f.location && f.location.toLowerCase().includes(locationFilter));
-        }
-        if (nameFilter) {
-          filteredFacilities = filteredFacilities.filter(f =>
-            f.name && f.name.toLowerCase().includes(nameFilter));
-        }
-
-        if (filteredFacilities.length === 0) {
-          $('#facilityList').html('<div class="alert alert-info">No facilities match your search criteria</div>');
-          return;
-        }
-
-        filteredFacilities.forEach(facility => {
-          const promoBadge = facility.promotion ?
-            `<span class="badge bg-danger promo-badge">${facility.promotion}</span>` : '';
-          
-          const sportIcon = sportIcons[facility.sportType || currentSport] || sportIcons.other;
-          const minPlayers = facility.minPlayers || 1;
-          const maxPlayers = facility.maxPlayers || 2;
-          const playerCapacity = maxPlayers > 1 ? 
-            `<span class="player-capacity">${minPlayers}-${maxPlayers} players</span>` : 
-            `<span class="player-capacity">Single player</span>`;
-
-          $('#facilityList').append(`
-            <div class="col">
-              <div class="card facility-card h-100">
-                ${promoBadge}
-                <img src="${facility.image || getDefaultSportImage(currentSport)}" 
-                     class="card-img-top facility-image" alt="${facility.name}">
-                <div class="card-body">
-                  <h5 class="card-title">
-                    <span class="sport-icon">${sportIcon}</span>
-                    ${facility.name}
-                  </h5>
-                  <p class="card-text">${facility.description || `${capitalizeFirstLetter(currentSport)} facility`}</p>
-                  <div class="d-flex justify-content-between align-items-center">
-                    <span class="badge bg-primary">RM${facility.price || '0'}/hour</span>
-                    ${playerCapacity}
-                  </div>
-                </div>
-                <div class="card-footer bg-transparent">
-                  <button class="btn btn-primary w-100 book-btn" 
-                          data-facility-id="${facility.id}"
-                          data-facility-name="${facility.name}">
-                    <i class="bi bi-calendar-plus"></i> Book Now
-                  </button>
-                </div>
-              </div>
-            </div>
-          `);
-        });
-
-        $('.book-btn').click(function () {
-          const facilityId = $(this).data('facility-id');
-          const facilityName = $(this).data('facility-name');
-
-          db.collection('facilities').doc(facilityId).get()
-            .then(doc => {
-              selectedFacility = { id: facilityId, ...doc.data() };
-              $('#facilityNameDisplay').text(facilityName);
-
-              // Show promotion if available
-              if (selectedFacility.promotion) {
-                $('#promoDetails').removeClass('d-none');
-                $('#promoText').text(selectedFacility.promotion);
-              } else {
-                $('#promoDetails').addClass('d-none');
-              }
-
-              // Load terms and conditions
-              loadFacilityTerms(facilityId);
-
-              $('#facilityList').hide();
-              $('#calendarSection').show();
-              $('#eventsSection').hide();
-              $('#evoCalendar').evoCalendar('addCalendarEvent', []);
-            })
-            .catch(error => {
-              console.error("Error loading facility:", error);
-              alert("Error loading facility details. Please try again.");
-            });
-        });
-      } catch (error) {
-        console.error("Error loading facilities:", error);
-        $('#facilityList').html('<div class="alert alert-danger">Error loading facilities. Please try again.</div>');
-        $('#loading').hide();
-      }
-    }
-
-    async function loadFacilityTerms(facilityId) {
-      try {
-        // In a real app, you would fetch this from Firestore
-        // For demo purposes, we'll use sample terms
-        const sampleTerms = `
-          <h6>Booking Terms & Conditions:</h6>
-          <ul>
-            <li>All bookings must be paid in full at the time of reservation</li>
-            <li>Cancellations made more than 24 hours in advance will receive a full refund</li>
-            <li>No-shows will be charged the full booking amount</li>
-            <li>Proper sports attire must be worn at all times</li>
-            <li>Damages to equipment or facilities will be charged to the booking party</li>
-            <li>Maximum booking duration is 3 hours per session</li>
-          </ul>
-          <h6 class="mt-3">Safety Guidelines:</h6>
-          <ul>
-            <li>Players must warm up properly before playing</li>
-            <li>No food or drinks (except water) allowed on the courts</li>
-            <li>Follow all posted safety instructions</li>
-            <li>Report any facility issues to staff immediately</li>
-          </ul>
-        `;
-
-        $('#facilityTerms').html(sampleTerms);
-      } catch (error) {
-        console.error("Error loading terms:", error);
-        $('#facilityTerms').html('<p>Unable to load terms and conditions at this time.</p>');
-      }
-    }
-
-    function getDefaultSportImage(sport) {
-      const images = {
-        tennis: 'https://images.unsplash.com/photo-1554068865-24cecd4e34b8?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1470&q=80',
-        badminton: 'https://images.unsplash.com/photo-1593352216891-b5bfa7b5ba33?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1470&q=80',
-        basketball: 'https://images.unsplash.com/photo-1546519638-68e109498ffc?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1490&q=80',
-        volleyball: 'https://images.unsplash.com/photo-1543357486-cf27149a7205?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1470&q=80',
-        football: 'https://images.unsplash.com/photo-1540747913346-19e32dc3e97e?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1605&q=80',
-        futsal: 'https://images.unsplash.com/photo-1574629810360-7efbbe195018?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1470&q=80',
-        squash: 'https://images.unsplash.com/photo-1600185365483-26d7a4cc7519?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1025&q=80',
-        "table-tennis": 'https://images.unsplash.com/photo-1519861531473-9200262188bf?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1471&q=80'
-      };
-      return images[sport] || images.tennis;
-    }
-
-    async function loadBookingsForFacility() {
-      try {
-        const snapshot = await db.collection('bookings')
-          .where('date', '==', selectedDate)
-          .where('facilityId', '==', selectedFacility.id)
-          .get();
-
-        const bookings = {};
-        selectedFacility.slots.forEach(slot => {
-          bookings[slot] = false;
-        });
-
-        snapshot.forEach(doc => {
-          const slot = doc.data().slot;
-          bookings[slot] = true;
-        });
-
-        renderSlotButtons(bookings);
-        $('#selectedFacilityText').text(selectedFacility.name);
-        $('#selectedDateText').text(selectedDate);
-        $('#slotModal').modal('show');
-      } catch (error) {
-        console.error("Error loading bookings:", error);
-        alert("Error loading available slots. Please try again.");
-      }
-    }
-
-    function renderSlotButtons(bookings) {
-      $('#slotButtons').empty();
-
-      selectedFacility.slots.forEach(slot => {
-        const isBooked = bookings[slot];
-        const btn = $(`
-          <button class="btn ${isBooked ? 'btn-secondary' : 'btn-primary'} slot-btn" 
-                  ${isBooked ? 'disabled' : ''}>
-            ${slot}
-            ${isBooked ? '<br><small>Booked</small>' : ''}
-          </button>
-        `);
-
-        if (!isBooked) {
-          btn.click(() => {
-            selectedSlot = slot;
-            $('#slotModal').modal('hide');
-            showAddonsSelection();
-          });
-        }
-
-        $('#slotButtons').append(btn);
-      });
-    }
-
-    function showAddonsSelection() {
-      // Render snacks list
-      $('#snacksList').empty();
-      snacksData.forEach(snack => {
-        $('#snacksList').append(`
-          <div class="col">
-            <div class="card h-100 snack-item">
-              <img src="${snack.image}" class="card-img-top" style="height: 120px; object-fit: cover;">
-              <div class="card-body">
-                <h5 class="card-title">${snack.name}</h5>
-                <p class="card-text">RM${snack.price.toFixed(2)}</p>
-                <div class="d-flex align-items-center">
-                  <button class="btn btn-sm btn-outline-primary add-snack-btn" data-id="${snack.id}">
-                    Add to Order
-                  </button>
-                  <select class="form-select form-select-sm quantity-selector" data-id="${snack.id}">
-                    <option value="1">1</option>
-                    <option value="2">2</option>
-                    <option value="3">3</option>
-                    <option value="4">4</option>
-                  </select>
-                </div>
-              </div>
-            </div>
-          </div>
-        `);
-      });
-
-      // Render equipment list
-      $('#equipmentList').empty();
-      equipmentData.forEach(equipment => {
-        $('#equipmentList').append(`
-          <div class="col">
-            <div class="card h-100 equipment-item">
-              <div class="text-center p-3">
-                <img src="${equipment.image}" style="height: 100px; object-fit: contain;">
-              </div>
-              <div class="card-body">
-                <h5 class="card-title">${equipment.name}</h5>
-                <p class="card-text">RM${equipment.price.toFixed(2)}</p>
-                <div class="d-flex align-items-center">
-                  <button class="btn btn-sm btn-outline-primary add-equipment-btn" data-id="${equipment.id}">
-                    Add to Order
-                  </button>
-                  <select class="form-select form-select-sm quantity-selector" data-id="${equipment.id}">
-                    <option value="1">1</option>
-                    <option value="2">2</option>
-                    <option value="3">3</option>
-                    <option value="4">4</option>
-                  </select>
-                </div>
-              </div>
-            </div>
-          </div>
-        `);
-      });
-
-      // Initialize selected addons display
-      updateSelectedAddonsDisplay();
-
-      // Add snack button handler
-      $('.add-snack-btn').click(function () {
-        const snackId = parseInt($(this).data('id'));
-        const quantity = parseInt($(`.quantity-selector[data-id="${snackId}"]`).val());
-        const snack = snacksData.find(s => s.id === snackId);
-
-        const existingIndex = selectedAddons.findIndex(s => s.id === snackId && s.type === 'snack');
-        if (existingIndex >= 0) {
-          selectedAddons[existingIndex].quantity += quantity;
-        } else {
-          selectedAddons.push({
-            id: snack.id,
-            name: snack.name,
-            price: snack.price,
-            quantity: quantity,
-            type: 'snack'
-          });
-        }
-
-        updateSelectedAddonsDisplay();
-      });
-
-      // Add equipment button handler
-      $('.add-equipment-btn').click(function () {
-        const equipmentId = parseInt($(this).data('id'));
-        const quantity = parseInt($(`.quantity-selector[data-id="${equipmentId}"]`).val());
-        const equipment = equipmentData.find(e => e.id === equipmentId);
-
-        const existingIndex = selectedAddons.findIndex(e => e.id === equipmentId && e.type === 'equipment');
-        if (existingIndex >= 0) {
-          selectedAddons[existingIndex].quantity += quantity;
-        } else {
-          selectedAddons.push({
-            id: equipment.id,
-            name: equipment.name,
-            price: equipment.price,
-            quantity: quantity,
-            type: 'equipment'
-          });
-        }
-
-        updateSelectedAddonsDisplay();
-      });
-
-      // Remove addon handler
-      $(document).on('click', '.remove-addon-btn', function () {
-        const addonId = parseInt($(this).data('id'));
-        const addonType = $(this).data('type');
-        selectedAddons = selectedAddons.filter(a => !(a.id === addonId && a.type === addonType));
-        updateSelectedAddonsDisplay();
-      });
-
-      $('#addonsModal').modal('show');
-      $('#floatingCoachBtn').removeClass('d-none');
-    }
-
-    function updateSelectedAddonsDisplay() {
-      $('#selectedAddons').empty();
-      let total = 0;
-
-      if (selectedAddons.length === 0) {
-        $('#selectedAddons').html('<p class="text-muted">No add-ons selected</p>');
-      } else {
-        selectedAddons.forEach(addon => {
-          const addonTotal = addon.price * addon.quantity;
-          total += addonTotal;
-
-          $('#selectedAddons').append(`
-            <div class="d-flex justify-content-between align-items-center mb-2">
-              <span>
-                ${addon.name} (${addon.quantity})
-                <small class="text-muted">${addon.type === 'snack' ? 'Snack' : 'Equipment'}</small>
-              </span>
-              <div>
-                <span class="me-2">RM${addonTotal.toFixed(2)}</span>
-                <button class="btn btn-sm btn-outline-danger remove-addon-btn" 
-                        data-id="${addon.id}" data-type="${addon.type}">
-                  ×
-                </button>
-              </div>
-            </div>
-          `);
-        });
-      }
-
-      $('#addonsTotal').text(total.toFixed(2));
-    }
-
-     async function fetchCoachesFromFirestore() {
-      try {
-        const snapshot = await db.collection('coaches').get();
-        const coaches = [];
-        
-        snapshot.forEach(doc => {
-          const coachData = doc.data();
-          coaches.push({
-            id: doc.id,
-            name: coachData.name,
-            price: coachData.price,
-            image: coachData.profile,
-            experience: coachData.experience || "N/A",
-            rating: coachData.rating || 4.5,
-            availability: coachData.availability || "",
-            highlights: coachData.highlights || "",
-            facilityId: coachData.facilityId || ""
-          });
-        });
-        
-        return coaches;
-      } catch (error) {
-        console.error("Error fetching coaches:", error);
-        return [];
-      }
-    }
-
-    async function showCoachesSelection() {
-      $('#floatingCoachBtn').addClass('d-none');
-      
-      // Reset discount when showing coaches
-      pendingDiscount = 0;
-      appliedDiscount = 0;
-      
-      // Update points display
-      $('#availablePointsDisplay').text(userLoyaltyPoints);
-      $('#discountAppliedMessage').addClass('d-none');
-      
-      // Render coaches list
-      $('#coachesList').empty();
-
-      // Add option for no coach
-      $('#coachesList').append(`
-        <div class="col">
-          <div class="card coach-item mb-3">
-            <div class="card-body">
-              <div class="form-check">
-                <input class="form-check-input" type="radio" name="coachOption" id="noCoach" value="no" checked>
-                <label class="form-check-label" for="noCoach">
-                  No coach needed
-                </label>
-              </div>
-            </div>
-          </div>
-        </div>
-      `);
-
-      try {
-        // Show loading state
-        $('#coachesList').append(`
-          <div class="col-12 text-center">
-            <div class="spinner-border text-primary" role="status">
-              <span class="visually-hidden">Loading coaches...</span>
-            </div>
-            <p class="mt-2">Loading available coaches...</p>
-          </div>
-        `);
-
-        // Fetch coaches from Firestore
-        const coachesData = await fetchCoachesFromFirestore();
-        
-        // Clear loading state
-        $('#coachesList').empty();
-        
-        // Re-add the "no coach" option
-        $('#coachesList').append(`
-          <div class="col">
-            <div class="card coach-item mb-3">
-              <div class="card-body">
-                <div class="form-check">
-                  <input class="form-check-input" type="radio" name="coachOption" id="noCoach" value="no" checked>
-                  <label class="form-check-label" for="noCoach">
-                    No coach needed
-                  </label>
-                </div>
-              </div>
-            </div>
-          </div>
-        `);
-
-        // Filter coaches by facility if needed, or show all
-        let filteredCoaches = coachesData;
-        if (selectedFacility && selectedFacility.id) {
-          // Show coaches that are either assigned to this facility or not assigned to any facility
-          filteredCoaches = coachesData.filter(coach => 
-            !coach.facilityId || coach.facilityId === selectedFacility.id
-          );
-        }
-
-        // Add coach options
-        if (filteredCoaches.length === 0) {
-          $('#coachesList').append(`
-            <div class="col-12">
-              <div class="alert alert-info">
-                No coaches available for this facility at the moment.
-              </div>
-            </div>
-          `);
-        } else {
-          filteredCoaches.forEach(coach => {
-            $('#coachesList').append(`
-              <div class="col">
-                <div class="card coach-item mb-3">
-                  <div class="row g-0">
-                    <div class="col-md-4">
-                      <img src="${coach.image}" class="img-fluid rounded-start h-100" style="object-fit: cover;" 
-                           onerror="this.src='https://cdn.pixabay.com/photo/2015/10/05/22/37/blank-profile-picture-973460_640.png'">
-                    </div>
-                    <div class="col-md-8">
-                      <div class="card-body">
-                        <h5 class="card-title">${coach.name}</h5>
-                        <p class="card-text"><small class="text-muted">${coach.experience}</small></p>
-                        ${coach.availability ? `<p class="card-text"><small>Available: ${coach.availability}</small></p>` : ''}
-                        ${coach.highlights ? `<p class="card-text"><small>${coach.highlights}</small></p>` : ''}
-                        <p class="card-text"><i class="bi bi-star-fill text-warning"></i> ${coach.rating}</p>
-                        <p class="card-text">RM${coach.price}/session</p>
-                        <div class="form-check">
-                          <input class="form-check-input" type="radio" name="coachOption" 
-                                 id="coach-${coach.id}" value="${coach.id}">
-                          <label class="form-check-label" for="coach-${coach.id}">
-                            Select Coach
-                          </label>
+        <!-- ===== SEARCH & TABS ===== -->
+        <div class="search-container mb-4 animate-fade-up">
+            <ul class="nav nav-tabs mb-3" id="bookingTabs" role="tablist">
+                <li class="nav-item"><button class="nav-link active" id="facility-tab" data-bs-toggle="tab" data-bs-target="#facility-tab-pane" type="button">🏟️ Book Facility</button></li>
+                <li class="nav-item"><button class="nav-link" id="event-tab" data-bs-toggle="tab" data-bs-target="#event-tab-pane" type="button">📅 Create Event</button></li>
+                <li class="nav-item"><button class="nav-link" id="rewards-tab" data-bs-toggle="tab" data-bs-target="#rewards-tab-pane" type="button">🎁 Rewards</button></li>
+            </ul>
+
+            <div class="tab-content">
+                <!-- Facility Tab -->
+                <div class="tab-pane fade show active" id="facility-tab-pane">
+                    <div class="row g-3">
+                        <div class="col-md-3">
+                            <label class="form-label" style="color:rgba(255,255,255,0.5); font-size:0.75rem; font-weight:600;">Sport</label>
+                            <select class="form-select" id="sportType">
+                                <option value="tennis">🎾 Tennis</option>
+                                <option value="badminton">🏸 Badminton</option>
+                                <option value="basketball">🏀 Basketball</option>
+                                <option value="volleyball">🏐 Volleyball</option>
+                                <option value="football">⚽ Football</option>
+                                <option value="futsal">🥅 Futsal</option>
+                                <option value="squash">🎯 Squash</option>
+                                <option value="table-tennis">🏓 Table Tennis</option>
+                            </select>
                         </div>
-                      </div>
+                        <div class="col-md-3">
+                            <label class="form-label" style="color:rgba(255,255,255,0.5); font-size:0.75rem; font-weight:600;">Location</label>
+                            <select class="form-select" id="locationSearch">
+                                <option value="">All Areas</option>
+                                <option value="kuala lumpur">Kuala Lumpur</option>
+                                <option value="petaling jaya">Petaling Jaya</option>
+                                <option value="subang jaya">Subang Jaya</option>
+                                <option value="puchong">Puchong</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label" style="color:rgba(255,255,255,0.5); font-size:0.75rem; font-weight:600;">Facility Name</label>
+                            <input type="text" class="form-control" id="facilityNameSearch" placeholder="Search...">
+                        </div>
+                        <div class="col-md-3 d-flex align-items-end">
+                            <button class="btn btn-primary w-100" id="searchBtn"><i class="bi bi-search"></i> Search</button>
+                        </div>
                     </div>
-                  </div>
                 </div>
-              </div>
-            `);
-          });
+
+                <!-- Event Tab -->
+                <div class="tab-pane fade" id="event-tab-pane">
+                    <form id="eventForm">
+                        <div class="row g-3">
+                            <div class="col-md-3">
+                                <label class="form-label" style="color:rgba(255,255,255,0.5); font-size:0.75rem; font-weight:600;">Sport *</label>
+                                <select class="form-select" id="eventSportType" required>
+                                    <option value="" disabled selected>Select</option>
+                                    <option value="tennis">🎾 Tennis</option>
+                                    <option value="badminton">🏸 Badminton</option>
+                                    <option value="basketball">🏀 Basketball</option>
+                                    <option value="volleyball">🏐 Volleyball</option>
+                                    <option value="football">⚽ Football</option>
+                                    <option value="futsal">🥅 Futsal</option>
+                                    <option value="squash">🎯 Squash</option>
+                                    <option value="table-tennis">🏓 Table Tennis</option>
+                                </select>
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label" style="color:rgba(255,255,255,0.5); font-size:0.75rem; font-weight:600;">Date *</label>
+                                <input type="date" class="form-control" id="eventDate" required>
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label" style="color:rgba(255,255,255,0.5); font-size:0.75rem; font-weight:600;">Time *</label>
+                                <input type="time" class="form-control" id="eventTime" required>
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label" style="color:rgba(255,255,255,0.5); font-size:0.75rem; font-weight:600;">Duration</label>
+                                <select class="form-select" id="eventDuration">
+                                    <option value="1">1 hour</option>
+                                    <option value="1.5">1.5 hours</option>
+                                    <option value="2" selected>2 hours</option>
+                                    <option value="3">3 hours</option>
+                                </select>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label" style="color:rgba(255,255,255,0.5); font-size:0.75rem; font-weight:600;">Skill Level</label>
+                                <select class="form-select" id="eventSkillLevel">
+                                    <option value="beginner">Beginner</option>
+                                    <option value="intermediate" selected>Intermediate</option>
+                                    <option value="advanced">Advanced</option>
+                                </select>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label" style="color:rgba(255,255,255,0.5); font-size:0.75rem; font-weight:600;">Players Needed</label>
+                                <select class="form-select" id="eventPlayersNeeded">
+                                    <option value="1">1 player</option>
+                                    <option value="2" selected>2 players</option>
+                                    <option value="4">4 players (doubles)</option>
+                                </select>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label" style="color:rgba(255,255,255,0.5); font-size:0.75rem; font-weight:600;">Facility</label>
+                                <input type="text" class="form-control" id="eventFacility" placeholder="Optional">
+                            </div>
+                            <div class="col-12">
+                                <label class="form-label" style="color:rgba(255,255,255,0.5); font-size:0.75rem; font-weight:600;">Description</label>
+                                <textarea class="form-control" id="eventDescription" rows="2" placeholder="Describe your event..."></textarea>
+                            </div>
+                            <div class="col-12">
+                                <button type="submit" class="btn btn-success" id="createEventBtn">
+                                    <i class="bi bi-calendar-event"></i> Create Event
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+
+                <!-- Rewards Tab -->
+                <div class="tab-pane fade" id="rewards-tab-pane">
+                    <div class="row g-4">
+                        <div class="col-md-6">
+                            <div class="reward-card p-4">
+                                <div class="d-flex align-items-center gap-3">
+                                    <div style="font-size:2.5rem;">🏆</div>
+                                    <div>
+                                        <h5 class="mb-1">Loyalty Rewards</h5>
+                                        <p class="mb-0" style="color:rgba(255,255,255,0.5); font-size:0.9rem;">Earn points with every booking</p>
+                                    </div>
+                                </div>
+                                <div class="mt-3">
+                                    <div class="d-flex justify-content-between py-2 border-bottom" style="border-color:rgba(255,255,255,0.05)!important;">
+                                        <span>100 points = RM5 off</span>
+                                        <span class="badge" style="background:var(--primary);">Available</span>
+                                    </div>
+                                    <div class="d-flex justify-content-between py-2 border-bottom" style="border-color:rgba(255,255,255,0.05)!important;">
+                                        <span>200 points = RM12 off</span>
+                                        <span class="badge" style="background:var(--primary);">Available</span>
+                                    </div>
+                                    <div class="d-flex justify-content-between py-2">
+                                        <span>500 points = RM30 off</span>
+                                        <span class="badge" style="background:var(--primary);">Available</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ===== FACILITY LIST ===== -->
+        <div id="facilityList" class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4"></div>
+
+        <!-- ===== CALENDAR SECTION ===== -->
+        <div id="calendarSection" style="display:none;">
+            <button class="btn btn-outline-secondary mb-3" id="backToFacilitiesBtn" style="border-radius:30px;">
+                <i class="bi bi-arrow-left"></i> Back to Facilities
+            </button>
+            <h4 class="mb-3">Select Date for <span id="facilityNameDisplay" style="color:var(--primary);"></span></h4>
+            <div id="promoDetails" class="d-none mb-4" style="background:rgba(253,121,168,0.1); border:1px solid rgba(253,121,168,0.2); border-radius:16px; padding:16px;">
+                <div class="d-flex align-items-center gap-3">
+                    <span style="font-size:1.5rem;">🔥</span>
+                    <div>
+                        <h6 class="mb-0">SPECIAL PROMOTION</h6>
+                        <p class="mb-0" id="promoText" style="color:rgba(255,255,255,0.6);"></p>
+                    </div>
+                </div>
+            </div>
+            <div id="evoCalendar"></div>
+            <div class="terms-conditions mt-4">
+                <h6><i class="bi bi-file-earmark-text"></i> Terms & Conditions</h6>
+                <div id="facilityTerms"></div>
+            </div>
+        </div>
+
+        <!-- ===== EVENTS SECTION ===== -->
+        <div id="eventsSection" class="mt-5" style="display:none;">
+            <h4 class="mb-4">Upcoming Events</h4>
+            <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4" id="eventsList"></div>
+        </div>
+
+        <!-- ===== LOADING ===== -->
+        <div id="loading" class="text-center my-5">
+            <div class="spinner-border text-primary loading-spinner" role="status"></div>
+            <p style="color:rgba(255,255,255,0.3);">Loading facilities...</p>
+        </div>
+    </div>
+
+    <!-- ===== SLOT MODAL ===== -->
+    <div class="modal fade" id="slotModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Book <span id="selectedFacilityText"></span></h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" style="filter:invert(1);"></button>
+                </div>
+                <div class="modal-body">
+                    <h6 class="mb-3">Date: <span id="selectedDateText"></span></h6>
+                    <div id="slotButtons" class="d-flex flex-wrap justify-content-center gap-2"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== ADD-ONS MODAL ===== -->
+    <div class="modal fade" id="addonsModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Add Extras</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" style="filter:invert(1);"></button>
+                </div>
+                <div class="modal-body">
+                    <ul class="nav nav-tabs mb-3" id="addonsTabs" role="tablist">
+                        <li class="nav-item"><button class="nav-link active" id="snacks-tab" data-bs-toggle="tab" data-bs-target="#snacks-tab-pane" type="button">🍿 Snacks</button></li>
+                        <li class="nav-item"><button class="nav-link" id="equipment-tab" data-bs-toggle="tab" data-bs-target="#equipment-tab-pane" type="button">🏸 Equipment</button></li>
+                    </ul>
+                    <div class="tab-content">
+                        <div class="tab-pane fade show active" id="snacks-tab-pane">
+                            <div class="row row-cols-1 row-cols-md-2 g-3" id="snacksList"></div>
+                        </div>
+                        <div class="tab-pane fade" id="equipment-tab-pane">
+                            <div class="row row-cols-1 row-cols-md-2 g-3" id="equipmentList"></div>
+                        </div>
+                    </div>
+                    <div class="mt-4">
+                        <h6>Your Selections</h6>
+                        <div id="selectedAddons" style="min-height:40px;"></div>
+                        <div class="d-flex justify-content-between align-items-center mt-3">
+                            <h6 class="mb-0">Total: RM<span id="addonsTotal">0</span></h6>
+                            <div>
+                                <button class="btn btn-outline-secondary me-2" id="skipAddonsBtn">Skip</button>
+                                <button class="btn btn-primary" id="proceedToCoachBtn">Continue</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== COACH MODAL ===== -->
+    <div class="modal fade" id="coachModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">👨‍🏫 Select Coach</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" style="filter:invert(1);"></button>
+                </div>
+                <div class="modal-body">
+                    <div id="coachesList" class="row row-cols-1 g-3"></div>
+                    <div class="mt-4 border-top pt-3" style="border-color:rgba(255,255,255,0.06)!important;">
+                        <h6>Apply Discount</h6>
+                        <div class="alert alert-info" style="background:rgba(108,92,231,0.1); border-color:rgba(108,92,231,0.2); color:#b8a9ff;">
+                            <i class="bi bi-info-circle"></i> You have <strong><span id="availablePointsDisplay">0</span></strong> points available.
+                        </div>
+                        <div class="d-flex align-items-center gap-2 flex-wrap">
+                            <select class="form-select" id="redeemOption" style="max-width:250px; background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.08); color:#fff; border-radius:12px;">
+                                <option value="0">No discount</option>
+                                <option value="100">100 points = RM5 off</option>
+                                <option value="200">200 points = RM12 off</option>
+                                <option value="500">500 points = RM30 off</option>
+                            </select>
+                            <button class="btn btn-success" id="applyDiscountBtn" style="border-radius:12px;">Apply</button>
+                        </div>
+                        <div id="discountAppliedMessage" class="alert alert-success d-none mt-2" style="background:rgba(0,184,148,0.1); border-color:rgba(0,184,148,0.2); color:#55efc4; border-radius:12px;">
+                            <i class="bi bi-check-circle"></i> Discount applied!
+                        </div>
+                    </div>
+                    <div class="mt-3 border-top pt-3" style="border-color:rgba(255,255,255,0.06)!important;">
+                        <div class="d-flex justify-content-between">
+                            <span>Subtotal:</span> <span>RM<span id="subtotalDisplay">0</span></span>
+                        </div>
+                        <div class="d-flex justify-content-between">
+                            <span style="color:#55efc4;">Discount:</span> <span style="color:#55efc4;">-RM<span id="discountDisplay">0</span></span>
+                        </div>
+                        <div class="d-flex justify-content-between mt-2" style="font-size:1.1rem; font-weight:700;">
+                            <span>Total:</span> <span>RM<span id="totalDisplay">0</span></span>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-outline-secondary" id="backToAddonsBtn">Back</button>
+                    <button class="btn btn-success" id="confirmBookingBtn">Confirm Booking</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== CONFIRMATION MODAL ===== -->
+    <div class="modal fade" id="confirmModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header" style="background:rgba(0,184,148,0.15); border-bottom:1px solid rgba(0,184,148,0.2);">
+                    <h5 class="modal-title"><i class="bi bi-check-circle-fill" style="color:#00b894;"></i> Booking Confirmed</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" style="filter:invert(1);"></button>
+                </div>
+                <div class="modal-body">
+                    <p>Your booking has been confirmed!</p>
+                    <div id="bookingDetails" class="mt-3"></div>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-primary" data-bs-dismiss="modal">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== EVENT CONFIRMATION MODAL ===== -->
+    <div class="modal fade" id="eventConfirmModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header" style="background:rgba(0,184,148,0.15); border-bottom:1px solid rgba(0,184,148,0.2);">
+                    <h5 class="modal-title"><i class="bi bi-calendar-check" style="color:#00b894;"></i> Event Created</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" style="filter:invert(1);"></button>
+                </div>
+                <div class="modal-body">
+                    <p>Your event has been created and notifications sent!</p>
+                    <div id="eventDetails" class="mt-3"></div>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-primary" data-bs-dismiss="modal">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== MATCH DETAILS MODAL ===== -->
+    <div class="modal fade" id="matchDetailsModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header" style="background:rgba(108,92,231,0.15);">
+                    <h5 class="modal-title">🤖 AI Match Results</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" style="filter:invert(1);"></button>
+                </div>
+                <div class="modal-body" id="matchResultsContent"></div>
+                <div class="modal-footer">
+                    <button class="btn btn-primary" data-bs-dismiss="modal">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/jquery@3.6.0/dist/jquery.min.js">
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js">
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/evo-calendar@1.1.3/evo-calendar/js/evo-calendar.min.js">
+    </script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js">
+    </script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js">
+    </script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js">
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js">
+    </script>
+
+    <script>
+        // ============================================================
+        // FIREBASE CONFIG
+        // ============================================================
+        const firebaseConfig = {
+            apiKey: "AIzaSyDjMwv9Bxff1bUE7CR_S-DPx3NV5kkinTU",
+            authDomain: "nste-booking-system.firebaseapp.com",
+            projectId: "nste-booking-system",
+            storageBucket: "nste-booking-system.appspot.com",
+            messagingSenderId: "574207536433",
+            appId: "1:574207536433:web:0d2aeaacdc280cec019410"
+        };
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+        const auth = firebase.auth();
+
+        // ============================================================
+        // DATA
+        // ============================================================
+        const sportIcons = {
+            tennis: "🎾",
+            badminton: "🏸",
+            basketball: "🏀",
+            volleyball: "🏐",
+            football: "⚽",
+            futsal: "🥅",
+            squash: "🎯",
+            "table-tennis": "🏓"
+        };
+
+        let currentUser = null;
+        let selectedFacility = null;
+        let selectedDate = null;
+        let selectedSlot = null;
+        let selectedAddons = [];
+        let selectedCoach = null;
+        let currentTheme = 'Royal Navy';
+        let bookingWithFriend = null;
+        let currentSport = 'tennis';
+        let userLoyaltyPoints = 0;
+        let pendingDiscount = 0;
+        let appliedDiscount = 0;
+        let coachesData = [];
+
+        // Sample add-ons data
+        const snacksData = [
+            { id: 1, name: "Energy Bar", price: 5, image: "https://cdn.mos.cms.futurecdn.net/CpcooP3z8M7QXfQ6Gfncdg.jpg" },
+            { id: 2, name: "Sports Drink", price: 8, image: "https://premierfootballuk.com/wp-content/uploads/Sports-drink.jpg" },
+            { id: 3, name: "Protein Shake", price: 12, image: "https://i5.walmartimages.com/asr/949c9c39-f0fb-4d3e-80e2-484dad00b8ec.41c3cb759a9ad3cdedabe2cf25cafd45.jpeg" },
+            { id: 4, name: "Banana", price: 2, image: "https://wallpaperaccess.com/full/889245.jpg" }
+        ];
+        const equipmentData = [
+            { id: 101, name: "Tennis Racket", price: 15, image: "https://m.media-amazon.com/images/I/61+1mQjT1RL._AC_UF1000,1000_QL80_.jpg" },
+            { id: 102, name: "Tennis Balls (3)", price: 10, image: "https://m.media-amazon.com/images/I/71+J6zRXQZL._AC_UF1000,1000_QL80_.jpg" },
+            { id: 103, name: "Sweatband", price: 5, image: "https://m.media-amazon.com/images/I/71GQz9Vk2LL._AC_UF1000,1000_QL80_.jpg" },
+            { id: 104, name: "Tennis Shoes", price: 20, image: "https://m.media-amazon.com/images/I/71GQz9Vk2LL._AC_UF1000,1000_QL80_.jpg" }
+        ];
+
+        // ============================================================
+        // DOM READY
+        // ============================================================
+        $(document).ready(function() {
+
+            // Init calendar
+            $('#evoCalendar').evoCalendar({
+                theme: currentTheme,
+                sidebarDisplayDefault: false,
+                sidebarToggler: false,
+                eventDisplayDefault: false,
+                eventListToggler: false
+            });
+
+            // Friend booking
+            const friendData = sessionStorage.getItem('bookingWithFriend');
+            if (friendData) {
+                bookingWithFriend = JSON.parse(friendData);
+                $('#friendNotice').removeClass('d-none');
+                $('#friendName').text(bookingWithFriend.name);
+                sessionStorage.removeItem('bookingWithFriend');
+            }
+
+            // Auth listener
+            auth.onAuthStateChanged(async user => {
+                currentUser = user;
+                if (user) {
+                    const userRef = db.collection('users').doc(user.uid);
+                    const doc = await userRef.get();
+                    if (!doc.exists) {
+                        await userRef.set({
+                            loyaltyPoints: 0,
+                            name: user.displayName || '',
+                            email: user.email || '',
+                            createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                        });
+                        userLoyaltyPoints = 0;
+                    } else {
+                        userLoyaltyPoints = doc.data().loyaltyPoints || 0;
+                    }
+                    updateLoyaltyPointsDisplay();
+                    loadFacilities();
+                    loadEvents();
+                } else {
+                    $('#facilityList').html(
+                        '<div class="alert alert-warning" style="background:rgba(255,193,7,0.1); border-color:rgba(255,193,7,0.2); color:#ffd93d; border-radius:16px;">Please log in to book facilities</div>'
+                        );
+                    $('#loading').hide();
+                }
+            });
+
+            // Theme toggle
+            let isDark = true;
+            $('#toggleTheme').click(function() {
+                isDark = !isDark;
+                $(this).html(isDark ? '<i class="bi bi-moon-stars"></i> Theme' :
+                    '<i class="bi bi-sun"></i> Theme');
+                $('body').css('background', isDark ? 'radial-gradient(ellipse at 20% 50%, #1a1a3e 0%, #0a0e1a 80%)' :
+                    'radial-gradient(ellipse at 20% 50%, #f0f0f5 0%, #e8e8f0 80%)');
+                $('body').css('color', isDark ? '#fff' : '#1a1a3e');
+                $('#evoCalendar').evoCalendar('setTheme', isDark ? 'Royal Navy' : 'Light');
+            });
+
+            // Calendar date select
+            $('#evoCalendar').on('selectDate', (_, newDate) => {
+                selectedDate = newDate;
+                loadBookingsForFacility();
+            });
+
+            // Back to facilities
+            $('#backToFacilitiesBtn').click(() => {
+                $('#calendarSection').hide();
+                $('#facilityList').show();
+                $('#eventsSection').hide();
+            });
+
+            // Search
+            $('#searchBtn').click(() => {
+                currentSport = $('#sportType').val();
+                loadFacilities();
+            });
+
+            // Skip add-ons
+            $('#skipAddonsBtn').click(() => {
+                selectedAddons = [];
+                $('#addonsModal').modal('hide');
+                showCoachesSelection();
+            });
+
+            // Back to add-ons
+            $('#backToAddonsBtn').click(() => {
+                $('#coachModal').modal('hide');
+                $('#addonsModal').modal('show');
+            });
+
+            // Proceed to coaches
+            $('#proceedToCoachBtn').click(() => {
+                $('#addonsModal').modal('hide');
+                showCoachesSelection();
+            });
+
+            // Apply discount
+            $('#applyDiscountBtn').click(applyDiscount);
+
+            // Confirm booking
+            $('#confirmBookingBtn').click(() => {
+                const coachOption = $('input[name="coachOption"]:checked').val();
+                selectedCoach = coachOption === 'no' ? null :
+                    coachesData.find(c => c.id == coachOption);
+                completeBooking();
+            });
+
+            // Refresh points
+            $('#refreshPointsBtn').click(async () => {
+                if (!currentUser) return;
+                try {
+                    $('#loyaltyPoints').html('<span class="spinner-border spinner-border-sm"></span>');
+                    const doc = await db.collection('users').doc(currentUser.uid).get();
+                    if (doc.exists) {
+                        userLoyaltyPoints = doc.data().loyaltyPoints || 0;
+                        updateLoyaltyPointsDisplay();
+                    }
+                } catch (e) {
+                    console.error(e);
+                }
+            });
+
+            // Event form
+            $('#eventForm').submit(function(e) {
+                e.preventDefault();
+                createEvent();
+            });
+
+            // Tab switch
+            $('button[data-bs-toggle="tab"]').on('shown.bs.tab', function(e) {
+                if (e.target.id === 'event-tab' || e.target.id === 'rewards-tab') {
+                    $('#facilityList').hide();
+                    $('#calendarSection').hide();
+                    $('#eventsSection').hide();
+                } else {
+                    $('#facilityList').show();
+                    $('#calendarSection').hide();
+                    $('#eventsSection').hide();
+                }
+            });
+
+            // Set min date
+            const today = new Date().toISOString().split('T')[0];
+            $('#eventDate').attr('min', today);
+        });
+
+        // ============================================================
+        // HELPER FUNCTIONS
+        // ============================================================
+        function capitalizeFirstLetter(s) {
+            return s.charAt(0).toUpperCase() + s.slice(1);
         }
-      } catch (error) {
-        console.error("Error loading coaches:", error);
-        $('#coachesList').html(`
-          <div class="col-12">
-            <div class="alert alert-danger">
-              Error loading coaches. Please try again.
-            </div>
-          </div>
-        `);
-      }
 
-      // Update price display
-      updatePriceDisplay();
-      
-      $('#coachModal').modal('show');
-    }
+        function formatTime(timeString) {
+            if (!timeString) return '';
+            const [hours, minutes] = timeString.split(':');
+            const hour = parseInt(hours);
+            const ampm = hour >= 12 ? 'PM' : 'AM';
+            const hour12 = hour % 12 || 12;
+            return `${hour12}:${minutes} ${ampm}`;
+        }
 
-    
-    function applyDiscount() {
-      const pointsToRedeem = parseInt($('#redeemOption').val());
-      
-      if (pointsToRedeem === 0) {
-        // No discount selected
-        pendingDiscount = 0;
-        $('#discountAppliedMessage').addClass('d-none');
-        updatePriceDisplay();
-        return;
-      }
-      
-      if (pointsToRedeem > userLoyaltyPoints) {
-        alert("You don't have enough points for this redemption");
-        return;
-      }
-      
-      // Calculate discount amount
-      let discountAmount = 0;
-      if (pointsToRedeem === 100) discountAmount = 5;
-      else if (pointsToRedeem === 200) discountAmount = 12;
-      else if (pointsToRedeem === 500) discountAmount = 30;
-      
-      pendingDiscount = discountAmount;
-      appliedDiscount = pointsToRedeem;
-      
-      $('#discountAppliedMessage').removeClass('d-none');
-      updatePriceDisplay();
-    }
-    
-    function updatePriceDisplay() {
-      const subtotal = calculateSubtotal();
-      const total = subtotal - pendingDiscount;
-      
-      $('#subtotalDisplay').text(subtotal.toFixed(2));
-      $('#discountDisplay').text(pendingDiscount.toFixed(2));
-      $('#totalDisplay').text(total.toFixed(2));
-    }
+        function getSkillLevelClass(level) {
+            switch (level) {
+                case 'beginner':
+                    return 'beginner';
+                case 'intermediate':
+                    return 'intermediate';
+                case 'advanced':
+                    return 'advanced';
+                default:
+                    return '';
+            }
+        }
 
-    function calculateSubtotal() {
-      let subtotal = selectedFacility.price;
+        function updateLoyaltyPointsDisplay() {
+            if (userLoyaltyPoints > 0) {
+                $('#loyaltyPointsDisplay').removeClass('d-none');
+                $('#loyaltyPoints').text(userLoyaltyPoints);
+                $('#availablePointsDisplay').text(userLoyaltyPoints);
+            } else {
+                $('#loyaltyPointsDisplay').addClass('d-none');
+            }
+        }
 
-      // Add snacks total
-      selectedAddons.filter(a => a.type === 'snack').forEach(snack => {
-        subtotal += snack.price * snack.quantity;
-      });
+        async function updateUserPoints(pointsChange) {
+            if (!currentUser) return;
+            try {
+                await db.collection('users').doc(currentUser.uid).update({
+                    loyaltyPoints: firebase.firestore.FieldValue.increment(pointsChange)
+                });
+                userLoyaltyPoints += pointsChange;
+                updateLoyaltyPointsDisplay();
+            } catch (e) {
+                console.error("Error updating points:", e);
+            }
+        }
 
-      // Add equipment total
-      selectedAddons.filter(a => a.type === 'equipment').forEach(equipment => {
-        subtotal += equipment.price * equipment.quantity;
-      });
+        function getDefaultSportImage(sport) {
+            const images = {
+                tennis: 'https://images.unsplash.com/photo-1554068865-24cecd4e34b8?w=600',
+                badminton: 'https://images.unsplash.com/photo-1593352216891-b5bfa7b5ba33?w=600',
+                basketball: 'https://images.unsplash.com/photo-1546519638-68e109498ffc?w=600',
+                volleyball: 'https://images.unsplash.com/photo-1543357486-cf27149a7205?w=600',
+                football: 'https://images.unsplash.com/photo-1540747913346-19e32dc3e97e?w=600',
+                futsal: 'https://images.unsplash.com/photo-1574629810360-7efbbe195018?w=600',
+                squash: 'https://images.unsplash.com/photo-1600185365483-26d7a4cc7519?w=600',
+                "table-tennis": 'https://images.unsplash.com/photo-1519861531473-9200262188bf?w=600'
+            };
+            return images[sport] || images.tennis;
+        }
 
-      // Add coach price if selected
-      if (selectedCoach) {
-        subtotal += selectedCoach.price;
-      }
+        // ============================================================
+        // LOAD FACILITIES
+        // ============================================================
+        async function loadFacilities() {
+            try {
+                const locationFilter = $('#locationSearch').val().toLowerCase();
+                const nameFilter = $('#facilityNameSearch').val().toLowerCase();
 
-      return subtotal;
-    }
+                const snapshot = await db.collection('facilities')
+                    .where('type', 'in', [currentSport, 'sport-facility'])
+                    .get();
 
-    async function completeBooking() {
-      if (!currentUser) {
-        alert("Please log in to complete booking");
-        return;
-      }
+                $('#facilityList').empty();
+                $('#loading').hide();
 
-      const coachOption = $('input[name="coachOption"]:checked').val();
-      selectedCoach = coachOption === 'no' ? null :
-        coachesData.find(c => c.id == coachOption);
+                if (snapshot.empty) {
+                    $('#facilityList').html(
+                        `<div class="alert alert-info" style="background:rgba(108,92,231,0.1); border-color:rgba(108,92,231,0.2); color:#b8a9ff; border-radius:16px;">No ${currentSport} facilities available</div>`
+                        );
+                    return;
+                }
 
-      // Calculate total amount with discount
-      const subtotal = calculateSubtotal();
-      const discountAmount = pendingDiscount;
-      const totalAmount = subtotal - discountAmount;
+                let facilitiesData = [];
+                snapshot.forEach(doc => {
+                    const facility = { id: doc.id, ...doc.data() };
+                    if (!facility.sportType && facility.type === currentSport) {
+                        facility.sportType = currentSport;
+                    }
+                    if (facility.sportType === currentSport || facility.type === currentSport) {
+                        facilitiesData.push(facility);
+                    }
+                });
 
-      // Calculate points earned (1 point per RM1 spent)
-      const pointsEarned = Math.floor(totalAmount);
+                let filtered = facilitiesData;
+                if (locationFilter) {
+                    filtered = filtered.filter(f => f.location && f.location.toLowerCase().includes(locationFilter));
+                }
+                if (nameFilter) {
+                    filtered = filtered.filter(f => f.name && f.name.toLowerCase().includes(nameFilter));
+                }
 
-      const bookingData = {
-        date: selectedDate,
-        slot: selectedSlot,
-        facilityId: selectedFacility.id,
-        facilityName: selectedFacility.name,
-        userId: currentUser.uid,
-        userName: currentUser.displayName || currentUser.email || "Guest",
-        email: currentUser.email || "no-email@example.com",
-        timestamp: firebase.firestore.FieldValue.serverTimestamp(),
-        price: selectedFacility.price,
-        status: 'confirmed',
-        type: selectedFacility.sportType || selectedFacility.type,
-        addons: {
-          snacks: selectedAddons.filter(a => a.type === 'snack'),
-          equipment: selectedAddons.filter(a => a.type === 'equipment'),
-          coach: selectedCoach ? {
-            id: selectedCoach.id,
-            name: selectedCoach.name,
-            price: selectedCoach.price
-          } : null
-        },
-        subtotal: subtotal,
-        discount: discountAmount,
-        totalAmount: totalAmount,
-        pointsEarned: pointsEarned,
-        friendId: bookingWithFriend ? bookingWithFriend.id : null,
-        friendName: bookingWithFriend ? bookingWithFriend.name : null,
-        pointsRedeemed: appliedDiscount > 0 ? appliedDiscount : null
-      };
+                if (filtered.length === 0) {
+                    $('#facilityList').html(
+                        '<div class="alert alert-info" style="background:rgba(108,92,231,0.1); border-color:rgba(108,92,231,0.2); color:#b8a9ff; border-radius:16px;">No facilities match your search</div>'
+                        );
+                    return;
+                }
 
-      try {
-        // Start a batch write to ensure both operations succeed or fail together
-        const batch = db.batch();
+                filtered.forEach(facility => {
+                    const promoBadge = facility.promo ?
+                        `<span class="badge" style="position:absolute; top:12px; right:12px; background:linear-gradient(135deg,#fd79a8,#e84393); border-radius:30px; padding:4px 14px; font-size:0.7rem; z-index:2;">🔥 ${facility.promo}</span>` :
+                        '';
+                    const sportIcon = sportIcons[facility.sportType || currentSport] || '🏟️';
+                    const minPlayers = facility.minPlayers || 1;
+                    const maxPlayers = facility.maxPlayers || 2;
+                    const capacity = maxPlayers > 1 ? `${minPlayers}-${maxPlayers} players` : 'Single player';
 
-        // Add booking
-        const bookingRef = db.collection('bookings').doc();
-        batch.set(bookingRef, bookingData);
+                    $('#facilityList').append(`
+                        <div class="col animate-fade-up">
+                            <div class="facility-card h-100">
+                                ${promoBadge}
+                                <img src="${facility.image || getDefaultSportImage(currentSport)}" 
+                                     class="facility-image w-100" alt="${facility.name}">
+                                <div class="p-3">
+                                    <div class="d-flex align-items-center gap-2 mb-2">
+                                        <span>${sportIcon}</span>
+                                        <h5 class="mb-0" style="font-weight:700;">${facility.name}</h5>
+                                    </div>
+                                    <p style="color:rgba(255,255,255,0.5); font-size:0.9rem;">${facility.description || `${capitalizeFirstLetter(currentSport)} facility`}</p>
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <span class="badge" style="background:rgba(108,92,231,0.2); color:#b8a9ff; border-radius:30px; padding:6px 14px;">RM${facility.price || '0'}/hour</span>
+                                        <span style="color:rgba(255,255,255,0.3); font-size:0.8rem;">${capacity}</span>
+                                    </div>
+                                    <button class="btn btn-primary w-100 mt-3 book-btn" 
+                                            data-facility-id="${facility.id}"
+                                            data-facility-name="${facility.name}"
+                                            style="border-radius:12px;">
+                                        <i class="bi bi-calendar-plus"></i> Book Now
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    `);
+                });
 
-        // Update user's loyalty points (add points earned and subtract redeemed points if any)
-        await updateUserPoints(pointsEarned - (appliedDiscount || 0));
+                $('.book-btn').click(function() {
+                    const facilityId = $(this).data('facility-id');
+                    const facilityName = $(this).data('facility-name');
 
-        // Commit the batch
-        await batch.commit();
+                    db.collection('facilities').doc(facilityId).get()
+                        .then(doc => {
+                            selectedFacility = { id: facilityId, ...doc.data() };
+                            $('#facilityNameDisplay').text(facilityName);
 
-        // Show confirmation
-        $('#bookingDetails').html(`
-            <div class="mb-2"><strong>Facility:</strong> ${selectedFacility.name}</div>
-            <div class="mb-2"><strong>Date:</strong> ${selectedDate}</div>
-            <div class="mb-2"><strong>Time:</strong> ${selectedSlot}</div>
-            ${bookingWithFriend ? `
-            <div class="mb-2"><strong>Playing with:</strong> ${bookingWithFriend.name}</div>
-            ` : ''}
-            <div class="mb-2"><strong>Base Price:</strong> RM${selectedFacility.price.toFixed(2)}</div>
-            ${selectedAddons.filter(a => a.type === 'snack').length > 0 ? `
-            <div class="mb-2"><strong>Snacks:</strong> 
-                ${selectedAddons.filter(a => a.type === 'snack').map(s => `${s.name} (${s.quantity})`).join(', ')}
-            </div>
-            ` : ''}
-            ${selectedAddons.filter(a => a.type === 'equipment').length > 0 ? `
-            <div class="mb-2"><strong>Equipment:</strong> 
-                ${selectedAddons.filter(a => a.type === 'equipment').map(e => `${e.name} (${e.quantity})`).join(', ')}
-            </div>
-            ` : ''}
-            ${selectedCoach ? `
-            <div class="mb-2"><strong>Coach:</strong> ${selectedCoach.name}</div>
-            ` : ''}
-            ${discountAmount > 0 ? `
-            <div class="mb-2 text-success"><strong>Discount Applied:</strong> -RM${discountAmount.toFixed(2)}</div>
-            ` : ''}
-            <div class="mt-3 pt-2 border-top">
-                <div class="d-flex justify-content-between">
-                    <strong>Subtotal:</strong> <span>RM${subtotal.toFixed(2)}</span>
+                            if (selectedFacility.promo) {
+                                $('#promoDetails').removeClass('d-none');
+                                $('#promoText').text(selectedFacility.promo);
+                            } else {
+                                $('#promoDetails').addClass('d-none');
+                            }
+
+                            loadFacilityTerms(facilityId);
+                            $('#facilityList').hide();
+                            $('#calendarSection').show();
+                            $('#eventsSection').hide();
+                            $('#evoCalendar').evoCalendar('addCalendarEvent', []);
+                        })
+                        .catch(e => {
+                            console.error(e);
+                            alert("Error loading facility details");
+                        });
+                });
+
+            } catch (e) {
+                console.error("Error loading facilities:", e);
+                $('#facilityList').html(
+                    '<div class="alert alert-danger" style="border-radius:16px;">Error loading facilities</div>');
+                $('#loading').hide();
+            }
+        }
+
+        // ============================================================
+        // LOAD FACILITY TERMS
+        // ============================================================
+        function loadFacilityTerms(facilityId) {
+            const sampleTerms = `
+                <ul>
+                    <li>All bookings must be paid in full at reservation</li>
+                    <li>Cancellations 24+ hours in advance get full refund</li>
+                    <li>No-shows will be charged full amount</li>
+                    <li>Proper sports attire required</li>
+                    <li>Damages to equipment will be charged</li>
+                    <li>Maximum booking: 3 hours per session</li>
+                </ul>
+                <h6 class="mt-3">Safety Guidelines</h6>
+                <ul>
+                    <li>Warm up properly before playing</li>
+                    <li>No food/drinks (except water) on courts</li>
+                    <li>Follow all posted safety instructions</li>
+                    <li>Report issues to staff immediately</li>
+                </ul>
+            `;
+            $('#facilityTerms').html(sampleTerms);
+        }
+
+        // ============================================================
+        // LOAD BOOKINGS
+        // ============================================================
+        async function loadBookingsForFacility() {
+            try {
+                const snapshot = await db.collection('bookings')
+                    .where('date', '==', selectedDate)
+                    .where('facilityId', '==', selectedFacility.id)
+                    .get();
+
+                const bookings = {};
+                selectedFacility.slots.forEach(slot => { bookings[slot] = false; });
+                snapshot.forEach(doc => {
+                    const slot = doc.data().slot;
+                    bookings[slot] = true;
+                });
+
+                renderSlotButtons(bookings);
+                $('#selectedFacilityText').text(selectedFacility.name);
+                $('#selectedDateText').text(selectedDate);
+                $('#slotModal').modal('show');
+            } catch (e) {
+                console.error(e);
+                alert("Error loading available slots");
+            }
+        }
+
+        function renderSlotButtons(bookings) {
+            $('#slotButtons').empty();
+            selectedFacility.slots.forEach(slot => {
+                const isBooked = bookings[slot];
+                const btn = $(`
+                    <button class="slot-btn ${isBooked ? 'booked' : ''}" ${isBooked ? 'disabled' : ''}>
+                        ${slot}
+                        ${isBooked ? '<br><small style="font-weight:400;">Booked</small>' : ''}
+                    </button>
+                `);
+                if (!isBooked) {
+                    btn.click(() => {
+                        selectedSlot = slot;
+                        $('#slotModal').modal('hide');
+                        showAddonsSelection();
+                    });
+                }
+                $('#slotButtons').append(btn);
+            });
+        }
+
+        // ============================================================
+        // ADD-ONS
+        // ============================================================
+        function showAddonsSelection() {
+            $('#snacksList').empty();
+            snacksData.forEach(snack => {
+                $('#snacksList').append(`
+                    <div class="col">
+                        <div class="glass-card p-3 h-100" style="cursor:pointer;">
+                            <img src="${snack.image}" style="width:100%; height:100px; object-fit:cover; border-radius:12px;">
+                            <h6 class="mt-2">${snack.name}</h6>
+                            <p style="color:rgba(255,255,255,0.4); font-size:0.85rem;">RM${snack.price}</p>
+                            <div class="d-flex align-items-center gap-2">
+                                <button class="btn btn-sm btn-primary add-snack-btn" data-id="${snack.id}" style="border-radius:30px;">Add</button>
+                                <select class="form-select quantity-selector" data-id="${snack.id}" style="width:60px; background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.08); color:#fff; border-radius:8px; padding:4px 8px;">
+                                    <option value="1">1</option>
+                                    <option value="2">2</option>
+                                    <option value="3">3</option>
+                                    <option value="4">4</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                `);
+            });
+
+            $('#equipmentList').empty();
+            equipmentData.forEach(equipment => {
+                $('#equipmentList').append(`
+                    <div class="col">
+                        <div class="glass-card p-3 h-100" style="cursor:pointer;">
+                            <div class="text-center">
+                                <img src="${equipment.image}" style="height:80px; object-fit:contain;">
+                            </div>
+                            <h6 class="mt-2">${equipment.name}</h6>
+                            <p style="color:rgba(255,255,255,0.4); font-size:0.85rem;">RM${equipment.price}</p>
+                            <div class="d-flex align-items-center gap-2">
+                                <button class="btn btn-sm btn-primary add-equipment-btn" data-id="${equipment.id}" style="border-radius:30px;">Add</button>
+                                <select class="form-select quantity-selector" data-id="${equipment.id}" style="width:60px; background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.08); color:#fff; border-radius:8px; padding:4px 8px;">
+                                    <option value="1">1</option>
+                                    <option value="2">2</option>
+                                    <option value="3">3</option>
+                                    <option value="4">4</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                `);
+            });
+
+            updateSelectedAddonsDisplay();
+
+            $('.add-snack-btn').click(function() {
+                const id = parseInt($(this).data('id'));
+                const qty = parseInt($(`.quantity-selector[data-id="${id}"]`).val());
+                const snack = snacksData.find(s => s.id === id);
+                const existing = selectedAddons.findIndex(a => a.id === id && a.type === 'snack');
+                if (existing >= 0) {
+                    selectedAddons[existing].quantity += qty;
+                } else {
+                    selectedAddons.push({ id: snack.id, name: snack.name, price: snack.price, quantity: qty,
+                        type: 'snack' });
+                }
+                updateSelectedAddonsDisplay();
+            });
+
+            $('.add-equipment-btn').click(function() {
+                const id = parseInt($(this).data('id'));
+                const qty = parseInt($(`.quantity-selector[data-id="${id}"]`).val());
+                const eq = equipmentData.find(e => e.id === id);
+                const existing = selectedAddons.findIndex(a => a.id === id && a.type === 'equipment');
+                if (existing >= 0) {
+                    selectedAddons[existing].quantity += qty;
+                } else {
+                    selectedAddons.push({ id: eq.id, name: eq.name, price: eq.price, quantity: qty,
+                        type: 'equipment' });
+                }
+                updateSelectedAddonsDisplay();
+            });
+
+            $(document).on('click', '.remove-addon-btn', function() {
+                const id = parseInt($(this).data('id'));
+                const type = $(this).data('type');
+                selectedAddons = selectedAddons.filter(a => !(a.id === id && a.type === type));
+                updateSelectedAddonsDisplay();
+            });
+
+            $('#addonsModal').modal('show');
+        }
+
+        function updateSelectedAddonsDisplay() {
+            $('#selectedAddons').empty();
+            let total = 0;
+            if (selectedAddons.length === 0) {
+                $('#selectedAddons').html('<p style="color:rgba(255,255,255,0.3);">No add-ons selected</p>');
+            } else {
+                selectedAddons.forEach(a => {
+                    const addonTotal = a.price * a.quantity;
+                    total += addonTotal;
+                    $('#selectedAddons').append(`
+                        <div class="d-flex justify-content-between align-items-center py-1">
+                            <span>${a.name} ×${a.quantity} <small style="color:rgba(255,255,255,0.3);">${a.type}</small></span>
+                            <div>
+                                <span class="me-2">RM${addonTotal}</span>
+                                <button class="btn btn-sm btn-outline-danger remove-addon-btn" data-id="${a.id}" data-type="${a.type}" style="border-radius:30px; padding:0 8px;">×</button>
+                            </div>
+                        </div>
+                    `);
+                });
+            }
+            $('#addonsTotal').text(total.toFixed(2));
+        }
+
+        // ============================================================
+        // COACHES - FIXED with better error handling
+        // ============================================================
+        async function fetchCoachesFromFirestore() {
+            try {
+                console.log("🔄 Fetching coaches from Firestore...");
+                const snapshot = await db.collection('coaches').get();
+                const coaches = [];
+                
+                if (snapshot.empty) {
+                    console.log("⚠️ No coaches found in Firestore");
+                    return coaches;
+                }
+                
+                snapshot.forEach(doc => {
+                    const data = doc.data();
+                    console.log("📄 Coach doc data:", data);
+                    
+                    // Map Firestore fields to our coach object with safe fallbacks
+                    const coach = {
+                        id: doc.id,
+                        name: data.name || 'Unnamed Coach',
+                        // Use 'rate' field for price (your Firestore uses 'rate')
+                        price: data.rate || data.price || 30,
+                        // Use 'photoURL' field for image
+                        image: data.photoURL || 'https://cdn.pixabay.com/photo/2015/10/05/22/37/blank-profile-picture-973460_640.png',
+                        // Use 'experience' field
+                        experience: data.experience || 'N/A',
+                        rating: 4.5,
+                        bio: data.bio || '',
+                        specialties: data.specialties || '',
+                        status: data.status || 'Active',
+                        // facilities is an array, check if it exists and has items
+                        facilityId: data.facilities && Array.isArray(data.facilities) && data.facilities.length > 0 ? data.facilities[0] : null,
+                        // Store all facility IDs for better matching
+                        facilityIds: data.facilities && Array.isArray(data.facilities) ? data.facilities : [],
+                        userId: data.userId || '',
+                        email: data.email || '',
+                        phone: data.phone || '',
+                        availableForHire: data.availableForHire !== undefined ? data.availableForHire : true
+                    };
+                    
+                    console.log("✅ Mapped coach:", coach);
+                    coaches.push(coach);
+                });
+                
+                console.log(`✅ Found ${coaches.length} coaches total`);
+                return coaches;
+            } catch (e) {
+                console.error("❌ Error fetching coaches:", e);
+                return [];
+            }
+        }
+
+        async function showCoachesSelection() {
+            console.log("🔄 Opening coach selection modal...");
+            $('#coachesList').empty();
+            pendingDiscount = 0;
+            appliedDiscount = 0;
+            $('#availablePointsDisplay').text(userLoyaltyPoints);
+            $('#discountAppliedMessage').addClass('d-none');
+
+            // Add "No coach" option first
+            $('#coachesList').append(`
+                <div class="col">
+                    <div class="coach-item p-3">
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="coachOption" id="noCoach" value="no" checked>
+                            <label class="form-check-label" for="noCoach">No coach needed</label>
+                        </div>
+                    </div>
                 </div>
-                <div class="d-flex justify-content-between">
-                    <strong>Total Amount:</strong> <span>RM${totalAmount.toFixed(2)}</span>
+            `);
+
+            try {
+                coachesData = await fetchCoachesFromFirestore();
+
+                // Filter coaches - show all coaches if no facility selected, or filter by facility
+                let filtered = coachesData;
+                
+                if (selectedFacility && selectedFacility.id && filtered.length > 0) {
+                    console.log(`🏟️ Filtering coaches for facility: ${selectedFacility.id}`);
+                    // Check if coach's facilityIds array contains the selected facility ID
+                    filtered = coachesData.filter(c => {
+                        // If coach has no facility assigned, show them (available for all)
+                        if (!c.facilityIds || c.facilityIds.length === 0) {
+                            return true;
+                        }
+                        // Check if the selected facility is in the coach's facility list
+                        return c.facilityIds.includes(selectedFacility.id);
+                    });
+                    console.log(`📊 After filtering: ${filtered.length} coaches available for this facility`);
+                }
+
+                if (filtered.length === 0) {
+                    $('#coachesList').append(`
+                        <div class="col-12">
+                            <div class="alert alert-info" style="background:rgba(108,92,231,0.1); border-color:rgba(108,92,231,0.2); color:#b8a9ff; border-radius:16px;">
+                                <i class="bi bi-info-circle"></i> No coaches available for this facility. You can still book without a coach.
+                            </div>
+                        </div>
+                    `);
+                } else {
+                    filtered.forEach(coach => {
+                        const expYears = coach.experience !== 'N/A' && coach.experience !== '' ? `${coach.experience} yrs exp` : '';
+                        const specialties = coach.specialties ? `· ${coach.specialties}` : '';
+                        const statusBadge = coach.status === 'Active' ? 
+                            `<span class="badge" style="background:#00b894; border-radius:30px; font-size:0.6rem;">Active</span>` :
+                            `<span class="badge" style="background:#fd79a8; border-radius:30px; font-size:0.6rem;">${coach.status || 'Available'}</span>`;
+                        
+                        $('#coachesList').append(`
+                            <div class="col">
+                                <div class="coach-item p-3">
+                                    <div class="d-flex gap-3 align-items-start">
+                                        <img src="${coach.image}" style="width:60px; height:60px; border-radius:50%; object-fit:cover; border:2px solid var(--primary);" 
+                                             onerror="this.src='https://cdn.pixabay.com/photo/2015/10/05/22/37/blank-profile-picture-973460_640.png'">
+                                        <div class="flex-grow-1">
+                                            <div class="d-flex justify-content-between align-items-center flex-wrap">
+                                                <div>
+                                                    <h6 class="mb-0">${coach.name}</h6>
+                                                    <small style="color:rgba(255,255,255,0.4);">${expYears} ${specialties}</small>
+                                                </div>
+                                                <div class="d-flex align-items-center gap-2">
+                                                    ${statusBadge}
+                                                    <span style="color:rgba(255,255,255,0.3); font-size:0.8rem;">⭐ ${coach.rating}</span>
+                                                </div>
+                                            </div>
+                                            ${coach.bio ? `<small style="color:rgba(255,255,255,0.3); display:block; margin-top:4px;">${coach.bio}</small>` : ''}
+                                            <div class="d-flex justify-content-between align-items-center mt-2">
+                                                <span style="color:var(--secondary); font-weight:600;">RM${coach.price}/session</span>
+                                                <div class="form-check">
+                                                    <input class="form-check-input" type="radio" name="coachOption" id="coach-${coach.id}" value="${coach.id}">
+                                                    <label class="form-check-label" for="coach-${coach.id}" style="font-size:0.85rem;">Select</label>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        `);
+                    });
+                }
+            } catch (e) {
+                console.error("❌ Error loading coaches:", e);
+                $('#coachesList').append(`
+                    <div class="col-12">
+                        <div class="alert alert-danger" style="border-radius:16px;">
+                            <i class="bi bi-exclamation-triangle"></i> Error loading coaches: ${e.message || 'Please try again'}
+                        </div>
+                    </div>
+                `);
+            }
+
+            updatePriceDisplay();
+            $('#coachModal').modal('show');
+        }
+
+        // ============================================================
+        // DISCOUNT & PRICE
+        // ============================================================
+        function applyDiscount() {
+            const points = parseInt($('#redeemOption').val());
+            if (points === 0) {
+                pendingDiscount = 0;
+                $('#discountAppliedMessage').addClass('d-none');
+                updatePriceDisplay();
+                return;
+            }
+            if (points > userLoyaltyPoints) {
+                alert("Not enough points");
+                return;
+            }
+            let amount = 0;
+            if (points === 100) amount = 5;
+            else if (points === 200) amount = 12;
+            else if (points === 500) amount = 30;
+            pendingDiscount = amount;
+            appliedDiscount = points;
+            $('#discountAppliedMessage').removeClass('d-none');
+            updatePriceDisplay();
+        }
+
+        function updatePriceDisplay() {
+            const subtotal = calculateSubtotal();
+            const total = subtotal - pendingDiscount;
+            $('#subtotalDisplay').text(subtotal.toFixed(2));
+            $('#discountDisplay').text(pendingDiscount.toFixed(2));
+            $('#totalDisplay').text(total.toFixed(2));
+        }
+
+        function calculateSubtotal() {
+            let subtotal = selectedFacility.price || 0;
+            selectedAddons.forEach(a => { subtotal += a.price * a.quantity; });
+            if (selectedCoach) subtotal += selectedCoach.price;
+            return subtotal;
+        }
+
+        // ============================================================
+        // COMPLETE BOOKING
+        // ============================================================
+        async function completeBooking() {
+            if (!currentUser) {
+                alert("Please log in");
+                return;
+            }
+
+            const coachOption = $('input[name="coachOption"]:checked').val();
+            selectedCoach = coachOption === 'no' ? null :
+                coachesData.find(c => c.id == coachOption);
+
+            const subtotal = calculateSubtotal();
+            const totalAmount = subtotal - pendingDiscount;
+            const pointsEarned = Math.floor(totalAmount);
+
+            const bookingData = {
+                date: selectedDate,
+                slot: selectedSlot,
+                facilityId: selectedFacility.id,
+                facilityName: selectedFacility.name,
+                userId: currentUser.uid,
+                userName: currentUser.displayName || currentUser.email || "Guest",
+                email: currentUser.email || "",
+                timestamp: firebase.firestore.FieldValue.serverTimestamp(),
+                price: selectedFacility.price,
+                status: 'confirmed',
+                type: selectedFacility.sportType || selectedFacility.type,
+                addons: {
+                    snacks: selectedAddons.filter(a => a.type === 'snack'),
+                    equipment: selectedAddons.filter(a => a.type === 'equipment'),
+                    coach: selectedCoach ? { id: selectedCoach.id, name: selectedCoach.name, price: selectedCoach
+                            .price } : null
+                },
+                subtotal: subtotal,
+                discount: pendingDiscount,
+                totalAmount: totalAmount,
+                pointsEarned: pointsEarned,
+                friendId: bookingWithFriend ? bookingWithFriend.id : null,
+                friendName: bookingWithFriend ? bookingWithFriend.name : null,
+                pointsRedeemed: appliedDiscount > 0 ? appliedDiscount : null
+            };
+
+            try {
+                const batch = db.batch();
+                const bookingRef = db.collection('bookings').doc();
+                batch.set(bookingRef, bookingData);
+                await updateUserPoints(pointsEarned - (appliedDiscount || 0));
+                await batch.commit();
+
+                let detailsHtml = `
+                    <div><strong>Facility:</strong> ${selectedFacility.name}</div>
+                    <div><strong>Date:</strong> ${selectedDate}</div>
+                    <div><strong>Time:</strong> ${selectedSlot}</div>
+                    ${bookingWithFriend ? `<div><strong>With:</strong> ${bookingWithFriend.name}</div>` : ''}
+                    <div><strong>Base Price:</strong> RM${selectedFacility.price}</div>
+                `;
+                const snacks = selectedAddons.filter(a => a.type === 'snack');
+                if (snacks.length) {
+                    detailsHtml += `<div><strong>Snacks:</strong> ${snacks.map(s => `${s.name} ×${s.quantity}`).join(', ')}</div>`;
+                }
+                const equip = selectedAddons.filter(a => a.type === 'equipment');
+                if (equip.length) {
+                    detailsHtml += `<div><strong>Equipment:</strong> ${equip.map(e => `${e.name} ×${e.quantity}`).join(', ')}</div>`;
+                }
+                if (selectedCoach) {
+                    detailsHtml += `<div><strong>Coach:</strong> ${selectedCoach.name}</div>`;
+                }
+                if (pendingDiscount > 0) {
+                    detailsHtml += `<div style="color:#55efc4;"><strong>Discount:</strong> -RM${pendingDiscount}</div>`;
+                }
+                detailsHtml += `
+                    <div class="mt-2 pt-2 border-top" style="border-color:rgba(255,255,255,0.06)!important;">
+                        <div class="d-flex justify-content-between"><strong>Total:</strong> <span>RM${totalAmount}</span></div>
+                        <div style="color:rgba(255,255,255,0.3); font-size:0.85rem;">Earned ${pointsEarned} points</div>
+                    </div>
+                `;
+                $('#bookingDetails').html(detailsHtml);
+                $('#confirmModal').modal('show');
+
+                // Reset
+                selectedFacility = null;
+                selectedDate = null;
+                selectedSlot = null;
+                selectedAddons = [];
+                selectedCoach = null;
+                bookingWithFriend = null;
+                pendingDiscount = 0;
+                appliedDiscount = 0;
+                $('#calendarSection').hide();
+                $('#facilityList').show();
+                $('#friendNotice').addClass('d-none');
+
+            } catch (e) {
+                console.error("Error saving booking:", e);
+                alert("Error completing booking");
+            }
+        }
+
+        // ============================================================
+        // EVENTS
+        // ============================================================
+        async function loadEvents() {
+            try {
+                const snapshot = await db.collection('events')
+                    .where('status', '==', 'active')
+                    .orderBy('createdAt', 'desc')
+                    .limit(6)
+                    .get();
+
+                $('#eventsList').empty();
+                if (snapshot.empty) {
+                    $('#eventsList').html(
+                        '<div class="alert alert-info" style="background:rgba(108,92,231,0.1); border-color:rgba(108,92,231,0.2); color:#b8a9ff; border-radius:16px;">No upcoming events</div>'
+                        );
+                    return;
+                }
+
+                snapshot.forEach(doc => {
+                    const event = doc.data();
+                    $('#eventsList').append(`
+                        <div class="col">
+                            <div class="glass-card p-3 h-100">
+                                <h6>${sportIcons[event.sport] || '🏟️'} ${capitalizeFirstLetter(event.sport)}</h6>
+                                <p style="color:rgba(255,255,255,0.5); font-size:0.9rem;">${event.date} at ${formatTime(event.time)}</p>
+                                <span class="badge ${getSkillLevelClass(event.skillLevel)}" style="background:rgba(108,92,231,0.2); color:#b8a9ff; border-radius:30px;">${event.skillLevel}</span>
+                                <p style="color:rgba(255,255,255,0.3); font-size:0.85rem; margin-top:8px;">${event.description || 'Join this event!'}</p>
+                                <small style="color:rgba(255,255,255,0.2);">By ${event.organizerName}</small>
+                            </div>
+                        </div>
+                    `);
+                });
+            } catch (e) {
+                console.error("Error loading events:", e);
+            }
+        }
+
+        async function createEvent() {
+            if (!currentUser) {
+                alert("Please log in");
+                return;
+            }
+
+            const eventData = {
+                sport: $('#eventSportType').val(),
+                date: $('#eventDate').val(),
+                time: $('#eventTime').val(),
+                duration: parseFloat($('#eventDuration').val()),
+                skillLevel: $('#eventSkillLevel').val(),
+                playersNeeded: parseInt($('#eventPlayersNeeded').val()),
+                facility: $('#eventFacility').val() || null,
+                description: $('#eventDescription').val() || '',
+                organizerId: currentUser.uid,
+                organizerName: currentUser.displayName || currentUser.email || "Guest",
+                createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+                status: 'active'
+            };
+
+            try {
+                $('#createEventBtn').html(
+                    '<span class="spinner-border spinner-border-sm"></span> Creating...');
+
+                const matches = await findMatchingPlayers(eventData);
+                showMatchDetails(matches, eventData);
+
+            } catch (e) {
+                console.error(e);
+                alert("Error creating event");
+            } finally {
+                $('#createEventBtn').html('<i class="bi bi-calendar-event"></i> Create Event');
+            }
+        }
+
+        async function findMatchingPlayers(eventData) {
+            try {
+                const snapshot = await db.collection('users')
+                    .where('skillLevel', '==', eventData.skillLevel)
+                    .get();
+
+                const matches = [];
+                snapshot.forEach(doc => {
+                    const user = doc.data();
+                    if (user.uid !== currentUser.uid) {
+                        let score = 50;
+                        if (user.preferredTimes && user.preferredTimes.some(t =>
+                                eventData.time.includes("Evening") ? t.includes("Evening") : t.includes(
+                                "Morning"))) {
+                            score += 30;
+                        }
+                        if (user.playingFrequency === "Weekly") score += 15;
+                        else if (user.playingFrequency === "Daily") score += 20;
+                        matches.push({ ...user, id: doc.id, compatibilityScore: Math.min(100, score) });
+                    }
+                });
+                matches.sort((a, b) => b.compatibilityScore - a.compatibilityScore);
+                return matches;
+            } catch (e) {
+                console.error(e);
+                return [];
+            }
+        }
+
+        function showMatchDetails(matches, eventData) {
+            const needed = parseInt($('#eventPlayersNeeded').val()) - 1;
+            const topMatches = matches.slice(0, needed);
+
+            let content = `
+                <h6>Event Details</h6>
+                <div class="p-3 mb-3" style="background:rgba(255,255,255,0.03); border-radius:12px;">
+                    <div><strong>Sport:</strong> ${capitalizeFirstLetter(eventData.sport)}</div>
+                    <div><strong>When:</strong> ${eventData.date} at ${formatTime(eventData.time)}</div>
+                    <div><strong>Skill:</strong> ${capitalizeFirstLetter(eventData.skillLevel)}</div>
                 </div>
-            </div>
-            <div class="mt-2 text-muted">
-                <small>You earned ${pointsEarned} loyalty points with this booking!</small>
-            </div>
-        `);
-        $('#confirmModal').modal('show');
+                <h6>AI Matched Players (${topMatches.length})</h6>
+            `;
 
-        // Reset selections
-        selectedFacility = null;
-        selectedDate = null;
-        selectedSlot = null;
-        selectedAddons = [];
-        selectedCoach = null;
-        bookingWithFriend = null;
-        pendingDiscount = 0;
-        appliedDiscount = 0;
+            if (topMatches.length > 0) {
+                content += `<div class="row g-3">`;
+                topMatches.forEach(p => {
+                    content += `
+                        <div class="col-md-6">
+                            <div class="p-3" style="background:rgba(255,255,255,0.03); border-radius:12px; border-left:3px solid var(--primary);">
+                                <div class="d-flex align-items-center gap-2">
+                                    <img src="${p.photoURL || 'https://cdn.pixabay.com/photo/2015/10/05/22/37/blank-profile-picture-973460_640.png'}" style="width:40px; height:40px; border-radius:50%; object-fit:cover;">
+                                    <div>
+                                        <strong>${p.name}</strong>
+                                        <div style="font-size:0.85rem; color:rgba(255,255,255,0.4);">${p.email}</div>
+                                    </div>
+                                </div>
+                                <div class="mt-2">
+                                    <div class="d-flex justify-content-between"><small>Compatibility</small><small>${p.compatibilityScore}%</small></div>
+                                    <div style="height:6px; background:rgba(255,255,255,0.06); border-radius:6px; overflow:hidden;">
+                                        <div style="height:100%; width:${p.compatibilityScore}%; background:linear-gradient(90deg,var(--primary),var(--secondary)); border-radius:6px;"></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                });
+                content += `</div>`;
+            } else {
+                content += `<div class="alert alert-info" style="background:rgba(108,92,231,0.1); border-color:rgba(108,92,231,0.2); color:#b8a9ff; border-radius:16px;">No matching players found</div>`;
+            }
 
-        // Return to facility list
-        $('#calendarSection').hide();
-        $('#facilityList').show();
-        $('#friendNotice').addClass('d-none');
-      } catch (error) {
-        console.error("Error saving booking:", error);
-        alert("Error completing booking. Please try again.");
-      }
-    }
-  </script>
+            content += `
+                <div class="mt-4">
+                    <button class="btn btn-primary" id="confirmEventWithMatches">Confirm Event</button>
+                    <button class="btn btn-outline-secondary ms-2" data-bs-dismiss="modal">Cancel</button>
+                </div>
+            `;
+
+            $('#matchResultsContent').html(content);
+            $('#matchDetailsModal').modal('show');
+
+            $('#confirmEventWithMatches').click(async () => {
+                $('#matchDetailsModal').modal('hide');
+                await finalizeEvent(eventData, topMatches);
+            });
+        }
+
+        async function finalizeEvent(eventData, matches) {
+            try {
+                eventData.matchedPlayers = matches.map(p => p.id);
+                const ref = await db.collection('events').add(eventData);
+                showEventConfirmation(eventData, matches);
+            } catch (e) {
+                console.error(e);
+                alert("Error creating event");
+            }
+        }
+
+        function showEventConfirmation(eventData, matches) {
+            const list = matches.map(p =>
+                `<li>${p.name} (${p.compatibilityScore}% match)</li>`
+            ).join('');
+            $('#eventDetails').html(`
+                <div><strong>Event:</strong> ${capitalizeFirstLetter(eventData.sport)}</div>
+                <div><strong>Date:</strong> ${eventData.date} at ${formatTime(eventData.time)}</div>
+                <div><strong>Matched Players:</strong></div>
+                <ul>${list || '<li>No players matched</li>'}</ul>
+            `);
+            $('#eventConfirmModal').modal('show');
+            $('#eventForm')[0].reset();
+        }
+
+        // ============================================================
+        // PREVENT SOURCE INSPECTION
+        // ============================================================
+        document.addEventListener('contextmenu', e => e.preventDefault());
+        document.addEventListener('keydown', e => {
+            if (e.ctrlKey && ['u', 'U', 's', 'S', 'c', 'C', 'i', 'I', 'j', 'J'].includes(e.key)) e.preventDefault();
+            if (e.key === 'F12') e.preventDefault();
+        });
+
+        console.log('%c⚡ SPORTOVA · Book & Play', 'font-size:20px; font-weight:bold; color:#6c5ce7;');
+    </script>
 </body>
 
 </html>

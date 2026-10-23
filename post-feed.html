@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>SPORTOVA Social Feed</title>
+    <title>NSTE Social Feed</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
     <script src="https://cdn.jsdelivr.net/npm/emoji-picker-element"></script>
@@ -144,11 +144,9 @@
 </head>
 
 <body>
-    <!-- 🌙 Dark mode toggle -->
     <button class="dark-toggle" id="darkToggle"><i class="fas fa-moon"></i></button>
 
     <div class="container">
-
         <form id="postForm" class="mb-4 shadow p-4 rounded" style="background: var(--card); color: var(--text);">
             <h1 class="text-4xl font-bold text-gray-800 mb-2" id="title">NSTE Social Feed</h1>
             <input type="text" id="caption" class="form-control mb-2" placeholder="Write a caption..." required />
@@ -192,6 +190,50 @@
         const postFeed = document.getElementById("postFeed");
         const searchInput = document.getElementById("searchInput");
 
+        // Security: Sanitize text content (remove all HTML)
+        function sanitizeText(text) {
+            if (!text) return '';
+            // Create a temporary element and use textContent to strip HTML
+            const temp = document.createElement('div');
+            temp.textContent = text;
+            return temp.textContent;
+        }
+
+        // Security: Validate and sanitize URLs
+        function sanitizeUrl(url) {
+            if (!url) return '';
+            try {
+                const parsedUrl = new URL(url);
+                // Only allow http and https protocols
+                if (parsedUrl.protocol !== 'http:' && parsedUrl.protocol !== 'https:') {
+                    return '';
+                }
+                // Additional: restrict to common image/video domains if needed
+                return url;
+            } catch (e) {
+                return '';
+            }
+        }
+
+        // Security: Create safe DOM elements using textContent and setAttribute
+        function createSafeElement(tag, content, attributes = {}) {
+            const element = document.createElement(tag);
+            
+            if (content !== undefined && content !== null) {
+                element.textContent = content;
+            }
+            
+            for (const [key, value] of Object.entries(attributes)) {
+                if (key === 'src' || key === 'href') {
+                    element.setAttribute(key, sanitizeUrl(value));
+                } else {
+                    element.setAttribute(key, value);
+                }
+            }
+            
+            return element;
+        }
+
         const darkToggle = document.getElementById("darkToggle");
         darkToggle.addEventListener("click", () => {
             document.body.classList.toggle("dark");
@@ -206,14 +248,18 @@
             if (userNamesCache[uid]) return userNamesCache[uid];
             const snap = await getDoc(doc(db, "users", uid));
             const name = snap.exists() ? snap.data().name : uid;
-            return userNamesCache[uid] = name;
+            // Sanitize the name before caching
+            userNamesCache[uid] = sanitizeText(name);
+            return userNamesCache[uid];
         }
 
         onAuthStateChanged(auth, async (user) => {
             if (user) {
                 currentUser = user;
                 const snap = await getDoc(doc(db, "users", user.uid));
-                if (snap.exists()) userNamesCache[user.uid] = snap.data().name;
+                if (snap.exists()) {
+                    userNamesCache[user.uid] = sanitizeText(snap.data().name);
+                }
                 fetchPosts();
             } else {
                 alert("Please sign in to use the app.");
@@ -226,9 +272,14 @@
             const caption = document.getElementById("caption").value;
             const mediaUrl = document.getElementById("mediaUrl").value;
             const mediaType = document.getElementById("mediaType").value;
+            
+            // Sanitize input before storing
+            const sanitizedCaption = sanitizeText(caption);
+            const sanitizedMediaUrl = sanitizeUrl(mediaUrl);
+            
             await addDoc(collection(db, "posts"), {
-                caption,
-                mediaUrl,
+                caption: sanitizedCaption,
+                mediaUrl: sanitizedMediaUrl,
                 type: mediaType,
                 userId: currentUser.uid,
                 likes: [],
@@ -256,7 +307,12 @@
                 p.caption.toLowerCase().includes(search) ||
                 p.userName.toLowerCase().includes(search)
             );
-            postFeed.innerHTML = "";
+            
+            // Clear feed using textContent to prevent XSS
+            while (postFeed.firstChild) {
+                postFeed.removeChild(postFeed.firstChild);
+            }
+            
             filtered.forEach(post => renderPost(post));
         }
 
@@ -265,33 +321,112 @@
             const liked = post.likes?.includes(currentUser.uid);
             const likeCount = post.likes?.length || 0;
 
-            const media = post.type === "video"
-                ? `<video class="media" controls src="${post.mediaUrl}"></video>`
-                : `<img class="media" src="${post.mediaUrl}" alt="Post Media">`;
+            // Sanitize all user data
+            const safeUserName = sanitizeText(post.userName);
+            const safeCaption = sanitizeText(post.caption);
+            const safeMediaUrl = sanitizeUrl(post.mediaUrl);
 
-            const postDiv = document.createElement("div");
-            postDiv.className = "post-card";
-            postDiv.innerHTML = `
-    <div><em>Posted by: <strong>${post.userName}</strong></em></div>
-    ${media}
-    <div class="mt-2 d-flex justify-content-between align-items-start">
-      <div><strong>${post.caption}</strong></div>
-      ${isOwner ? `<div>
-        <button class="icon-btn" onclick="editPost('${post.id}')"><i class="fas fa-pen"></i></button>
-        <button class="icon-btn" onclick="deletePost('${post.id}')"><i class="fas fa-trash"></i></button>
-      </div>` : ""}
-    </div>
-    <div class="mt-2 d-flex align-items-center">
-      <button class="icon-btn ${liked ? 'icon-liked' : ''}" onclick="likePost(event,'${post.id}')"><i class="fas fa-heart"></i></button>
-      <span class="me-3">${likeCount}</span>
-      <button class="icon-btn" onclick="toggleCommentBox('${post.id}', true)">
-        <i class="fas fa-comment"></i>
-      </button>
-      <span id="commentCount-${post.id}" class="ms-2 small text-muted">0</span>
-    </div>
-    <div id="commentBox-${post.id}" class="comment-box"></div>
-  `;
-            postFeed.appendChild(postDiv);
+            // Create post card using DOM APIs
+            const postCard = document.createElement('div');
+            postCard.className = 'post-card';
+
+            // User info - using textContent
+            const userInfo = document.createElement('div');
+            const em = document.createElement('em');
+            const textNode1 = document.createTextNode('Posted by: ');
+            const strong = document.createElement('strong');
+            strong.textContent = safeUserName;
+            em.appendChild(textNode1);
+            em.appendChild(strong);
+            userInfo.appendChild(em);
+            postCard.appendChild(userInfo);
+
+            // Media - using setAttribute
+            const mediaContainer = document.createElement('div');
+            if (post.type === 'video') {
+                const video = document.createElement('video');
+                video.className = 'media';
+                video.controls = true;
+                if (safeMediaUrl) {
+                    video.setAttribute('src', safeMediaUrl);
+                }
+                mediaContainer.appendChild(video);
+            } else {
+                const img = document.createElement('img');
+                img.className = 'media';
+                if (safeMediaUrl) {
+                    img.setAttribute('src', safeMediaUrl);
+                }
+                img.setAttribute('alt', 'Post Media');
+                mediaContainer.appendChild(img);
+            }
+            postCard.appendChild(mediaContainer);
+
+            // Caption and actions
+            const actionsDiv = document.createElement('div');
+            actionsDiv.className = 'mt-2 d-flex justify-content-between align-items-start';
+
+            const captionDiv = document.createElement('div');
+            const captionStrong = document.createElement('strong');
+            captionStrong.textContent = safeCaption;
+            captionDiv.appendChild(captionStrong);
+            actionsDiv.appendChild(captionDiv);
+
+            if (isOwner) {
+                const ownerActions = document.createElement('div');
+                
+                const editBtn = document.createElement('button');
+                editBtn.className = 'icon-btn';
+                editBtn.innerHTML = '<i class="fas fa-pen"></i>';
+                editBtn.setAttribute('onclick', `editPost('${post.id}')`);
+                ownerActions.appendChild(editBtn);
+                
+                const deleteBtn = document.createElement('button');
+                deleteBtn.className = 'icon-btn';
+                deleteBtn.innerHTML = '<i class="fas fa-trash"></i>';
+                deleteBtn.setAttribute('onclick', `deletePost('${post.id}')`);
+                ownerActions.appendChild(deleteBtn);
+                
+                actionsDiv.appendChild(ownerActions);
+            }
+            postCard.appendChild(actionsDiv);
+
+            // Interactions
+            const interactionDiv = document.createElement('div');
+            interactionDiv.className = 'mt-2 d-flex align-items-center';
+
+            const likeBtn = document.createElement('button');
+            likeBtn.className = `icon-btn ${liked ? 'icon-liked' : ''}`;
+            likeBtn.innerHTML = '<i class="fas fa-heart"></i>';
+            likeBtn.setAttribute('onclick', `likePost(event,'${post.id}')`);
+            interactionDiv.appendChild(likeBtn);
+
+            const likeCountSpan = document.createElement('span');
+            likeCountSpan.className = 'me-3';
+            likeCountSpan.textContent = likeCount;
+            interactionDiv.appendChild(likeCountSpan);
+
+            const commentBtn = document.createElement('button');
+            commentBtn.className = 'icon-btn';
+            commentBtn.innerHTML = '<i class="fas fa-comment"></i>';
+            commentBtn.setAttribute('onclick', `toggleCommentBox('${post.id}', true)`);
+            interactionDiv.appendChild(commentBtn);
+
+            const commentCountSpan = document.createElement('span');
+            commentCountSpan.id = `commentCount-${post.id}`;
+            commentCountSpan.className = 'ms-2 small text-muted';
+            commentCountSpan.textContent = '0';
+            interactionDiv.appendChild(commentCountSpan);
+
+            postCard.appendChild(interactionDiv);
+
+            // Comment box
+            const commentBox = document.createElement('div');
+            commentBox.id = `commentBox-${post.id}`;
+            commentBox.className = 'comment-box';
+            postCard.appendChild(commentBox);
+
+            postFeed.appendChild(postCard);
         }
 
         searchInput.addEventListener("input", fetchPosts);
@@ -311,19 +446,37 @@
             const box = document.getElementById(`commentBox-${postId}`);
             box.classList.toggle("open");
 
-            if (init && box.innerHTML.trim() === "") {
-                box.innerHTML = `
-        <div style="position:relative">
-          <emoji-picker></emoji-picker>
-          <input id="commentInput-${postId}" class="form-control comment-input mt-2" placeholder="Write a comment..." />
-          <button class="btn btn-sm btn-outline-primary mt-2" onclick="addComment('${postId}')">Comment</button>
-        </div>
-        <ul id="commentList-${postId}" class="list-unstyled mt-3"></ul>
-      `;
+            if (init && box.children.length === 0) {
+                // Create comment container using DOM APIs
+                const commentContainer = document.createElement('div');
+                commentContainer.style.position = 'relative';
 
-                const picker = box.querySelector("emoji-picker");
-                const input = box.querySelector("input");
-                picker.addEventListener("emoji-click", e => input.value += e.detail.unicode);
+                const picker = document.createElement('emoji-picker');
+                commentContainer.appendChild(picker);
+
+                const input = document.createElement('input');
+                input.id = `commentInput-${postId}`;
+                input.className = 'form-control comment-input mt-2';
+                input.placeholder = 'Write a comment...';
+                commentContainer.appendChild(input);
+
+                const commentBtn = document.createElement('button');
+                commentBtn.className = 'btn btn-sm btn-outline-primary mt-2';
+                commentBtn.textContent = 'Comment';
+                commentBtn.setAttribute('onclick', `addComment('${postId}')`);
+                commentContainer.appendChild(commentBtn);
+
+                box.appendChild(commentContainer);
+
+                const commentList = document.createElement('ul');
+                commentList.id = `commentList-${postId}`;
+                commentList.className = 'list-unstyled mt-3';
+                box.appendChild(commentList);
+
+                picker.addEventListener('emoji-click', (e) => {
+                    input.value += e.detail.unicode;
+                });
+
                 loadComments(postId);
             }
         };
@@ -332,20 +485,26 @@
             const input = document.getElementById(`commentInput-${postId}`);
             const comment = input.value.trim();
             if (!comment) return;
+            
+            const sanitizedComment = sanitizeText(comment);
+            
             await addDoc(collection(db, "posts", postId, "comments"), {
                 userId: currentUser.uid,
-                comment,
+                comment: sanitizedComment,
                 timestamp: serverTimestamp()
             });
             input.value = "";
         };
 
-
         async function loadComments(postId) {
             const ul = document.getElementById(`commentList-${postId}`);
             if (!ul) return;
             onSnapshot(query(collection(db, "posts", postId, "comments"), orderBy("timestamp")), async (snap) => {
-                ul.innerHTML = "";
+                // Clear using DOM API
+                while (ul.firstChild) {
+                    ul.removeChild(ul.firstChild);
+                }
+                
                 for (const commentDoc of snap.docs) {
                     const c = commentDoc.data();
                     const commentId = commentDoc.id;
@@ -353,21 +512,55 @@
                     const time = c.timestamp?.toDate ? moment(c.timestamp.toDate()).fromNow() : '';
                     const isOwner = currentUser && currentUser.uid === c.userId;
 
-                    const li = document.createElement("li");
-                    li.className = "comment";
-                    li.innerHTML = `
-          <div class="d-flex justify-content-between align-items-center">
-            <div>
-              <span class="comment-user">${name}</span>
-              <span class="comment-time">${time}</span>
-            </div>
-            ${isOwner ? `<i class="fas fa-trash text-danger" style="cursor:pointer;" onclick="deleteComment('${postId}', '${commentId}')"></i>` : ""}
-          </div>
-          <span class="comment-text">${c.comment}</span>
-        `;
+                    // Sanitize comment data
+                    const safeName = sanitizeText(name);
+                    const safeComment = sanitizeText(c.comment);
+                    const safeTime = sanitizeText(time);
+
+                    const li = document.createElement('li');
+                    li.className = 'comment';
+
+                    // Comment header
+                    const headerDiv = document.createElement('div');
+                    headerDiv.className = 'd-flex justify-content-between align-items-center';
+
+                    const userDiv = document.createElement('div');
+                    
+                    const userSpan = document.createElement('span');
+                    userSpan.className = 'comment-user';
+                    userSpan.textContent = safeName;
+                    userDiv.appendChild(userSpan);
+
+                    const timeSpan = document.createElement('span');
+                    timeSpan.className = 'comment-time';
+                    timeSpan.textContent = safeTime;
+                    userDiv.appendChild(timeSpan);
+
+                    headerDiv.appendChild(userDiv);
+
+                    if (isOwner) {
+                        const deleteIcon = document.createElement('i');
+                        deleteIcon.className = 'fas fa-trash text-danger';
+                        deleteIcon.style.cursor = 'pointer';
+                        deleteIcon.setAttribute('onclick', `deleteComment('${postId}', '${commentId}')`);
+                        headerDiv.appendChild(deleteIcon);
+                    }
+
+                    li.appendChild(headerDiv);
+
+                    // Comment text
+                    const commentTextSpan = document.createElement('span');
+                    commentTextSpan.className = 'comment-text';
+                    commentTextSpan.textContent = safeComment;
+                    li.appendChild(commentTextSpan);
+
                     ul.appendChild(li);
                 }
-                document.getElementById(`commentCount-${postId}`).innerText = snap.size;
+                
+                const commentCount = document.getElementById(`commentCount-${postId}`);
+                if (commentCount) {
+                    commentCount.textContent = snap.size;
+                }
             });
         }
 
@@ -383,8 +576,13 @@
             const post = snap.data();
             const caption = prompt("Edit caption:", post.caption);
             const mediaUrl = prompt("Edit media URL:", post.mediaUrl);
-            if (caption && mediaUrl) {
-                await updateDoc(ref, { caption, mediaUrl });
+            if (caption !== null && mediaUrl !== null) {
+                const sanitizedCaption = sanitizeText(caption);
+                const sanitizedMediaUrl = sanitizeUrl(mediaUrl);
+                await updateDoc(ref, { 
+                    caption: sanitizedCaption, 
+                    mediaUrl: sanitizedMediaUrl 
+                });
             }
         };
 
