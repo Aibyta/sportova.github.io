@@ -498,6 +498,15 @@
     .stats-card, .table-card, .form-card {
       animation: fadeSlideUp 0.4s ease forwards;
     }
+    .availability-hero { background:linear-gradient(125deg,#eff5ff,#f5f3ff); border:1px solid #e5eafd; border-radius:20px; padding:24px; }
+    .availability-filters { display:grid; grid-template-columns:minmax(220px,1fr) minmax(220px,2fr); gap:12px; }
+    .availability-facility { border:1px solid #e8edf4; border-radius:18px; background:#fff; box-shadow:0 8px 24px rgba(30,50,80,.05); overflow:hidden; }
+    .availability-facility-head { padding:18px 20px; background:#fafbfe; border-bottom:1px solid #edf0f5; }
+    .availability-court { height:100%; border:1px solid #edf0f5; border-radius:14px; padding:16px; }
+    .availability-chip { display:inline-flex; align-items:center; gap:6px; background:#f1f4ff; border:1px solid #e4e9ff; color:#3446a8; padding:6px 10px; border-radius:999px; margin:3px; font-size:.82rem; }
+    .availability-chip.time { background:#ecf9f4; border-color:#d9f1e7; color:#14744d; }
+    .availability-empty { border:1px dashed #d8deea; border-radius:12px; padding:14px; color:#7a8598; background:#fafbfc; }
+    @media(max-width:650px) { .availability-filters { grid-template-columns:1fr; } .availability-hero { padding:18px; } }
   </style>
 </head>
 <body>
@@ -924,75 +933,27 @@
     // ============================================================
     // MY BOOKINGS
     // ============================================================
+    let coachBookingCalendarDate=new Date(new Date().getFullYear(),new Date().getMonth(),1);
     async function loadMyBookings() {
-      const bookings = await getCoachBookings();
-      let html = `
-        <div class="d-flex justify-content-between align-items-center mb-3">
-          <h4></h4>
-          <button class="btn btn-outline-primary btn-sm" onclick="loadMyBookings()">
-            <i class="fas fa-sync-alt"></i> Refresh
-          </button>
-        </div>
-        <div class="table-responsive">
-          <table class="table table-hover">
-            <thead><tr><th>User</th><th>Facility</th><th>Date</th><th>Time</th><th>Status</th><th>Actions</th></tr></thead>
-            <tbody>
-      `;
-      if (bookings.length === 0) {
-        html += `<tr><td colspan="6" class="text-center text-muted">No bookings found.</td></tr>`;
-      } else {
-        bookings.forEach(b => {
-          const date = formatDate(b.date);
-          html += `
-            <tr>
-              <td><i class="fas fa-user-circle me-2" style="color: var(--primary);"></i>${b.userName || 'User'}</td>
-              <td>${b.facilityName || 'Facility'}</td>
-              <td>${date}</td>
-              <td>${b.time || b.slot || 'N/A'}</td>
-              <td><span class="badge badge-status badge-${b.status || 'pending'}">${b.status || 'pending'}</span></td>
-              <td>
-                <button class="btn btn-sm btn-primary chat-with-user" data-userid="${b.userId}" data-bookingid="${b.id}"><i class="fas fa-comment"></i></button>
-                ${b.status !== 'cancelled' ? `<button class="btn btn-sm btn-danger cancel-booking" data-id="${b.id}"><i class="fas fa-times"></i></button>` : ''}
-              </td>
-            </tr>
-          `;
-        });
-      }
-      html += `</tbody></table></div>`;
-      pageContent.innerHTML = html;
-
-      document.querySelectorAll('.chat-with-user').forEach(btn => {
-        btn.addEventListener('click', function() {
-          const userId = this.dataset.userid;
-          openChatModal(userId);
-        });
-      });
-
-      document.querySelectorAll('.cancel-booking').forEach(btn => {
-        btn.addEventListener('click', async function() {
-          const id = this.dataset.id;
-          if (!confirm('Cancel this booking? The user will be notified.')) return;
-          try {
-            await db.collection('bookings').doc(id).update({
-              status: 'cancelled',
-              updatedAt: firebase.firestore.FieldValue.serverTimestamp()
-            });
-            const booking = (await db.collection('bookings').doc(id).get()).data();
-            await createNotification(
-              booking.userId,
-              'booking_cancelled_coach',
-              'Booking Cancelled by Coach',
-              `Your booking for ${booking.facilityName} on ${formatDate(booking.date)} has been cancelled by the coach.`,
-              { bookingId: id, facilityId: booking.facilityId }
-            );
-            showToast('Booking cancelled, user notified.', 'success');
-            loadMyBookings();
-          } catch (e) {
-            console.error(e);
-            showToast('Error cancelling booking.', 'danger');
-          }
-        });
-      });
+      const bookings=await getCoachBookings();
+      pageContent.innerHTML=`<div class="d-flex justify-content-between align-items-center flex-wrap mb-3"><div><h4>My Bookings</h4><p class="text-muted mb-0">Calendar of your assigned sessions</p></div><div class="btn-group"><button class="btn btn-outline-primary" onclick="shiftCoachBookingCalendar(-1)"><i class="fas fa-chevron-left"></i></button><button class="btn btn-outline-primary" onclick="setCoachBookingCalendarToday()">Today</button><button class="btn btn-outline-primary" onclick="shiftCoachBookingCalendar(1)"><i class="fas fa-chevron-right"></i></button><button class="btn btn-outline-secondary ms-2" onclick="loadMyBookings()"><i class="fas fa-sync-alt"></i></button></div></div><div class="form-card"><h5 id="coachCalendarMonth" class="text-center"></h5><div id="coachBookingsCalendar" class="table-responsive"></div></div>`;
+      renderCoachBookingsCalendar(bookings);
+    }
+    function renderCoachBookingsCalendar(bookings){
+      const host=document.getElementById('coachBookingsCalendar');if(!host)return;
+      const y=coachBookingCalendarDate.getFullYear(),m=coachBookingCalendarDate.getMonth();
+      document.getElementById('coachCalendarMonth').textContent=coachBookingCalendarDate.toLocaleDateString('en-MY',{month:'long',year:'numeric'});
+      const first=new Date(y,m,1).getDay(),days=new Date(y,m+1,0).getDate();
+      const dateOf=b=>{const v=b.date&&b.date.toDate?b.date.toDate():new Date(b.date);return Number.isNaN(v.getTime())?null:v;};
+      let html='<table class="table table-bordered align-middle"><thead><tr>'+['Sun','Mon','Tue','Wed','Thu','Fri','Sat'].map(d=>`<th>${d}</th>`).join('')+'</tr></thead><tbody><tr>';
+      for(let i=0;i<first;i++)html+='<td class="bg-light" style="height:130px"></td>';
+      for(let day=1;day<=days;day++){if((first+day-1)%7===0&&day>1)html+='</tr><tr>';const events=bookings.filter(b=>{const d=dateOf(b);return d&&d.getFullYear()===y&&d.getMonth()===m&&d.getDate()===day;});html+=`<td style="min-width:140px;height:130px;vertical-align:top"><strong>${day}</strong>${events.map(b=>`<div class="small border rounded p-2 mt-1 bg-light"><strong class="d-block text-truncate">${b.userName||'User'}</strong><span class="d-block text-truncate">${b.facilityName||'Facility'} · ${b.time||b.slot||'Time TBD'}</span><span class="badge bg-secondary">${b.status||'pending'}</span><div class="d-flex gap-1 mt-1"><button class="btn btn-xs btn-outline-primary" onclick="openChatModal('${b.userId}')">Message</button><button class="btn btn-xs btn-outline-warning" onclick="requestCoachReschedule('${b.id}')">Inform admin</button></div></div>`).join('')}</td>`;}
+      const trailing=(7-(first+days)%7)%7;for(let i=0;i<trailing;i++)html+='<td class="bg-light" style="height:130px"></td>';html+='</tr></tbody></table>';if(!bookings.length)html+='<p class="text-center text-muted mt-3">No assigned sessions yet.</p>';host.innerHTML=html;
+    }
+    function shiftCoachBookingCalendar(offset){coachBookingCalendarDate=new Date(coachBookingCalendarDate.getFullYear(),coachBookingCalendarDate.getMonth()+offset,1);getCoachBookings().then(renderCoachBookingsCalendar);}
+    function setCoachBookingCalendarToday(){coachBookingCalendarDate=new Date(new Date().getFullYear(),new Date().getMonth(),1);getCoachBookings().then(renderCoachBookingsCalendar);}
+    async function requestCoachReschedule(bookingId){
+      try{const ref=db.collection('bookings').doc(bookingId),doc=await ref.get();if(!doc.exists)return;const booking=doc.data();await ref.update({coachRescheduleRequest:{status:'requested',coachId:currentUser.uid,requestedAt:firebase.firestore.FieldValue.serverTimestamp()},updatedAt:firebase.firestore.FieldValue.serverTimestamp()});const admins=await db.collection('users').where('role','==','admin').get();await Promise.all(admins.docs.map(a=>db.collection('notifications').add({userId:a.id,type:'coach_reschedule_request',title:'Coach requested a booking change',message:`${currentCoachData.name||'A coach'} asked to reschedule ${booking.facilityName||'a booking'} for ${booking.userName||'a user'}.`,bookingId,createdAt:firebase.firestore.FieldValue.serverTimestamp(),isRead:false})));showToast('Admin has been notified.','success');}catch(e){console.error(e);showToast('Could not notify admin.','danger');}
     }
 
     // ============================================================
@@ -1262,55 +1223,37 @@
     // ============================================================
     // AVAILABILITY
     // ============================================================
+    let coachAvailabilityFacilities=[];
     async function loadAvailabilityPage() {
-      const coachFacilities = currentCoachData.facilities || [];
-      let html = `
-        <div class="form-card">
-          <h4><i class="fas fa-clock"></i> Set Your Availability</h4>
-          <p class="text-muted">Update the time slots you are available for each assigned facility.</p>
-      `;
-      if (coachFacilities.length === 0) {
-        html += `<div class="alert alert-info">You are not assigned to any facility. Contact admin.</div>`;
-      } else {
-        for (const fid of coachFacilities) {
-          try {
-            const fDoc = await db.collection('facilities').doc(fid).get();
-            if (fDoc.exists) {
-              const f = fDoc.data();
-              const slots = f.slots || [];
-              html += `
-                <div class="mb-4 border p-3 rounded" style="background: #fafcff; border: 1px solid #e5e7eb;">
-                  <h5><i class="fas fa-dumbbell me-2" style="color: var(--primary);"></i>${f.name}</h5>
-                  <div class="form-group">
-                    <label class="form-label">Your Available Time Slots (comma separated, e.g. 09:00-10:00, 10:00-11:00)</label>
-                    <input type="text" class="form-control coach-slots" data-facility="${fid}" value="${slots.join(', ')}">
-                  </div>
-                  <button class="btn btn-primary btn-sm update-slots mt-2" data-facility="${fid}">Update Slots</button>
-                </div>
-              `;
-            }
-          } catch (e) {
-            console.error('Error loading facility:', e);
-          }
-        }
-      }
-      html += `</div>`;
-      pageContent.innerHTML = html;
-
-      document.querySelectorAll('.update-slots').forEach(btn => {
-        btn.addEventListener('click', async function() {
-          const fid = this.dataset.facility;
-          const input = document.querySelector(`.coach-slots[data-facility="${fid}"]`);
-          const slots = input.value.split(',').map(s => s.trim()).filter(s => s);
-          try {
-            await db.collection('facilities').doc(fid).update({ slots });
-            showToast('Availability updated!', 'success');
-          } catch (e) {
-            console.error(e);
-            showToast('Error updating slots.', 'danger');
-          }
-        });
-      });
+      const ids=Array.isArray(currentCoachData.facilities)?currentCoachData.facilities:[];
+      const snaps=await Promise.all(ids.map(id=>db.collection('facilities').doc(id).get()));
+      coachAvailabilityFacilities=snaps.filter(s=>s.exists).map(s=>({id:s.id,...s.data()}));
+      pageContent.innerHTML=`
+        <section class="availability-hero mb-4">
+          <div class="d-flex flex-wrap justify-content-between align-items-start gap-3">
+            <div><span class="badge rounded-pill text-bg-primary mb-2">READ ONLY</span><h3 class="mb-1"><i class="fas fa-calendar-check me-2 text-primary"></i>Court availability</h3><p class="text-muted mb-0">Review dates and times set by the facility admin. To change a booking, open My Bookings and send a request to admin.</p></div>
+            <div class="text-muted small"><i class="fas fa-lock me-1"></i>Only admin can edit availability</div>
+          </div>
+        </section>
+        <div class="availability-filters mb-4"><select id="coachAvailabilityFacilityFilter" class="form-select"><option value="">All assigned facilities</option>${coachAvailabilityFacilities.map(f=>`<option value="${f.id}">${coachAvailabilityEscape(f.name||'Facility')}</option>`).join('')}</select><input id="coachAvailabilitySearch" class="form-control" type="search" placeholder="Search courts, dates, or time slots…"></div>
+        <div id="coachAvailabilityResults"></div>`;
+      document.getElementById('coachAvailabilityFacilityFilter').addEventListener('change',renderCoachAvailability);
+      document.getElementById('coachAvailabilitySearch').addEventListener('input',renderCoachAvailability);
+      renderCoachAvailability();
+    }
+    function coachAvailabilityEscape(value){return String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+    function coachAvailabilityDate(value){const d=value&&value.toDate?value.toDate():new Date(value);return Number.isNaN(d.getTime())?String(value):d.toLocaleDateString('en-MY',{day:'numeric',month:'short',year:'numeric'});}
+    function renderCoachAvailability(){
+      const host=document.getElementById('coachAvailabilityResults');if(!host)return;
+      const selected=document.getElementById('coachAvailabilityFacilityFilter')?.value||'',query=(document.getElementById('coachAvailabilitySearch')?.value||'').trim().toLowerCase();
+      const facilities=coachAvailabilityFacilities.filter(f=>!selected||f.id===selected).map(f=>{
+        const rawCourts=Array.isArray(f.courts)?f.courts:[],courts=rawCourts.length?rawCourts:[{name:'All courts',dates:f.availableDates||[],slots:f.slots||[]}];
+        const matching=courts.map((raw,index)=>{const c=typeof raw==='string'?{name:raw}:raw||{},dates=c.dates||c.availableDates||f.availableDates||[],slots=c.slots||c.timeSlots||f.slots||[],name=c.name||c.courtName||`Court ${index+1}`;return{name,dates:Array.isArray(dates)?dates:[],slots:Array.isArray(slots)?slots:[]};}).filter(c=>!query||`${f.name} ${f.location||''} ${c.name} ${c.dates.join(' ')} ${c.slots.join(' ')}`.toLowerCase().includes(query));
+        return {...f,matching};
+      }).filter(f=>f.matching.length);
+      if(!coachAvailabilityFacilities.length){host.innerHTML='<div class="availability-empty text-center"><i class="fas fa-building d-block fs-3 mb-2"></i>No assigned facilities yet. Contact admin if this looks incorrect.</div>';return;}
+      if(!facilities.length){host.innerHTML='<div class="availability-empty text-center">No availability matches this search.</div>';return;}
+      host.innerHTML=facilities.map(f=>`<section class="availability-facility mb-3"><div class="availability-facility-head d-flex flex-wrap justify-content-between gap-2"><div><h5 class="mb-1">${coachAvailabilityEscape(f.name||'Facility')}</h5><div class="small text-muted">${coachAvailabilityEscape([f.district,f.state,f.location].filter(Boolean).join(' · ')||'Assigned facility')}</div></div><span class="badge text-bg-light align-self-start">${f.matching.length} ${f.matching.length===1?'court':'courts'}</span></div><div class="row g-3 p-3">${f.matching.map(c=>`<div class="col-md-6 col-xl-4"><article class="availability-court"><h6 class="fw-bold mb-3"><i class="fas fa-table-tennis-paddle-ball text-primary me-2"></i>${coachAvailabilityEscape(c.name)}</h6><div class="small text-uppercase text-muted fw-semibold mb-1">Available dates</div><div class="mb-3">${c.dates.length?c.dates.map(d=>`<span class="availability-chip"><i class="far fa-calendar"></i>${coachAvailabilityEscape(coachAvailabilityDate(d))}</span>`).join(''):'<div class="availability-empty">No dates listed</div>'}</div><div class="small text-uppercase text-muted fw-semibold mb-1">Time slots</div><div>${c.slots.length?c.slots.map(t=>`<span class="availability-chip time"><i class="far fa-clock"></i>${coachAvailabilityEscape(t)}</span>`).join(''):'<div class="availability-empty">No time slots listed</div>'}</div></article></div>`).join('')}</div></section>`).join('');
     }
 
     // ============================================================

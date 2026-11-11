@@ -1782,6 +1782,7 @@
       <li><a href="#" data-page="marketplace"><i class="fas fa-store"></i> <span class="sidebar-text">Marketplace</span></a></li>
       <li><a href="#" data-page="community"><i class="fas fa-comments"></i> <span class="sidebar-text">Community</span></a></li>
       <li><a href="#" data-page="events"><i class="fas fa-calendar-alt"></i> <span class="sidebar-text">Events</span></a></li>
+      <li><a href="#" data-page="yoga-pilates"><i class="fas fa-spa"></i> <span class="sidebar-text">Yoga &amp; Pilates</span></a></li>
       <li><a href="#" data-page="profile"><i class="fas fa-user"></i> <span class="sidebar-text">My Profile</span></a>
       </li>
     </ul>
@@ -2005,6 +2006,7 @@
     let selectedTimeSlots = [];       // array of slot strings, e.g. ["08:00-08:30", "08:30-09:00"]
     let selectionAnchor = null;       // remembers first click for range selection
     let selectedCourt = null;
+    let selectedCourtSelections = [];
     let selectedCoach = null;
     let selectedSnacks = [];
     let availableCoaches = [];
@@ -2152,7 +2154,8 @@
        ============================================================ */
     function getFacilityDisplayPrice(facility) {
       const base = Number(facility?.price) || 0;
-      return base * 1.05;
+      const commission=Number(facility?.commissionRate);
+      return base * (1 + (Number.isFinite(commission)&&commission>=0?commission:5)/100);
     }
     window.getFacilityDisplayPrice = getFacilityDisplayPrice;
 
@@ -2162,6 +2165,9 @@
       const bands = courtBands || (Array.isArray(facility?.pricingBands) && facility.pricingBands.length
         ? facility.pricingBands : [{ start: '00:00', end: '24:00', rate: Number(facility?.price) || 0 }]);
       const toMinutes = value => { const [h,m] = String(value || '0:0').split(':').map(Number); return h*60+m; };
+      const rawDate=selectedDate&&selectedDate.toDate?selectedDate.toDate():selectedDate;
+      const holidayKey=rawDate instanceof Date?`${rawDate.getFullYear()}-${String(rawDate.getMonth()+1).padStart(2,'0')}-${String(rawDate.getDate()).padStart(2,'0')}`:String(rawDate||'').slice(0,10);
+      const isHoliday=(facility?.publicHolidayDates||[]).includes(holidayKey)&&Number(facility?.holidayRate)>0;
       let base = 0;
       (slots || []).forEach(slot => {
         const match = String(slot).match(/(\d{1,2}:\d{2})\s*[-–]\s*(\d{1,2}:\d{2})/);
@@ -2169,10 +2175,12 @@
         const start = toMinutes(match[1]), end = toMinutes(match[2]);
         for(let minute=start;minute<end;minute+=30){
           const rate = bands.find(b => minute >= toMinutes(b.start) && minute < toMinutes(b.end));
-          base += (Number(rate?.rate) || Number(facility?.price) || 0) * Math.min(30,end-minute) / 60;
+          const hourlyRate=isHoliday?Number(facility.holidayRate):(Number(rate?.rate) || Number(facility?.price) || 0);
+          base += hourlyRate * Math.min(30,end-minute) / 60;
         }
       });
-      return base * 1.05;
+      const commission=Number(facility?.commissionRate);
+      return base * (1 + (Number.isFinite(commission)&&commission>=0?commission:5)/100);
     }
 
     // Expand a stored `time` value into slot strings.
@@ -2600,6 +2608,9 @@
         case 'events':
           content = loadEventsPage();
           break;
+        case 'yoga-pilates':
+          content = loadYogaPilatesPage();
+          break;
         case 'profile':
           content = loadProfilePage();
           break;
@@ -2626,6 +2637,7 @@
         'marketplace': 'Marketplace',
         'community': 'Community',
         'events': 'Events',
+        'yoga-pilates': 'Yoga & Pilates',
         'profile': 'My Profile'
       };
 
@@ -2670,6 +2682,9 @@
         case 'events':
           initializeEventsPage();
           break;
+        case 'yoga-pilates':
+          initializeYogaPilatesPage();
+          break;
         case 'profile':
           requestAnimationFrame(() => {
             initializeProfilePage();
@@ -2686,12 +2701,13 @@
           currentUser = user;
 
           // IMPORTANT: reload dashboard if active
-          const currentPage =
-            localStorage.getItem('currentPage') || 'dashboard';
+          const requestedPage=new URLSearchParams(window.location.search).get('page');
+          const currentPage=requestedPage||localStorage.getItem('currentPage')||'dashboard';
 
-          if (currentPage === 'dashboard') {
-            loadPageContent('dashboard');
+          if (requestedPage || currentPage === 'dashboard') {
+            loadPageContent(currentPage);
           }
+          setTimeout(() => showLoginPromotionsPopup(), 500);
         } else {
           console.log('User is signed out');
           if (!window.location.pathname.includes('login.html') && !window.location.pathname.includes('index.html')) {
@@ -3428,15 +3444,50 @@
 
       try {
         await updateDashboardStats(currentUser.uid);
+        const profile=await db.collection('users').doc(currentUser.uid).get();
+        const referralEl=document.getElementById('dashboardReferralCode');
+        if(referralEl)referralEl.textContent=profile.data()?.referralCode||`SPORT${currentUser.uid.slice(0,8).toUpperCase()}`;
+        loadPersonalizedRecommendations(profile.data()||{});
       } catch (error) {
         console.error('Error loading dashboard data:', error);
         showToast('Error loading dashboard data', 'danger');
       }
     }
 
+    async function copyReferralCode(){const code=document.getElementById('dashboardReferralCode')?.textContent;if(!code)return;try{await navigator.clipboard.writeText(code);showToast('Referral code copied.','success');}catch(_){showToast(`Your referral code is ${code}`,'info');}}
+    async function loadPersonalizedRecommendations(profile){
+      const host=document.getElementById('personalizedRecommendations');if(!host)return;
+      try{
+        const [facilitiesSnap,bookingsSnap]=await Promise.all([db.collection('facilities').get(),db.collection('bookings').where('userId','==',currentUser.uid).get()]);
+        const counts={};bookingsSnap.forEach(doc=>{const id=doc.data().facilityId;if(id)counts[id]=(counts[id]||0)+1;});
+        const sport=String(profile.primarySport||'').toLowerCase(),state=String(profile.state||'').toLowerCase(),district=String(profile.district||'').toLowerCase();
+        const suggestions=facilitiesSnap.docs.map(doc=>({id:doc.id,...doc.data()})).filter(f=>String(f.status||'active').toLowerCase()==='active').map(f=>({f,score:(String(f.type||f.sportType||'').toLowerCase()===sport?5:0)+(String(f.state||'').toLowerCase()===state?3:0)+(String(f.district||'').toLowerCase()===district?2:0)-(counts[f.id]||0)})).sort((a,b)=>b.score-a.score).slice(0,3);
+        host.innerHTML=suggestions.length?suggestions.map(({f})=>`<div class="col-md-4"><div class="border rounded-3 p-3 h-100"><strong>${f.name||'Sports facility'}</strong><div class="small text-muted mb-2">${f.type||f.sportType||'Facility'} · ${f.district||f.location||'Nearby'}</div><button class="btn btn-sm btn-outline-primary" onclick="loadPageContent('book-facility');setTimeout(()=>startBookingProcess('${f.id}'),450)">Explore facility</button></div></div>`).join(''):'<div class="col-12 text-muted">No active facilities to recommend yet.</div>';
+      }catch(error){console.warn('Recommendations unavailable:',error);host.innerHTML='<div class="col-12 text-muted">Recommendations will appear when facilities are available.</div>';}
+    }
+
+    async function showLoginPromotionsPopup(){
+      if(!currentUser)return;
+      const seenKey=`sportovaPromosSeen:${currentUser.uid}`;
+      if(sessionStorage.getItem(seenKey))return;
+      try{
+        const now=new Date(),snapshot=await db.collection('promos').where('status','==','active').get();
+        const promos=snapshot.docs.map(d=>({id:d.id,...d.data()})).filter(p=>
+          (!p.userId||p.userId===currentUser.uid)&&
+          (!p.validFrom||((p.validFrom.toDate?p.validFrom.toDate():new Date(p.validFrom))<=now))&&
+          (!p.validTo||((p.validTo.toDate?p.validTo.toDate():new Date(p.validTo))>=now))
+        );
+        if(!promos.length){sessionStorage.setItem(seenKey,'1');return;}
+        const modalId='loginPromotionsModal';document.getElementById(modalId)?.remove();
+        document.body.insertAdjacentHTML('beforeend',`<div class="modal fade" id="${modalId}" tabindex="-1"><div class="modal-dialog modal-dialog-centered"><div class="modal-content"><div class="modal-header"><h5 class="modal-title"><i class="fas fa-gift text-warning me-2"></i>Current promotions</h5><button class="btn-close" data-bs-dismiss="modal"></button></div><div class="modal-body">${promos.slice(0,5).map(p=>`<div class="d-flex gap-3 align-items-center border rounded-3 p-2 mb-2">${p.imageUrl?`<img src="${p.imageUrl}" alt="" style="width:76px;height:58px;object-fit:cover;border-radius:8px">`:''}<div><strong>${p.code||p.description||'Special offer'}</strong><div class="small text-muted">${p.description||`${p.type==='percentage'?p.discountValue+'%':'RM'+p.discountValue} off`}</div></div></div>`).join('')}</div><div class="modal-footer"><button class="btn btn-primary" data-bs-dismiss="modal">Start booking</button></div></div></div></div>`);
+        const modalEl=document.getElementById(modalId);sessionStorage.setItem(seenKey,'1');modalEl.addEventListener('hidden.bs.modal',()=>modalEl.remove());new bootstrap.Modal(modalEl).show();
+      }catch(error){console.warn('Promotions popup not available:',error);}
+    }
+
     // Page content loaders
     function loadDashboardPage() {
       return `
+        <div class="alert alert-primary d-flex flex-wrap align-items-center justify-content-between gap-2 mb-4"><div><strong><i class="fas fa-share-alt me-2"></i>Invite your friends</strong><div class="small">Share your referral code and earn a voucher when a friend joins.</div></div><div class="d-flex align-items-center gap-2"><code id="dashboardReferralCode">Loading…</code><button class="btn btn-sm btn-primary" type="button" onclick="copyReferralCode()"><i class="fas fa-copy me-1"></i>Copy</button></div></div>
         <div class="row">
           <div class="col-md-3">
             <div class="stats-card">
@@ -3498,6 +3549,7 @@
             </div>
           </div>
         </div>
+        <div class="table-card mt-4"><div class="d-flex justify-content-between align-items-center mb-3"><h4 class="mb-0">Picked for you</h4><small class="text-muted">Based on your sports and booking history</small></div><div class="row g-3" id="personalizedRecommendations"><div class="col-12 text-muted">Finding facilities…</div></div></div>
       `;
     }
 
@@ -3505,6 +3557,8 @@
     // Global variables
     let availableSportTypes = new Set();
     let availableLocations = new Set();
+    let availableFacilityStates = new Set();
+    let availableFacilityDistricts = new Set();
     let dates = new Set();
     let availableTimeSlots = new Set();
     let facilityAmenities = [];
@@ -3549,6 +3603,8 @@
                     </select>
                   </div>
                 </div>
+                <div class="col-md-3"><div class="form-group"><label class="form-label">State</label><select class="form-select" id="bookingState"><option value="all">All States</option></select></div></div>
+                <div class="col-md-3"><div class="form-group"><label class="form-label">District</label><select class="form-select" id="bookingDistrict" disabled><option value="all">All Districts</option></select></div></div>
                 <div class="col-md-3">
                   <div class="form-group">
                     <label class="form-label">Date</label>
@@ -3652,6 +3708,8 @@
                 Click the first slot, then click the last slot of your desired range — everything in between will be selected automatically. You can also click slots one by one.
               </small>
               <div id="timeSlotSelection" class="d-flex flex-wrap gap-2"></div>
+              <div id="courtSelectionSummary" class="small mt-2"></div>
+              <button type="button" class="btn btn-sm btn-outline-primary mt-2" id="saveCourtSelectionBtn"><i class="fas fa-plus me-1"></i>Save this court and choose another</button>
               <div id="noSlotsMessage" class="alert alert-info mt-3" style="display: none;">
                 <i class="fas fa-info-circle me-2"></i>No available time slots for this court on the selected date.
               </div>
@@ -3860,6 +3918,8 @@
         const facilitiesSnapshot = await db.collection('facilities').get();
         availableSportTypes.clear();
         availableLocations.clear();
+        availableFacilityStates.clear();
+        availableFacilityDistricts.clear();
         dates.clear();
         availableTimeSlots.clear();
         const today = new Date();
@@ -3868,6 +3928,8 @@
           const facility = doc.data();
           if (facility.type) availableSportTypes.add(facility.type);
           if (facility.location) availableLocations.add(facility.location.trim());
+          if (facility.state) availableFacilityStates.add(String(facility.state).trim());
+          if (facility.district) availableFacilityDistricts.add(String(facility.district).trim());
           if (facility.availableDates && Array.isArray(facility.availableDates)) {
             facility.availableDates.forEach(dateStr => {
               const date = new Date(dateStr);
@@ -3896,6 +3958,8 @@
           }
         });
         populateSportTypeFilter();
+        const stateSelect=document.getElementById('bookingState');
+        if(stateSelect){stateSelect.innerHTML='<option value="all">All States</option>';[...availableFacilityStates].sort().forEach(state=>stateSelect.insertAdjacentHTML('beforeend',`<option value="${state}">${state}</option>`));}
         resetFilter('location');
         resetFilter('date');
         resetFilter('time');
@@ -4215,6 +4279,10 @@
         div.innerHTML +=
           `<span class="badge bg-success d-flex align-items-center">Location: ${location} <button class="btn btn-sm btn-close btn-close-white ms-2" onclick="clearSingleFilter('location')"></button></span>`;
       }
+      const state=document.getElementById('bookingState')?.value||'all';
+      const district=document.getElementById('bookingDistrict')?.value||'all';
+      if(state!=='all'){has=true;div.innerHTML+=`<span class="badge bg-secondary">State: ${state}</span>`;}
+      if(district!=='all'){has=true;div.innerHTML+=`<span class="badge bg-dark">District: ${district}</span>`;}
       if (date !== 'all') {
         has = true;
         div.innerHTML +=
@@ -4246,6 +4314,9 @@
         await populateTimeFilter(sportType, location, 'all');
       } else if (filterType === 'time') {
         document.getElementById('bookingTime').value = 'all';
+      document.getElementById('bookingState').value='all';
+      document.getElementById('bookingDistrict').innerHTML='<option value="all">All Districts</option>';
+      document.getElementById('bookingDistrict').disabled=true;
       }
       updateSelectedFiltersDisplay();
       searchFacilities();
@@ -4257,6 +4328,8 @@
       await populateLocationFilter('all');
       await populateDateFilter('all', 'all');
       await populateTimeFilter('all', 'all', 'all');
+      if(document.getElementById('bookingState'))document.getElementById('bookingState').value='all';
+      if(document.getElementById('bookingDistrict')){document.getElementById('bookingDistrict').innerHTML='<option value="all">All Districts</option>';document.getElementById('bookingDistrict').disabled=true;}
       updateSelectedFiltersDisplay();
       searchFacilities();
     }
@@ -4273,6 +4346,8 @@
       const location = document.getElementById('bookinglocation').value;
       const date = document.getElementById('bookingDate').value;
       const time = document.getElementById('bookingTime').value;
+      const state=document.getElementById('bookingState')?.value||'all';
+      const district=document.getElementById('bookingDistrict')?.value||'all';
       showLoading(true);
       try {
         const filters = {};
@@ -4280,6 +4355,8 @@
         if (location && location !== 'all') filters.location = location;
         if (date && date !== 'all') filters.date = date;
         if (time && time !== 'all') filters.timeSlots = [time];
+        if(state!=='all')filters.state=state;
+        if(district!=='all')filters.district=district;
         await loadFacilities(filters);
         updateSelectedFiltersDisplay();
         const cards = document.querySelectorAll('.facility-card');
@@ -4319,6 +4396,8 @@
         const facilities = [];
         for (const doc of snapshot.docs) {
           const facility = { id: doc.id, ...doc.data() };
+          if(filters.state&&filters.state!=='all'&&String(facility.state||'').toLowerCase()!==filters.state.toLowerCase())continue;
+          if(filters.district&&filters.district!=='all'&&String(facility.district||'').toLowerCase()!==filters.district.toLowerCase())continue;
           if (filters.date && filters.date !== 'all') {
             const hasTop = facility.availableDates && facility.availableDates.includes(filters.date);
             const hasCourt = facility.courts && facility.courts.some(c => c.dates && c.dates.includes(filters.date));
@@ -4349,10 +4428,12 @@
               const hasCourtDate = court.dates && court.dates.includes(filters.date);
               if (!hasCourtDate) continue;
               const isBooked = validBookings.some(b => {
-                const bookingCourt = String(b.court || '').trim();
+                const courtSelection=Array.isArray(b.courtSelections)?b.courtSelections.find(s=>String(s.court||'').trim()===String(court.name||'').trim()):null;
+                const bookingCourt = courtSelection?String(courtSelection.court||'').trim():String(b.court || '').trim();
                 if (bookingCourt !== court.name) return false;
                 let bSlots = [];
-                if (Array.isArray(b.slots) && b.slots.length) bSlots = b.slots.map(x => String(x).trim());
+                if (courtSelection&&Array.isArray(courtSelection.slots)) bSlots=courtSelection.slots.map(x=>String(x).trim());
+                else if (Array.isArray(b.slots) && b.slots.length) bSlots = b.slots.map(x => String(x).trim());
                 else if (b.time) bSlots = expandTimeRange(b.time);
                 else if (b.timeSlot) bSlots = [String(b.timeSlot).trim()];
                 return bSlots.includes(slot);
@@ -4406,9 +4487,10 @@
         const promoBadge = facility.promo ? `<div class="promo-badge">${facility.promo}</div>` : '';
         const availabilityStatus = getAvailabilityStatus(facility);
         const statusBadge = `<span class="badge ${availabilityStatus.class} float-end">${availabilityStatus.text}</span>`;
-        // User-facing prices always include the 5% platform fee.
+        // User-facing prices include the facility's configured commission.
         const bands = Array.isArray(facility.pricingBands) ? facility.pricingBands : [];
-        const multiplier = 1.05;
+        const commission=Number(facility.commissionRate);
+        const multiplier = 1 + (Number.isFinite(commission)&&commission>=0?commission:5)/100;
         const prices = bands.map(b => Number(b.rate) * multiplier).filter(n => Number.isFinite(n));
         const displayPrice = getFacilityDisplayPrice(facility);
         const priceLabel = prices.length ? (Math.min(...prices) === Math.max(...prices) ? `RM${Math.min(...prices).toFixed(2)}/hour` : `RM${Math.min(...prices).toFixed(2)}–${Math.max(...prices).toFixed(2)}/hour`) : `RM${displayPrice.toFixed(2)}/hour`;
@@ -4480,6 +4562,11 @@
         if (!promoSnapshot.empty) {
           const promoDoc = promoSnapshot.docs[0];
           selectedPromo = { id: promoDoc.id, ...promoDoc.data() };
+        }
+        if(currentUser){
+          const personalPromos=await db.collection('promos').where('userId','==',currentUser.uid).where('status','==','active').get();
+          const available=personalPromos.docs.map(doc=>({id:doc.id,...doc.data()})).find(p=>!p.usedAt&&(!p.facilities?.length||p.facilities.includes(facilityId)));
+          if(available)selectedPromo=available;
         }
         window.selectedPromo = selectedPromo;
         document.getElementById('facilitiesList').style.display = 'none';
@@ -4774,6 +4861,9 @@
       noSlotsMsg.style.display = 'none';
       selectedCourt = null;
       selectedTimeSlots = [];
+      selectedCourtSelections=[];
+      document.getElementById('courtSelectionSummary').innerHTML='';
+      document.getElementById('saveCourtSelectionBtn').disabled=(selectedFacility.courts||[]).length<2;
       selectionAnchor = null;
       document.getElementById('nextToStep3').disabled = true;
 
@@ -4809,10 +4899,20 @@
 
       courtSelection.addEventListener('change', function(e) {
         if (e.target.classList.contains('court-radio') && e.target.checked) {
+          if(selectedCourt&&selectedCourt!==e.target.value&&selectedTimeSlots.length)storeCurrentCourtSelection();
           selectedCourt = e.target.value;
           loadTimeSlotsForCourt(selectedCourt);
         }
       });
+
+      document.getElementById('saveCourtSelectionBtn').onclick=()=>{
+        if(!selectedCourt||!selectedTimeSlots.length){showToast('Select at least one time slot first.','warning');return;}
+        storeCurrentCourtSelection();
+        selectedTimeSlots=[];selectionAnchor=null;selectedCourt=null;
+        timeSlotSelection.innerHTML='<p class="text-muted">Choose another court to select its time slots.</p>';
+        courtSelection.querySelectorAll('.court-radio').forEach(r=>r.checked=false);
+        document.getElementById('nextToStep3').disabled=true;
+      };
 
       if (courts.length > 1) {
         timeSlotSelection.innerHTML = '<p class="text-muted">Please select a court first.</p>';
@@ -4846,6 +4946,17 @@
         }
       }
     }
+
+    function storeCurrentCourtSelection(){
+      if(!selectedCourt||!selectedTimeSlots.length)return;
+      const entry={court:String(selectedCourt),slots:sortSlots(selectedTimeSlots)};
+      const idx=selectedCourtSelections.findIndex(x=>x.court===entry.court);
+      if(idx>=0)selectedCourtSelections[idx]=entry;else selectedCourtSelections.push(entry);
+      const host=document.getElementById('courtSelectionSummary');
+      if(host)host.innerHTML=selectedCourtSelections.map(s=>`<div class="badge bg-primary me-1 mb-1">${s.court}: ${formatSlotRange(s.slots)} <button class="btn-close btn-close-white ms-1" aria-label="Remove" onclick="removeCourtSelection('${s.court}')"></button></div>`).join('');
+    }
+    function removeCourtSelection(court){selectedCourtSelections=selectedCourtSelections.filter(s=>s.court!==court);storeCourtSelectionSummary();}
+    function storeCourtSelectionSummary(){const host=document.getElementById('courtSelectionSummary');if(host)host.innerHTML=selectedCourtSelections.map(s=>`<div class="badge bg-primary me-1 mb-1">${s.court}: ${formatSlotRange(s.slots)} <button class="btn-close btn-close-white ms-1" onclick="removeCourtSelection('${s.court}')"></button></div>`).join('');}
 
     async function loadTimeSlotsForCourt(courtName) {
       const timeSlotSelection = document.getElementById('timeSlotSelection');
@@ -4976,14 +5087,17 @@
 
           if (isRescheduleMode && rescheduleBookingId && doc.id === rescheduleBookingId) return;
 
-          const bookingCourt = String(data.court || '').trim();
+          const courtSelection=Array.isArray(data.courtSelections)?data.courtSelections.find(s=>String(s.court||'').trim()===String(courtName||'').trim()):null;
+          const bookingCourt = courtSelection?String(courtSelection.court||'').trim():String(data.court || '').trim();
           if (bookingCourt !== String(courtName || '').trim()) return;
 
           const bookingStatus = String(data.status || '').trim().toLowerCase();
           if (!validStatuses.includes(bookingStatus)) return;
 
           let slotsForBooking = [];
-          if (Array.isArray(data.slots) && data.slots.length > 0) {
+          if(courtSelection&&Array.isArray(courtSelection.slots)){
+            slotsForBooking=courtSelection.slots.map(s=>String(s).trim()).filter(Boolean);
+          } else if (Array.isArray(data.slots) && data.slots.length > 0) {
             slotsForBooking = data.slots.map(s => String(s).trim()).filter(Boolean);
           } else if (data.time) {
             slotsForBooking = expandTimeRange(data.time);
@@ -5250,6 +5364,9 @@
     // ===================== RESCHEDULE FUNCTIONS =====================
 
     async function loadRescheduleData(bookingId) {
+      showToast('Only admin can change a booking date or time. Request a change from My Bookings.','warning');
+      window.location.href='user-dashboard.html?page=my-bookings';
+      return;
       try {
         const bookingDoc = await db.collection('bookings').doc(bookingId).get();
         if (!bookingDoc.exists) {
@@ -5339,6 +5456,7 @@
     // ===================== SUBMIT BOOKING =====================
 
     async function submitBooking() {
+      if(isRescheduleMode){showToast('Only admin can change an existing booking.','warning');return;}
       try {
         if (!selectedFacility || !selectedDate || selectedTimeSlots.length === 0 || !selectedCourt) {
           showToast('Please complete all booking steps', 'warning');
@@ -5363,12 +5481,17 @@
           return;
         }
 
-        const hours         = calculateSlotsDuration(selectedTimeSlots) || 1;
-        const sortedSlots   = sortSlots(selectedTimeSlots);
-        const timeDisplay   = formatSlotRange(sortedSlots);
+        const currentCourtSelection=selectedCourt&&selectedTimeSlots.length?{court:String(selectedCourt),slots:sortSlots(selectedTimeSlots)}:null;
+        const courtSelections=[...selectedCourtSelections.filter(s=>!currentCourtSelection||s.court!==currentCourtSelection.court),...(currentCourtSelection?[currentCourtSelection]:[])];
+        if(!courtSelections.length){showToast('Select time slots for at least one court.','warning');return;}
+        const hours=courtSelections.reduce((sum,s)=>sum+(calculateSlotsDuration(s.slots)||0),0)||1;
+        const sortedSlots=courtSelections.flatMap(s=>s.slots);
+        const timeDisplay=courtSelections.map(s=>`${s.court}: ${formatSlotRange(s.slots)}`).join(' · ');
         const durationLabel = formatHours(hours);
 
-        const courtFee = Number(getFacilitySlotPrice(selectedFacility, sortedSlots).toFixed(2));
+        const originalSelectedCourt=selectedCourt;
+        const courtFee=Number(courtSelections.reduce((sum,s)=>{selectedCourt=s.court;return sum+getFacilitySlotPrice(selectedFacility,s.slots);},0).toFixed(2));
+        selectedCourt=originalSelectedCourt;
         const coachFee = selectedCoach ? Number(selectedCoach.rate) || 0 : 0;
         const snacksFee = selectedSnacks.reduce((t, s) => t + (Number(s.price) || 0), 0);
         const amenitiesFee = selectedAmenities.reduce((t, a) => t + (Number(a.amenityPrice) || 0), 0);
@@ -5394,6 +5517,9 @@
           loyaltyDiscount = loyaltyPointsUsed * 0.1;
         }
         const totalAmount = Math.max(0, courtFee + coachFee + snacksFee + amenitiesFee - discount - loyaltyDiscount);
+        const commissionRatePercent=Number(selectedFacility.commissionRate)>=0?Number(selectedFacility.commissionRate):5;
+        const baseCourtAmount=Number((courtFee/(1+commissionRatePercent/100)).toFixed(2));
+        const commissionAmount=Number((courtFee-baseCourtAmount).toFixed(2));
         const coachData = selectedCoach ? { id: selectedCoach.id, name: selectedCoach.name, rate: Number(selectedCoach
             .rate) || 0 } : null;
         const participants = [currentUser.uid];
@@ -5411,6 +5537,7 @@
             slots: sortedSlots,
             duration: durationLabel,
             court: String(selectedCourt).trim(),
+            courtSelections,
             coach: coachData,
             snacks: selectedSnacks.length ? selectedSnacks : null,
             amenities: selectedAmenities,
@@ -5467,9 +5594,14 @@
         const bookingData = {
           amenities: selectedAmenities,
           amount: Number(totalAmount.toFixed(2)),
+          baseCourtAmount,
+          commissionRate: commissionRatePercent,
+          commissionAmount,
           capacity: Number(selectedFacility.capacity) || 30,
           coach: coachData,
-          court: String(selectedCourt).trim(),
+          court: courtSelections.map(s=>s.court).join(', '),
+          courts: courtSelections.map(s=>s.court),
+          courtSelections,
           createdAt: firebase.firestore.FieldValue.serverTimestamp(),
           date: selectedDate,
           description: selectedFacility.description || '',
@@ -5485,6 +5617,9 @@
           participants: participants,
           price: Number(selectedFacility.price) || 0,
           promo: selectedFacility.promo || '',
+          promoId: selectedPromo?.id || null,
+          promoCode: selectedPromo?.code || '',
+          promoDiscount: Number(discount.toFixed(2)),
           snacks: selectedSnacks.length ? selectedSnacks : null,
           slots: sortedSlots,
           sportType: selectedFacility.type || 'Tennis Court',
@@ -5498,6 +5633,10 @@
         };
 
         await db.collection('bookings').add(bookingData);
+        await db.collection('users').doc(currentUser.uid).set({lastActivityText:`Booked ${selectedFacility.name} for ${selectedDate instanceof Date?selectedDate.toLocaleDateString():selectedDate}`,lastActivityAt:firebase.firestore.FieldValue.serverTimestamp()},{merge:true});
+        if(selectedPromo?.id&&selectedPromo.userId===currentUser.uid){
+          await db.collection('promos').doc(selectedPromo.id).update({status:'used',usedAt:firebase.firestore.FieldValue.serverTimestamp(),usedByBooking:true});
+        }
 
         if (loyaltyPointsUsed > 0) {
           const userRef = db.collection('users').doc(currentUser.uid);
@@ -5538,9 +5677,14 @@
       const isBookTogether = urlParams.get('bookTogether') === 'true';
       const friendId = urlParams.get('friendId');
 
-      // Check for reschedule mode
-      isRescheduleMode = urlParams.get('reschedule') === 'true';
-      rescheduleBookingId = urlParams.get('bookingId') || null;
+      // Rescheduling is admin-managed. Older direct reschedule links now return to the request flow.
+      if (urlParams.get('reschedule') === 'true') {
+        showToast('Only an admin can change a booking. Send a reschedule request from My Bookings.','warning');
+        window.location.href='user-dashboard.html?page=my-bookings';
+        return;
+      }
+      isRescheduleMode = false;
+      rescheduleBookingId = null;
 
       if (isBookTogether && friendId) {
         const banner = document.getElementById('bookTogetherBanner');
@@ -5586,6 +5730,18 @@
       document.getElementById('bookingTime').addEventListener('change', function() {
         searchFacilities();
       });
+      document.getElementById('bookingState')?.addEventListener('change', async function(){
+        const district=document.getElementById('bookingDistrict');
+        district.innerHTML='<option value="all">All Districts</option>';
+        district.disabled=this.value==='all';
+        if(this.value!=='all'){
+          const snapshot=await db.collection('facilities').get();
+          const values=[...new Set(snapshot.docs.map(d=>d.data()).filter(f=>String(f.state||'').toLowerCase()===this.value.toLowerCase()).map(f=>f.district).filter(Boolean))].sort();
+          values.forEach(value=>district.insertAdjacentHTML('beforeend',`<option value="${value}">${value}</option>`));
+        }
+        searchFacilities();
+      });
+      document.getElementById('bookingDistrict')?.addEventListener('change',searchFacilities);
 
       document.getElementById('searchFacilitiesBtn').addEventListener('click', () => {
         if (isRescheduleMode) {
@@ -6229,6 +6385,7 @@
 
       // Calculate last active time
       const lastActiveText = formatLastActive(user.lastActive);
+      const recentActionText=user.lastActivityText||'No recent booking activity';
 
       userCard.innerHTML = `
         <div class="card h-100 border-0 shadow-sm">
@@ -6262,6 +6419,7 @@
                   <i class="fas fa-clock me-1"></i>
                   ${lastActiveText}
                 </p>
+                <p class="text-primary small mb-3"><i class="fas fa-bolt me-1"></i>Recent: ${recentActionText}</p>
               </div>
             </div>
             
@@ -7128,6 +7286,8 @@
             if (chatUserAvatar) {
               chatUserAvatar.src = userData.photoURL || userData.photoUrl || "https://via.placeholder.com/150";
             }
+            const activityStatus=document.getElementById('chatUserStatus');
+            if(activityStatus)activityStatus.textContent=userData.lastActivityText||'No recent activity shared';
           }
         }
 
@@ -7794,6 +7954,7 @@
           <div class="col-md-12">
             <div class="table-card">
               <h4>My Bookings</h4>
+              <div class="alert alert-info d-flex gap-2 align-items-start"><i class="fas fa-circle-info mt-1"></i><div><strong>Booking changes are handled by admin.</strong><div class="small">Use “Request admin reschedule” below. Your booking stays unchanged until admin updates it.</div></div></div>
               <div class="table-responsive">
                 <table class="table table-hover">
                   <thead>
@@ -7989,21 +8150,11 @@
             }
           }
 
-          // Reschedule button: only if canReschedule
-          if (canReschedule) {
-            if (coach && coach.id && !hasChatWithCoach) {
-              actionsHtml += `
-                <button class="btn btn-sm btn-outline-secondary" disabled title="Please chat with coach first">
-                  <i class="fas fa-edit"></i> Reschedule (Chat required)
-                </button>
-              `;
-            } else {
-              actionsHtml += `
-                <button class="btn btn-sm btn-outline-warning reschedule-booking-btn" data-id="${booking.id}">
-                  <i class="fas fa-edit"></i> Reschedule
-                </button>
-              `;
-            }
+          const reschedulePending=booking.rescheduleRequest?.status==='requested';
+          if(isFuture&&!['cancelled','rejected','completed'].includes(statusText.toLowerCase())) {
+            actionsHtml += reschedulePending
+              ? `<span class="badge bg-warning text-dark d-block mt-2">Reschedule request sent</span>`
+              : `<button class="btn btn-sm btn-outline-warning request-reschedule-btn mt-2" data-id="${booking.id}"><i class="fas fa-calendar-pen"></i> Request admin reschedule</button>`;
           }
 
           row.innerHTML = `
@@ -8037,10 +8188,10 @@
           });
         });
 
-        document.querySelectorAll('.reschedule-booking-btn').forEach(btn => {
+        document.querySelectorAll('.request-reschedule-btn').forEach(btn => {
           btn.addEventListener('click', function() {
             const bookingId = this.getAttribute('data-id');
-            rescheduleBooking(bookingId);
+            requestBookingReschedule(bookingId);
           });
         });
 
@@ -8061,18 +8212,22 @@
       }
     }
 
-    // RESCHEDULE BOOKING FUNCTION
-    function rescheduleBooking(bookingId) {
-      if (!bookingId) {
-        showToast('Invalid booking ID', 'danger');
-        return;
-      }
-
-      // Redirect to book facility page with reschedule parameters
-      const url =
-        `user-dashboard.html?page=book-facility&reschedule=true&bookingId=${bookingId}`;
-      window.location.href = url;
+    // Users submit a request; only an administrator changes the booking date/time.
+    async function requestBookingReschedule(bookingId) {
+      if(!bookingId||!currentUser)return;
+      try {
+        const ref=db.collection('bookings').doc(bookingId),doc=await ref.get();
+        if(!doc.exists||doc.data().userId!==currentUser.uid){showToast('Booking not found.','danger');return;}
+        const data=doc.data();
+        if(data.rescheduleRequest?.status==='requested'){showToast('A reschedule request is already pending.','info');return;}
+        await ref.update({rescheduleRequest:{status:'requested',requestedBy:currentUser.uid,requestedAt:firebase.firestore.FieldValue.serverTimestamp()},updatedAt:firebase.firestore.FieldValue.serverTimestamp()});
+        const admins=await db.collection('users').where('role','==','admin').get();
+        await Promise.all(admins.docs.map(admin=>db.collection('notifications').add({userId:admin.id,type:'reschedule_request',title:'Booking reschedule requested',message:`${data.userName||'A user'} requested a new date/time for ${data.facilityName||'a booking'}.`,bookingId,createdAt:firebase.firestore.FieldValue.serverTimestamp(),isRead:false})));
+        showToast('Your request was sent to the admin.','success');
+        initializeMyBookingsPage();
+      } catch(error){console.error('Reschedule request failed:',error);showToast('Could not send your request. Please try again.','danger');}
     }
+    function rescheduleBooking(bookingId) { return requestBookingReschedule(bookingId); }
 
     // View Booking Details Function
     async function viewBookingDetails(bookingId) {
@@ -10482,7 +10637,7 @@
           </div>
         </div>
       
-        <div class="form-card mb-4"><h4><i class="fas fa-calendar-week me-2"></i>Yoga &amp; Pilates class schedule</h4><p class="text-muted small">Classes appear on their scheduled dates. Select a class to jump to its booking card.</p><div id="yogaPilatesSchedule" class="table-responsive"><p class="text-muted">Loading class schedule…</p></div></div>
+        
         <!-- Tabs for My Events vs All Events -->
         <div class="row mb-4">
           <div class="col-md-12">
@@ -11151,34 +11306,59 @@
     // Render all events
     async function renderAllEvents(events) {
       const eventsList = document.getElementById('allEventsList');
-      await renderEventsToContainer(events, eventsList, 'all');
+      await renderEventsToContainer(events.filter(e=>!['yoga','pilates'].includes(String(e.sport||'').toLowerCase())), eventsList, 'all');
     }
 
     // Render my events
     async function renderMyEvents(events) {
       const eventsList = document.getElementById('myEventsList');
-      await renderEventsToContainer(events, eventsList, 'my');
+      await renderEventsToContainer(events.filter(e=>!['yoga','pilates'].includes(String(e.sport||'').toLowerCase())), eventsList, 'my');
     }
 
     // Render registered events
     async function renderRegisteredEvents(events) {
       const eventsList = document.getElementById('registeredEventsList');
-      await renderEventsToContainer(events, eventsList, 'registered');
+      await renderEventsToContainer(events.filter(e=>!['yoga','pilates'].includes(String(e.sport||'').toLowerCase())), eventsList, 'registered');
     }
 
+    let yogaCalendarShownDate=new Date(new Date().getFullYear(),new Date().getMonth(),1);
     function renderYogaPilatesSchedule(events) {
-      const host=document.getElementById('yogaPilatesSchedule'); if(!host)return;
-      const dateKey=e=>{const raw=e.startDate||e.sessionDate;const d=raw&&raw.toDate?raw.toDate():new Date(raw);return isNaN(d.getTime())?'':d.toISOString().slice(0,10);};
-      const classes=(events||[]).filter(e=>['yoga','pilates'].includes(String(e.sport||'').toLowerCase())&&e.status!=='cancelled'&&dateKey(e)).sort((a,b)=>dateKey(a).localeCompare(dateKey(b)));
-      if(!classes.length){host.innerHTML='<p class="text-muted mb-0">No Yoga or Pilates classes are scheduled yet.</p>';return;}
-      const todayKey=new Date().toISOString().slice(0,10),firstUpcoming=classes.find(e=>dateKey(e)>=todayKey)||classes[classes.length-1];
-      const month=dateKey(firstUpcoming).slice(0,7), monthEvents=classes.filter(e=>dateKey(e).startsWith(month));
-      const [year,mon]=month.split('-').map(Number), days=new Date(year,mon,0).getDate(), offset=new Date(year,mon-1,1).getDay();
-      let html='<table class="table table-bordered align-middle"><thead><tr>'+['Sun','Mon','Tue','Wed','Thu','Fri','Sat'].map(d=>'<th>'+d+'</th>').join('')+'</tr></thead><tbody><tr>';
-      for(let i=0;i<offset;i++)html+='<td class="bg-light"></td>';
-      for(let d=1;d<=days;d++){if((offset+d-1)%7===0&&d!==1)html+='</tr><tr>';const date=year+'-'+String(mon).padStart(2,'0')+'-'+String(d).padStart(2,'0');const ev=monthEvents.filter(e=>dateKey(e)===date);html+='<td style="min-width:110px;height:90px;vertical-align:top"><strong>'+d+'</strong>'+ev.map(e=>'<button type="button" class="btn btn-link p-0 d-block text-start small yoga-calendar-event" data-target-event="'+e.id+'">'+(e.startTime||'')+' '+e.name+'</button>').join('')+'</td>';}
-      html+='</tr></tbody></table><div class="small text-muted">Showing '+new Date(year,mon-1,1).toLocaleString('en',{month:'long',year:'numeric'})+'. Register for a class in its card below.</div>';host.innerHTML=html;
+      const host=document.getElementById('yogaPilatesSchedule');if(!host)return;
+      const dateKey=e=>{const raw=e.startDate||e.sessionDate;const d=raw&&raw.toDate?raw.toDate():new Date(raw);return isNaN(d.getTime())?'':`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;};
+      const classes=(events||[]).filter(e=>['yoga','pilates'].includes(String(e.sport||'').toLowerCase())&&e.status!=='cancelled'&&dateKey(e));
+      const year=yogaCalendarShownDate.getFullYear(),month=yogaCalendarShownDate.getMonth(),first=new Date(year,month,1).getDay(),days=new Date(year,month+1,0).getDate();
+      const monthLabel=document.getElementById('yogaCalendarMonth');if(monthLabel)monthLabel.textContent=yogaCalendarShownDate.toLocaleDateString('en-MY',{month:'long',year:'numeric'});
+      let html='<table class="table table-bordered align-middle mb-0"><thead><tr>'+['Sun','Mon','Tue','Wed','Thu','Fri','Sat'].map(d=>`<th>${d}</th>`).join('')+'</tr></thead><tbody><tr>';
+      for(let i=0;i<first;i++)html+='<td class="bg-light" style="height:106px"></td>';
+      for(let day=1;day<=days;day++){if((first+day-1)%7===0&&day>1)html+='</tr><tr>';const date=`${year}-${String(month+1).padStart(2,'0')}-${String(day).padStart(2,'0')}`,matches=classes.filter(e=>dateKey(e)===date);html+=`<td style="min-width:120px;height:106px;vertical-align:top"><strong>${day}</strong>${matches.map(e=>`<button type="button" class="btn btn-sm d-block w-100 text-start mt-1 ${String(e.sport).toLowerCase()==='pilates'?'btn-outline-info':'btn-outline-success'} yoga-calendar-event" data-target-event="${e.id}"><small>${e.startTime||''} ${e.sport==='pilates'?'Pilates':'Yoga'}</small><span class="d-block text-truncate">${e.name||'Class'}</span>${e.promoCode?`<small>${e.promoCode}</small>`:''}</button>`).join('')}</td>`;}
+      const trailing=(7-(first+days)%7)%7;for(let i=0;i<trailing;i++)html+='<td class="bg-light" style="height:106px"></td>';html+='</tr></tbody></table>';host.innerHTML=html;
       host.querySelectorAll('.yoga-calendar-event').forEach(button=>button.addEventListener('click',()=>document.querySelector('.event-card[data-event-id="'+button.dataset.targetEvent+'"]')?.scrollIntoView({behavior:'smooth',block:'center'})));
+    }
+    function shiftUserYogaCalendar(offset){yogaCalendarShownDate=new Date(yogaCalendarShownDate.getFullYear(),yogaCalendarShownDate.getMonth()+offset,1);initializeYogaPilatesPage();}
+    function setUserYogaCalendarToday(){yogaCalendarShownDate=new Date(new Date().getFullYear(),new Date().getMonth(),1);initializeYogaPilatesPage();}
+
+    function loadYogaPilatesPage() {
+      return `<div class="mb-4"><h3><i class="fas fa-spa text-primary me-2"></i>Yoga &amp; Pilates</h3><p class="text-muted">Browse studio classes and freelance instructors, then book or share a class.</p></div><div class="form-card mb-4"><h4>Class calendar</h4><div id="yogaPilatesSchedule" class="table-responsive"></div></div><div id="yogaClassPromotions" class="row g-3 mb-4"></div><h4 class="mb-3">Available classes</h4><div class="row" id="yogaPilatesClasses"><div class="col-12 text-muted">Loading classes…</div></div>`;
+    }
+
+    async function initializeYogaPilatesPage() {
+      try {
+        const snapshot=await db.collection('events').get();
+        const classes=snapshot.docs.map(doc=>({id:doc.id,...doc.data()})).filter(event=>['yoga','pilates'].includes(String(event.sport||'').toLowerCase())&&event.status!=='cancelled');
+        renderYogaPilatesSchedule(classes);
+        await renderEventsToContainer(classes,document.getElementById('yogaPilatesClasses'),'all');
+        const promoSnap=await db.collection('promos').where('status','==','active').get();
+        const promos=promoSnap.docs.map(doc=>({id:doc.id,...doc.data()})).filter(p=>p.imageUrl||p.bannerUrl);
+        const host=document.getElementById('yogaClassPromotions');
+        if(host&&promos.length)host.innerHTML=promos.map(p=>`<div class="col-md-6"><a href="${p.link||'#'}" class="d-block rounded-3 overflow-hidden"><img src="${p.imageUrl||p.bannerUrl}" alt="${p.description||p.code||'Class promotion'}" class="img-fluid w-100" style="max-height:220px;object-fit:cover"></a></div>`).join('');
+      } catch(error) { console.error('Unable to load Yoga/Pilates classes:',error);const host=document.getElementById('yogaPilatesClasses');if(host)host.innerHTML='<div class="col-12"><div class="alert alert-danger">Could not load classes. Please refresh.</div></div>'; }
+    }
+
+    async function shareEvent(eventId) {
+      const event=await db.collection('events').doc(eventId).get();if(!event.exists)return;
+      const data=event.data(),url=`${location.origin}${location.pathname}?page=yoga-pilates&event=${encodeURIComponent(eventId)}`;
+      const shareData={title:data.name||'Sportova event',text:`Join ${data.name||'this event'} on ${data.startDate||''}${data.promoCode?` · Promo: ${data.promoCode}`:''}`,url};
+      if(navigator.share)await navigator.share(shareData);else{await navigator.clipboard.writeText(`${shareData.text}\n${url}`);showToast('Event link copied.','success');}
     }
 
     // Generic render function
@@ -11285,6 +11465,7 @@
                   ${event.locationType === 'freelance' ? 'Freelance instructor • Home visit' : (locationText || 'Facility studio')}, ${event.district || ''}, ${event.state || ''}
                 </p>
                 ${Number(event.price || event.entryFee) > 0 ? `<p class="mb-1"><i class="fas fa-tag me-2"></i>RM${Number(event.price || event.entryFee).toFixed(2)} per person</p>` : ''}
+                ${event.promoCode ? `<p class="mb-1"><i class="fas fa-ticket-alt me-2"></i>Class promo: <strong>${event.promoCode}</strong></p>` : ''}
                 <p class="mb-1">
                   <i class="fas fa-users me-2"></i>
                   ${participantsCount} participants
@@ -11306,6 +11487,7 @@
                           data-event-id="${event.id}">
                     <i class="fas fa-eye me-1"></i> View Details
                   </button>
+                  <button class="btn btn-sm btn-outline-primary w-100 mt-2" onclick="shareEvent('${event.id}')"><i class="fas fa-share-alt me-1"></i> Share with friends</button>
                 </div>
               </div>
             </div>

@@ -256,7 +256,8 @@
               <option value="suspended">Suspended</option>
             </select>
           </div>
-          <div class="col-md-3 mb-2 text-md-end">
+          <div class="col-md-2 mb-2"><select class="form-select" id="bookingCountFilter"><option value="">Any booking count</option><option value="most">Most bookings first</option><option value="least">Fewest bookings first</option></select></div>
+          <div class="col-md-1 mb-2 text-md-end">
             <button class="btn btn-outline-secondary" id="exportBtn">
               <i class="fas fa-download me-2"></i>Export
             </button>
@@ -282,6 +283,7 @@
                   <th>Contact</th>
                   <th>Role</th>
                   <th>Sport & Skill</th>
+                  <th>Bookings</th>
                   <th>Status</th>
                   <th>Actions</th>
                 </tr>
@@ -452,10 +454,12 @@
     async function loadUsers() {
       try {
         const table = document.getElementById("usersTable");
-        table.innerHTML = "<tr><td colspan='6' class='text-center py-4'><div class='spinner-border text-primary' role='status'></div><p class='mt-2'>Loading users...</p></td></tr>";
+        table.innerHTML = "<tr><td colspan='7' class='text-center py-4'><div class='spinner-border text-primary' role='status'></div><p class='mt-2'>Loading users...</p></td></tr>";
         
-        const snapshot = await db.collection("users").get();
+        const [snapshot, bookingSnapshot] = await Promise.all([db.collection("users").get(), db.collection("bookings").get()]);
         allUsers = [];
+        const bookingCounts={};
+        bookingSnapshot.forEach(doc=>{const id=doc.data().userId;if(id)bookingCounts[id]=(bookingCounts[id]||0)+1;});
         const userCounts = {
           total: 0,
           active: 0,
@@ -466,7 +470,7 @@
         };
 
         snapshot.forEach(doc => {
-          const user = { id: doc.id, ...doc.data() };
+          const user = { id: doc.id, ...doc.data(), bookingCount: bookingCounts[doc.id] || 0 };
           allUsers.push(user);
           
           // Update counts
@@ -490,7 +494,7 @@
         renderUsers(filteredUsers);
       } catch (error) {
         console.error("Error loading users:", error);
-        document.getElementById("usersTable").innerHTML = "<tr><td colspan='6' class='text-center text-danger py-4'>Error loading users. Please try again.</td></tr>";
+        document.getElementById("usersTable").innerHTML = "<tr><td colspan='7' class='text-center text-danger py-4'>Error loading users. Please try again.</td></tr>";
       }
     }
 
@@ -499,7 +503,7 @@
       const table = document.getElementById("usersTable");
       
       if (users.length === 0) {
-        table.innerHTML = "<tr><td colspan='6' class='text-center py-4'>No users found.</td></tr>";
+        table.innerHTML = "<tr><td colspan='7' class='text-center py-4'>No users found.</td></tr>";
         return;
       }
       
@@ -535,6 +539,7 @@
             <div>${user.primarySport || "N/A"}</div>
             <small class="text-muted">${user.skillLevel || "No skill level"}</small>
           </td>
+          <td><span class="badge bg-light text-dark">${user.bookingCount || 0}</span></td>
           <td>
             <span class="badge ${user.suspended ? 'bg-danger' : 'bg-success'}">
               ${user.suspended ? 'Suspended' : 'Active'}
@@ -544,6 +549,7 @@
             <button class="btn btn-sm btn-info action-btn" onclick="viewActivity('${user.id}')" title="View Activity">
               <i class="fas fa-history"></i>
             </button>
+            ${user.role === 'user' ? `<button class="btn btn-sm btn-success action-btn" onclick="offerSpecialVoucher('${user.id}')" title="Give special promo"><i class="fas fa-ticket-alt"></i></button>` : ''}
             <button class="btn btn-sm btn-warning action-btn" onclick="editUser('${user.id}')" title="Edit User">
               <i class="fas fa-edit"></i>
             </button>
@@ -689,12 +695,14 @@
     document.getElementById('roleFilter').addEventListener('change', filterUsers);
     document.getElementById('sportFilter').addEventListener('change', filterUsers);
     document.getElementById('statusFilter').addEventListener('change', filterUsers);
+    document.getElementById('bookingCountFilter').addEventListener('change', filterUsers);
 
     function filterUsers() {
       const searchText = document.getElementById('searchInput').value.toLowerCase();
       const roleFilter = document.getElementById('roleFilter').value;
       const sportFilter = document.getElementById('sportFilter').value;
       const statusFilter = document.getElementById('statusFilter').value;
+      const bookingCountFilter = document.getElementById('bookingCountFilter').value;
       
       filteredUsers = allUsers.filter(user => {
         const matchesSearch = user.name?.toLowerCase().includes(searchText) || 
@@ -707,8 +715,24 @@
         
         return matchesSearch && matchesRole && matchesSport && matchesStatus;
       });
+      if(bookingCountFilter==='most')filteredUsers.sort((a,b)=>(b.bookingCount||0)-(a.bookingCount||0));
+      if(bookingCountFilter==='least')filteredUsers.sort((a,b)=>(a.bookingCount||0)-(b.bookingCount||0));
       
       renderUsers(filteredUsers);
+    }
+
+    async function offerSpecialVoucher(userId) {
+      const raw=prompt('Voucher value in RM:', '5');
+      if(raw===null)return;
+      const value=Number(raw);
+      if(!Number.isFinite(value)||value<=0){showNotification('Enter a voucher amount above RM0.','error');return;}
+      const code=`SPECIAL-${userId.slice(0,5).toUpperCase()}-${Math.random().toString(36).slice(2,6).toUpperCase()}`;
+      const validTo=new Date();validTo.setMonth(validTo.getMonth()+3);
+      try{
+        await db.collection('promos').add({code,description:'Personal special voucher',type:'fixed',discountValue:value,minPurchase:0,userId,facilities:[],status:'active',validFrom:new Date(),validTo,reason:'admin-special',createdAt:firebase.firestore.FieldValue.serverTimestamp()});
+        await db.collection('users').doc(userId).set({personalVouchers:firebase.firestore.FieldValue.arrayUnion({code,type:'fixed',value,status:'active',reason:'Special offer'})},{merge:true});
+        showNotification(`RM${value.toFixed(2)} voucher ${code} sent to user.`,'success');
+      }catch(error){console.error(error);showNotification('Could not issue the voucher.','error');}
     }
 
     // Export functionality

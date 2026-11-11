@@ -770,6 +770,7 @@
             background: rgba(255, 107, 107, 0.3);
             border-radius: 4px;
         }
+        .d-none { display:none !important; }
     </style>
 </head>
 <body>
@@ -926,6 +927,11 @@
                                     <input type="text" id="signupLocation" placeholder="e.g., Near KLCC">
                                 </div>
                             </div>
+                            <div class="input-group">
+                                <label>Referral code (optional)</label>
+                                <input type="text" id="signupReferralCode" placeholder="Enter your friend's code">
+                                <div class="text-muted">Your friend earns a voucher when you join.</div>
+                            </div>
 
                             <!-- Preferred Times - Chip based -->
                             <div class="input-group">
@@ -961,7 +967,8 @@
                             <button type="submit" class="btn-auth" id="adminLoginBtn"><i class="fas fa-shield"></i> Admin login</button>
                             <div class="message-box" id="adminLoginMsg"></div>
                         </form>
-                        <div style="margin-top:1.2rem; text-align:center; color:rgba(255,255,255,0.2); font-size:0.8rem;">Admins are created by super admin only.</div>
+                        <button type="button" class="btn-auth btn-outline mt-3" onclick="document.getElementById('adminRequestBox').classList.toggle('d-none')">Request an admin account</button>
+                        <form id="adminRequestBox" class="d-none mt-3"><div class="input-group"><label>Full name</label><input id="adminRequestName" required></div><div class="input-group"><label>Email</label><input type="email" id="adminRequestEmail" required></div><div class="input-group"><label>Password</label><input type="password" id="adminRequestPassword" minlength="8" required></div><button class="btn-auth" type="submit">Create pending admin account</button><div class="message-box" id="adminRequestMsg"></div><small class="text-muted">An owner must approve admin access before this account can use the admin portal.</small></form>
                     </div>
                 </div>
             </div>
@@ -1007,7 +1014,8 @@
                             <button type="submit" class="btn-auth" id="coachLoginBtn"><i class="fas fa-chalkboard"></i> Coach login</button>
                             <div class="message-box" id="coachLoginMsg"></div>
                         </form>
-                        <div style="margin-top:1.2rem; text-align:center; color:rgba(255,255,255,0.2); font-size:0.8rem;">Contact admin to create coach accounts.</div>
+                        <button type="button" class="btn-auth btn-outline mt-3" onclick="document.getElementById('coachRequestBox').classList.toggle('d-none')">Sign up as a coach</button>
+                        <form id="coachRequestBox" class="d-none mt-3"><div class="input-group"><label>Full name</label><input id="coachRequestName" required></div><div class="input-group"><label>Email</label><input type="email" id="coachRequestEmail" required></div><div class="input-group"><label>Password</label><input type="password" id="coachRequestPassword" minlength="8" required></div><div class="input-group"><label>Sport / specialty</label><input id="coachRequestSport" placeholder="e.g. Yoga, Tennis"></div><button class="btn-auth" type="submit">Create coach account</button><div class="message-box" id="coachRequestMsg"></div><small class="text-muted">A manager must approve the coach account before sign-in.</small></form>
                     </div>
                 </div>
             </div>
@@ -1393,6 +1401,7 @@
 
                 // Get selected times from chips
                 const preferredTimes = getSelectedTimes();
+                const referralCodeInput = document.getElementById('signupReferralCode').value.trim().toUpperCase();
 
                 // Validate required fields
                 if (!firstName || !lastName || !email || !password || !dob || !primarySport || !skillLevel || !state || !district || !location || !frequency) {
@@ -1454,6 +1463,13 @@
                     }
                 }
 
+                let referrer = null;
+                if (referralCodeInput) {
+                    const referrerSnap = await db.collection('users').where('referralCode', '==', referralCodeInput).limit(1).get();
+                    if (referrerSnap.empty) throw new Error('That referral code was not found. Check it or leave the field blank.');
+                    referrer = { id: referrerSnap.docs[0].id, ...referrerSnap.docs[0].data() };
+                }
+
                 // Create user account
                 const cred = await auth.createUserWithEmailAndPassword(email, password);
 
@@ -1481,8 +1497,31 @@
                     playingFrequency: frequency,
                     preferredTimes: preferredTimes,
                     role: 'user',
+                    referralCode: `SPORT${cred.user.uid.slice(0, 8).toUpperCase()}`,
+                    referredBy: referrer ? referrer.id : null,
+                    personalVouchers: [{ code: `WELCOME-${cred.user.uid.slice(0, 6).toUpperCase()}`, type: 'fixed', value: 5, status: 'active', reason: 'Welcome voucher' }],
                     createdAt: firebase.firestore.FieldValue.serverTimestamp()
                 });
+
+                const voucherExpiry = new Date();
+                voucherExpiry.setFullYear(voucherExpiry.getFullYear() + 1);
+                await db.collection('promos').add({
+                    code: `WELCOME-${cred.user.uid.slice(0, 6).toUpperCase()}`, description: 'RM5 first booking voucher', type: 'fixed', discountValue: 5,
+                    minPurchase: 0, userId: cred.user.uid, facilities: [], status: 'active', validFrom: new Date(), validTo: voucherExpiry,
+                    createdAt: firebase.firestore.FieldValue.serverTimestamp(), reason: 'welcome'
+                });
+                if (referrer) {
+                    const referralVoucher = `REFER-${referrer.id.slice(0, 6).toUpperCase()}-${cred.user.uid.slice(0, 4).toUpperCase()}`;
+                    await db.collection('promos').add({
+                        code: referralVoucher, description: `Referral reward for inviting ${firstName}`, type: 'fixed', discountValue: 5,
+                        minPurchase: 0, userId: referrer.id, facilities: [], status: 'active', validFrom: new Date(), validTo: voucherExpiry,
+                        createdAt: firebase.firestore.FieldValue.serverTimestamp(), reason: 'referral', referredUserId: cred.user.uid
+                    });
+                    await db.collection('users').doc(referrer.id).update({
+                        personalVouchers: firebase.firestore.FieldValue.arrayUnion({ code: referralVoucher, type: 'fixed', value: 5, status: 'active', reason: 'Referral reward' }),
+                        updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+                    });
+                }
 
                 showMsg('userSignupMsg', '🎉 Account created! Redirecting...', 'success');
                 setTimeout(() => window.location.href = 'user-dashboard.html', 1400);
@@ -1548,6 +1587,24 @@
                 setTimeout(() => window.location.href = 'coach-dashboard.html', 1200);
             } catch (err) { showMsg('coachLoginMsg', '❌ ' + err.message); }
         });
+
+        async function submitPendingRoleSignup(formId, role, messageId, extra={}) {
+            const form=document.getElementById(formId);form.addEventListener('submit',async e=>{
+                e.preventDefault();const name=document.getElementById(role+'RequestName').value.trim();
+                const email=document.getElementById(role+'RequestEmail').value.trim();const password=document.getElementById(role+'RequestPassword').value;
+                const msg=document.getElementById(messageId);msg.textContent='Creating account…';msg.className='message-box';
+                try{
+                    const credential=await auth.createUserWithEmailAndPassword(email,password);await credential.user.updateProfile({displayName:name});
+                    const pendingRole=role==='admin'?'admin_pending':'coach_pending';
+                    const userData={uid:credential.user.uid,name,email,role:pendingRole,status:'pending',createdAt:firebase.firestore.FieldValue.serverTimestamp(),accessRequestedAt:firebase.firestore.FieldValue.serverTimestamp(),...extra()};
+                    await db.collection('users').doc(credential.user.uid).set(userData);
+                    if(role==='coach')await db.collection('coaches').doc(credential.user.uid).set({uid:credential.user.uid,name,email,rate:0,experience:0,sport:document.getElementById('coachRequestSport').value.trim(),facilities:[],status:'pending',createdAt:firebase.firestore.FieldValue.serverTimestamp()});
+                    await auth.signOut();msg.textContent='Account created. An owner must approve access before you can sign in.';msg.classList.add('success');form.reset();
+                }catch(error){console.error(error);msg.textContent=error.message;msg.classList.add('error');}
+            });
+        }
+        submitPendingRoleSignup('adminRequestBox','admin','adminRequestMsg',()=>({}));
+        submitPendingRoleSignup('coachRequestBox','coach','coachRequestMsg',()=>({sport:document.getElementById('coachRequestSport').value.trim()}));
 
         // ============================================================
         //  FORGOT PASSWORD
