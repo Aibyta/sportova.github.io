@@ -5931,7 +5931,7 @@
                             <h3>Promo & Vouchers Management</h3>
                             <div class="d-flex gap-2">
                                 <button class="btn btn-primary" onclick="showPromoModal()"><i class="fas fa-plus me-1"></i> Add New Promo</button>
-                                <button class="btn btn-primary" onclick="sendPromoEmailToAllUsers()"><i class="fas fa-envelope me-1"></i> Send Promo Email to All Users</button>
+                                <button class="btn btn-outline-primary" id="sendPromoBroadcastBtn" onclick="sendPromoEmailToAllUsers()"><i class="fas fa-bullhorn me-1"></i> Notify All Users</button>
                             </div>
                         </div>
                         <div class="row mb-4">
@@ -6153,43 +6153,38 @@
             if (snap.empty) return null;
             for (const doc of snap.docs) {
                 const p = doc.data();
-                const from = p.validFrom?.toDate();
-                const to = p.validTo?.toDate();
-                if (from && to && now >= from && now <= to) return { id: doc.id, ...p };
+                const from = coercePromoDate(p.validFrom);
+                const to = coercePromoDate(p.validTo);
+                if (from && to && now >= from && now <= to && p.code) return { id: doc.id, ...p, validFromDate:from, validToDate:to };
             }
             return null;
         }
 
-        function sendPromoEmail(toEmail, promo) {
-            const discountText = promo.type === "percentage" ? `${promo.discountValue}% OFF` :
-                `RM ${promo.discountValue} OFF`;
-            return emailjs.send("YOUR_SERVICE_ID", "YOUR_TEMPLATE_ID", {
-                to_email: toEmail,
-                promo_code: promo.code,
-                promo_description: promo.description,
-                discount: discountText,
-                min_purchase: promo.minPurchase || 0,
-                valid_from: promo.validFrom.toDate().toLocaleDateString(),
-                valid_to: promo.validTo.toDate().toLocaleDateString(),
-                promo_type: promo.type
-            });
-        }
-
         async function sendPromoEmailToAllUsers() {
+            const button=document.getElementById('sendPromoBroadcastBtn');
             try {
+                if(button){button.disabled=true;button.innerHTML='<span class="spinner-border spinner-border-sm me-2"></span>Sending…';}
                 const promo = await getActivePromo();
-                if (!promo) { showToast("No active promo found", "warning"); return; }
+                if (!promo) { showToast("There is no active promo with a valid date range to send.", "warning"); return; }
                 const usersSnap = await db.collection("users").get();
-                let sentCount = 0;
-                for (const doc of usersSnap.docs) {
-                    const user = doc.data();
-                    if (!user.email) continue;
-                    await sendPromoEmail(user.email, promo);
-                    sentCount++;
-                    await new Promise(res => setTimeout(res, 900));
+                const recipients=usersSnap.docs.filter(doc=>{
+                    const user=doc.data();return user.role==='user'||(!user.role&&user.email);
+                });
+                if(!recipients.length){showToast('No user accounts were found to notify.','warning');return;}
+                const discount=promo.type==='percentage'?`${Number(promo.discountValue||promo.discount||0)}% off`:`RM${Number(promo.discountValue||promo.discount||0).toFixed(2)} off`;
+                const message=`${promo.code}: ${promo.description||discount}. Valid until ${promo.validToDate.toLocaleDateString()}.`;
+                for(let i=0;i<recipients.length;i+=400){
+                    const batch=db.batch();
+                    recipients.slice(i,i+400).forEach(doc=>batch.set(db.collection('notifications').doc(),{
+                        userId:doc.id,type:'promo_broadcast',title:'A new promotion is available',message,
+                        data:{promoId:promo.id,promoCode:promo.code,description:promo.description||'',discount,validTo:promo.validToDate.toISOString()},
+                        isRead:false,createdAt:firebase.firestore.FieldValue.serverTimestamp()
+                    }));
+                    await batch.commit();
                 }
-                showToast(`Promo email sent to ${sentCount} users 🎉`, "success");
-            } catch (err) { console.error(err); }
+                showToast(`Promotion ${promo.code} sent to ${recipients.length} users in the app.`, "success");
+            } catch (err) { console.error('Could not send promo notification:',err);showToast(`Could not send the promotion: ${err.message||'Please try again.'}`,'danger'); }
+            finally { if(button){button.disabled=false;button.innerHTML='<i class="fas fa-bullhorn me-1"></i> Notify All Users';} }
         }
 
         // =========================================================================

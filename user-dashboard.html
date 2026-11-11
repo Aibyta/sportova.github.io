@@ -2474,12 +2474,19 @@
           snapshot.docChanges().forEach(change => {
             if (change.type === "added") {
               const notif = change.doc.data();
-
+              const isPromo=notif.type==='promo_broadcast';
               showToast(
-                `💬 ${notif.title}: ${notif.message}`,
+                `${isPromo?'🎉':'💬'} ${notif.title}: ${notif.message}`,
                 "info",
-                () => {
-                  // Handle notification click - open chat
+                async () => {
+                  try { await change.doc.ref.update({isRead:true}); } catch(error) { console.warn('Could not mark notification read:',error); }
+                  if(isPromo){
+                    const code=notif.data?.promoCode;
+                    if(code){try{await navigator.clipboard.writeText(code);}catch(_){}}
+                    loadPageContent('book-facility');
+                    showToast(code?`Promo code ${code} copied. Apply it during booking.`:'Opening available promotions.','success');
+                    return;
+                  }
                   if (notif.data && notif.data.chatId) {
                     const chatId = notif.data.chatId;
                     markNotificationAsRead(chatId);
